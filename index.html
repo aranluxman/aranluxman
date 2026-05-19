@@ -1,0 +1,242 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#efeaf3" />
+    <title>Aran Life Flow</title>
+    <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="stylesheet" href="/styles.css" />
+    <script type="module" src="/src/app.mjs"></script>
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Primary navigation">
+        <div class="brand">
+          <span class="brand-mark">A</span>
+          <div>
+            <strong>Life Flow</strong>
+            <small>Aran's planner</small>
+          </div>
+        </div>
+        <nav class="nav-list">
+          <button class="nav-item active" data-view="home" type="button">Home</button>
+          <button class="nav-item" data-view="tasks" type="button">Tasks</button>
+          <button class="nav-item" data-view="calendar" type="button">Cal</button>
+          <button class="nav-item" data-view="focus" type="button">Focus</button>
+        </nav>
+        <button class="ghost-button" id="settingsButton" type="button">Settings</button>
+      </aside>
+
+      <main class="workspace">
+        <section class="view active" id="homeView" aria-labelledby="homeTitle">
+          <header class="hero-grid">
+            <div>
+              <p class="greeting" id="greeting">Good evening</p>
+              <h1 id="homeTitle">Aran</h1>
+              <p class="fresh-line" id="freshLine">Today is a fresh start</p>
+            </div>
+            <div class="sparkle" aria-hidden="true">✦</div>
+          </header>
+
+          <section class="word-card" aria-labelledby="wordTitle">
+            <p id="wordTitle">Word of the day</p>
+            <h2 id="wordTerm">Sillage</h2>
+            <blockquote id="wordDefinition">
+              The scent that lingers in the air after someone passes by.
+            </blockquote>
+          </section>
+
+          <section class="quote-card" aria-label="Motivational quote">
+            <p id="quoteText">Small steps count. Show up once, then again.</p>
+            <button class="icon-button" id="nextQuoteButton" type="button" aria-label="Next quote">↻</button>
+          </section>
+
+          <section class="mood-panel" aria-labelledby="moodTitle">
+            <h2 id="moodTitle">How are you feeling?</h2>
+            <div class="mood-row" id="moodRow"></div>
+          </section>
+
+          <section class="stats-grid" aria-label="Progress stats">
+            <article class="stat-card">
+              <span>✓</span>
+              <strong id="doneTodayStat">0</strong>
+              <small>Done</small>
+            </article>
+            <article class="stat-card">
+              <span>◷</span>
+              <strong id="openTasksStat">0</strong>
+              <small>To Do</small>
+            </article>
+            <article class="stat-card">
+              <span>♨</span>
+              <strong id="streakStat">0d</strong>
+              <small>Streak</small>
+            </article>
+            <article class="stat-card">
+              <span>◉</span>
+              <strong id="coinsStat">0</strong>
+              <small>Coins</small>
+            </article>
+          </section>
+        </section>
+
+        <section class="view" id="tasksView" aria-labelledby="tasksTitle">
+          <div class="section-heading">
+            <h1 id="tasksTitle">Tasks</h1>
+            <button class="add-button" data-open-compose="daily_task" type="button" aria-label="Add task">+</button>
+          </div>
+          <div class="filter-row" id="taskFilters" aria-label="Task filters">
+            <button class="filter-pill active" data-filter="all" type="button">All</button>
+            <button class="filter-pill" data-filter="weekly" type="button">Weekly</button>
+            <button class="filter-pill" data-filter="priorities" type="button">Priorities</button>
+            <button class="filter-pill" data-filter="long-term" type="button">Long-term</button>
+          </div>
+          <div class="task-list" id="taskList"></div>
+        </section>
+
+        <section class="view" id="calendarView" aria-labelledby="calendarTitle">
+          <div class="section-heading">
+            <h1 id="calendarTitle">Calendar</h1>
+            <button class="add-button" data-open-compose="calendar_event" type="button" aria-label="Add calendar item">+</button>
+          </div>
+          <div class="calendar-toolbar">
+            <button class="icon-button" id="prevMonthButton" type="button" aria-label="Previous month">‹</button>
+            <strong id="monthLabel">May 2026</strong>
+            <button class="icon-button" id="nextMonthButton" type="button" aria-label="Next month">›</button>
+          </div>
+          <div class="weekday-row" aria-hidden="true">
+            <span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span>
+          </div>
+          <div class="calendar-grid" id="calendarGrid"></div>
+          <section class="day-agenda" aria-labelledby="agendaTitle">
+            <h2 id="agendaTitle">Today</h2>
+            <div id="agendaList"></div>
+          </section>
+        </section>
+
+        <section class="view" id="focusView" aria-labelledby="focusTitle">
+          <header class="focus-heading">
+            <h1 id="focusTitle">Focus Mode</h1>
+            <p>Deep work, no distractions ✨</p>
+          </header>
+          <div class="focus-stage">
+            <aside class="mini-calendar" id="miniCalendar"></aside>
+            <section class="timer-card" aria-label="Pomodoro timer">
+              <div class="timer-ring">
+                <strong id="timerText">25:00</strong>
+                <span>Pomodoro</span>
+              </div>
+              <div class="timer-controls">
+                <button class="icon-button" id="resetTimerButton" type="button" aria-label="Reset timer">↺</button>
+                <button class="play-button" id="playTimerButton" type="button" aria-label="Start timer">▷</button>
+                <button class="icon-button" id="finishTimerButton" type="button" aria-label="Finish focus session">☕</button>
+              </div>
+              <div class="duration-row">
+                <button class="filter-pill active" data-minutes="25" type="button">25 min</button>
+                <button class="filter-pill" data-minutes="50" type="button">50 min</button>
+                <button class="filter-pill" data-minutes="15" type="button">15 min</button>
+                <label class="custom-minutes">
+                  <span>Custom</span>
+                  <input id="customMinutesInput" type="number" min="1" max="240" value="25" aria-label="Custom focus minutes" />
+                </label>
+              </div>
+            </section>
+          </div>
+          <section class="ambient-panel" aria-labelledby="ambientTitle">
+            <h2 id="ambientTitle">Ambient vibes</h2>
+            <div class="ambient-grid">
+              <button type="button" data-sound="rain">🌧️<span>Rain</span></button>
+              <button type="button" data-sound="cafe">☕<span>Cafe</span></button>
+              <button type="button" data-sound="library">📚<span>Library</span></button>
+            </div>
+            <p class="sound-status" id="soundStatus">Pick a vibe to start background sound.</p>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <dialog class="compose-dialog" id="composeDialog">
+      <form id="composeForm" method="dialog">
+        <div class="dialog-heading">
+          <h2 id="composeTitle">Add item</h2>
+          <button class="icon-button" value="cancel" type="button" id="closeComposeButton" aria-label="Close">×</button>
+        </div>
+        <label>
+          Title
+          <input id="itemTitleInput" name="title" required maxlength="120" />
+        </label>
+        <div class="form-grid">
+          <label>
+            Type
+            <select id="itemKindInput" name="kind">
+              <option value="daily_task">Daily task</option>
+              <option value="long_term">Long-term to-do</option>
+              <option value="calendar_event">Calendar item</option>
+            </select>
+          </label>
+          <label>
+            Date
+            <input id="itemDateInput" name="due_date" type="date" />
+          </label>
+          <label>
+            Category
+            <select id="itemCategoryInput" name="category">
+              <option>School</option>
+              <option>Personal</option>
+              <option>Wellness</option>
+              <option>Training</option>
+              <option>Calendar</option>
+            </select>
+          </label>
+          <label>
+            Priority
+            <select id="itemPriorityInput" name="priority">
+              <option value="medium">Medium</option>
+              <option value="high">High</option>
+              <option value="low">Low</option>
+            </select>
+          </label>
+        </div>
+        <label>
+          Notes
+          <textarea id="itemNotesInput" name="notes" rows="3"></textarea>
+        </label>
+        <button class="primary-button" type="submit">Save</button>
+      </form>
+    </dialog>
+
+    <dialog class="compose-dialog" id="settingsDialog">
+      <form id="settingsForm" method="dialog">
+        <div class="dialog-heading">
+          <h2>Settings</h2>
+          <button class="icon-button" value="cancel" type="button" id="closeSettingsButton" aria-label="Close">×</button>
+        </div>
+        <p class="settings-note">
+          Supabase sync uses your project URL, anon key, and a private owner key stored only in this browser.
+        </p>
+        <label>
+          Supabase URL
+          <input id="supabaseUrlInput" name="supabaseUrl" />
+        </label>
+        <label>
+          Supabase publishable key
+          <input id="supabaseAnonInput" name="supabaseAnonKey" />
+        </label>
+        <label>
+          Owner key
+          <input id="ownerKeyInput" name="ownerKey" />
+        </label>
+        <label>
+          Optional Google Calendar secret iCal URL
+          <input id="calendarUrlInput" name="calendarUrl" />
+        </label>
+        <div class="dialog-actions">
+          <button class="ghost-button" id="syncButton" type="button">Sync now</button>
+          <button class="primary-button" type="submit">Save settings</button>
+        </div>
+        <p class="sync-status" id="syncStatus">Local mode</p>
+      </form>
+    </dialog>
+  </body>
+</html>

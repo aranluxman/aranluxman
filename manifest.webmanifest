@@ -1,0 +1,15 @@
+{
+  "name": "Aran Life Flow",
+  "short_name": "Life Flow",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#eaf1f6",
+  "theme_color": "#155a8a",
+  "icons": [
+    {
+      "src": "/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    }
+  ]
+}

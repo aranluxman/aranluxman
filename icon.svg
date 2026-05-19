@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" role="img" aria-label="Aran Life Flow">
+  <rect width="128" height="128" rx="30" fill="#155a8a"/>
+  <path d="M35 88 60 30h12l25 58H83l-5-13H54l-5 13H35Zm23-24h16l-8-20-8 20Z" fill="#fff"/>
+  <circle cx="94" cy="34" r="8" fill="#d8aa35"/>
+</svg>

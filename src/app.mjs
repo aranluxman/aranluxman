@@ -1,9 +1,12 @@
 import {
   buildMonthDays,
+  calculateSleepMinutes,
   calculateStats,
   filterItems,
+  formatSleepDuration,
   formatDateKey,
   getGreeting,
+  getSleepSummary,
   parseIcsEvents,
   sanitizeFocusMinutes,
   todayKey,
@@ -13,11 +16,45 @@ const STORE_KEY = "aran-life-flow-state";
 const SETTINGS_KEY = "aran-life-flow-settings";
 const colors = ["#ef6f75", "#95cfb7", "#efc963", "#6f3aa5", "#b99be1"];
 const today = todayKey();
+const starterTasks = [
+  {
+    id: "0b7c7939-4a28-4d4e-8e96-b4d3a78ff101",
+    kind: "daily_task",
+    title: "Tell guidance about website and how I am not taking summer school",
+    notes: "",
+    category: "School",
+    priority: "high",
+    due_date: today,
+    scheduled_at: "",
+    duration_minutes: 30,
+    completed: false,
+    color: colors[0],
+    source: "manual",
+    created_at: `${today}T09:00:00.000Z`,
+  },
+  {
+    id: "f47ba22f-b0db-4d3d-853d-a3091caaaf20",
+    kind: "daily_task",
+    title: "Work on science culminating",
+    notes: "",
+    category: "School",
+    priority: "high",
+    due_date: today,
+    scheduled_at: "",
+    duration_minutes: 45,
+    completed: false,
+    color: colors[2],
+    source: "manual",
+    created_at: `${today}T09:05:00.000Z`,
+  },
+];
 
 const defaultState = {
-  items: [],
+  items: starterTasks,
   moods: [],
   focusSessions: [],
+  sleepEntries: [],
+  starterTasksSeeded: true,
   selectedDate: today,
   activeFilter: "all",
   monthCursor: `${today.slice(0, 7)}-01`,
@@ -38,6 +75,109 @@ const quotes = [
   "You do not need perfect energy. You need a clear next move.",
   "Future you is built by the quiet choices you make today.",
   "Start simple. Finish clean. Let momentum do its work.",
+  "Do the first five minutes. The rest can meet you there.",
+  "One finished task beats ten perfect plans.",
+  "Make the next move small enough that you cannot dodge it.",
+  "Your focus is a muscle. Train it gently and often.",
+  "You are allowed to begin before you feel ready.",
+  "Clean effort today gives tomorrow more room.",
+  "Choose the task that makes everything else lighter.",
+  "The win is not feeling motivated. The win is starting anyway.",
+  "Take one lap around the problem, then take one real step.",
+  "Consistency is quiet. That is why it works.",
+  "A clear desk is nice. A clear next action is better.",
+  "You can reset the day at any minute.",
+  "Do not wait for a perfect mood to do useful work.",
+  "Finish the little thing. It will change the whole room.",
+  "Study like you are helping tomorrow-you breathe easier.",
+  "Put your phone down and give your brain a fair chance.",
+  "The hard part gets smaller once it is named.",
+  "Tiny progress still counts as proof.",
+  "Do it badly for two minutes. Then make it better.",
+  "Momentum likes motion, not speeches.",
+  "Your future is built in boring, brave minutes.",
+  "Start with the page, the problem, or the first sentence.",
+  "Lock in now so you can relax properly later.",
+  "A little discipline gives you a lot of freedom.",
+  "The next right action is enough.",
+  "You do not need a perfect day to have a strong one.",
+  "Make it simple. Make it done.",
+  "One calm hour can rescue the whole afternoon.",
+  "Energy follows action more often than action follows energy.",
+  "Give yourself one clean block of attention.",
+  "Done is a door. Walk through it.",
+  "You can be tired and still take one good step.",
+  "Pick the important thing before the urgent noise picks for you.",
+  "Your attention is valuable. Spend it like it matters.",
+  "Small habits are how big goals learn to stand.",
+  "Do the work your future self keeps thanking you for.",
+  "A focused twenty-five minutes is a serious move.",
+  "The best comeback is a quiet restart.",
+  "You are not behind. You are here, and here is workable.",
+  "Less scrolling, more becoming.",
+  "Start where your feet are.",
+  "You do not have to crush the day. Just move it forward.",
+  "Protect the next hour like it belongs to your goals.",
+  "The first rep is the hardest. Do that one.",
+  "Progress is allowed to look ordinary.",
+  "Your brain likes proof. Give it one completed task.",
+  "Make the plan smaller until it moves.",
+  "The assignment gets less scary when it has a first line.",
+  "You can always choose focus again.",
+  "Every finished task is a vote for the person you are becoming.",
+  "A calm pace can still be a powerful pace.",
+  "Start now. Confidence can catch up.",
+  "Build the streak one honest session at a time.",
+  "The goal is not drama. The goal is progress.",
+  "Do the useful thing before the easy distraction.",
+  "You only need enough courage for the next step.",
+  "If it matters, give it a block on the calendar.",
+  "Your work does not need to be loud to be strong.",
+  "Turn the big thing into a checklist and take the first check.",
+  "You are closer after one focused minute than after one worried hour.",
+  "Breathe, choose, begin.",
+  "Good work starts with attention.",
+  "You can make this lighter by starting.",
+  "Let the first draft be messy and real.",
+  "Respect the timer. It is here to help you win.",
+  "Focus is just returning, over and over.",
+  "A clean start is available right now.",
+  "Choose one thing and make it obvious.",
+  "The day bends when you act.",
+  "Do the thing that makes you proud at bedtime.",
+  "Your goals deserve a quiet yes today.",
+  "No rush, no panic, just steady pressure.",
+  "You can handle a small beginning.",
+  "A little order creates a lot of peace.",
+  "Put the next task where your eyes can find it.",
+  "Your effort is not wasted just because it is slow.",
+  "Focus first, polish later.",
+  "You are building evidence that you can trust yourself.",
+  "One task. One timer. One clean finish.",
+  "The page will not stay blank after the first word.",
+  "Study now so the test feels familiar later.",
+  "Your sleep, focus, and work all count. Track them honestly.",
+  "Make today easier by doing the next real thing.",
+  "The strongest routine is the one you actually repeat.",
+  "You can be low-energy and still be high-intent.",
+  "Start with what is due. Then take care of what matters.",
+  "The calendar is not pressure. It is a map.",
+  "Put your mind where your future is.",
+  "Short sessions are still sessions.",
+  "Every reset is a skill.",
+  "Win the next ten minutes.",
+  "Do not negotiate with the distraction. Start the timer.",
+  "You can make a hard day useful.",
+  "Clear beats crowded.",
+  "A task written down is a task you can beat.",
+  "Give the work your full attention, then give rest your full attention.",
+  "Your best days are made from small choices repeated.",
+  "The next focused block is always available.",
+  "Keep promises to yourself in small, specific ways.",
+  "Let steady be enough.",
+  "The finish line gets closer when you stop measuring and start moving.",
+  "You have done hard things before. This is another rep.",
+  "Be the person who starts.",
 ];
 
 const words = [
@@ -48,7 +188,7 @@ const words = [
   ["Komorebi", "Sunlight filtering through trees."],
 ];
 
-let state = loadJson(STORE_KEY, defaultState);
+let state = ensureStarterTasks(loadJson(STORE_KEY, defaultState));
 let settings = loadJson(SETTINGS_KEY, {
   supabaseUrl: "https://hcvjiveloioftozvnbhe.supabase.co",
   supabaseAnonKey: "sb_publishable_DGZFZUhnMLgFpdYzcHWRmw_wqOPu2Aq",
@@ -72,7 +212,8 @@ document.addEventListener("DOMContentLoaded", () => {
   hydrateSettingsForm();
   render();
   const initialView = new URLSearchParams(window.location.search).get("view");
-  if (["home", "tasks", "calendar", "focus"].includes(initialView)) setView(initialView);
+  if (["home", "tasks", "calendar", "sleep", "focus"].includes(initialView)) setView(initialView);
+  persist();
   void syncFromSupabase();
   void importCalendar();
 });
@@ -81,8 +222,6 @@ function bindElements() {
   [
     "greeting",
     "freshLine",
-    "wordTerm",
-    "wordDefinition",
     "quoteText",
     "moodRow",
     "doneTodayStat",
@@ -99,6 +238,17 @@ function bindElements() {
     "timerText",
     "customMinutesInput",
     "soundStatus",
+    "addSleepButton",
+    "sleepDialog",
+    "sleepForm",
+    "sleepDateInput",
+    "sleptAtInput",
+    "wokeAtInput",
+    "latestSleepStat",
+    "averageSleepStat",
+    "sleepChart",
+    "sleepHint",
+    "sleepList",
     "composeDialog",
     "composeForm",
     "composeTitle",
@@ -132,6 +282,7 @@ function wireEvents() {
   });
 
   document.getElementById("closeComposeButton").addEventListener("click", () => els.composeDialog.close());
+  document.getElementById("closeSleepButton").addEventListener("click", () => els.sleepDialog.close());
   document.getElementById("closeSettingsButton").addEventListener("click", () => els.settingsDialog.close());
   document.getElementById("prevMonthButton").addEventListener("click", () => moveMonth(-1));
   document.getElementById("nextMonthButton").addEventListener("click", () => moveMonth(1));
@@ -141,6 +292,7 @@ function wireEvents() {
   document.getElementById("finishTimerButton").addEventListener("click", finishFocusSession);
   els.settingsButton.addEventListener("click", () => els.settingsDialog.showModal());
   els.syncButton.addEventListener("click", () => syncAll());
+  els.addSleepButton.addEventListener("click", openSleepDialog);
 
   els.taskFilters.addEventListener("click", (event) => {
     const button = event.target.closest("[data-filter]");
@@ -179,6 +331,11 @@ function wireEvents() {
     saveItemFromForm();
   });
 
+  els.sleepForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    saveSleepFromForm();
+  });
+
   els.settingsForm.addEventListener("submit", (event) => {
     event.preventDefault();
     settings = {
@@ -199,17 +356,15 @@ function render() {
   renderStats();
   renderTasks();
   renderCalendar();
+  renderSleep();
   renderMiniCalendar();
   renderTimer();
 }
 
 function renderHome() {
   const date = new Date();
-  const word = words[date.getDate() % words.length];
   els.greeting.textContent = `${getGreeting(date)} 🌙`;
   els.freshLine.textContent = "Today is a fresh start 🌷";
-  els.wordTerm.textContent = word[0];
-  els.wordDefinition.textContent = `"${word[1]}"`;
   els.quoteText.textContent = quotes[date.getDate() % quotes.length];
 }
 
@@ -340,6 +495,61 @@ function renderCalendar() {
     : `<div class="agenda-item"><strong>Open day</strong><div class="task-meta">No calendar items yet.</div></div>`;
 }
 
+function renderSleep() {
+  const summary = getSleepSummary(state.sleepEntries);
+  els.latestSleepStat.textContent = formatSleepDuration(summary.latestMinutes);
+  els.averageSleepStat.textContent = formatSleepDuration(summary.averageMinutes);
+  els.sleepHint.textContent = summary.points.length
+    ? "Your latest sleep entries, scaled to your best night."
+    : "Add your first sleep log to start the graph.";
+
+  if (!summary.points.length) {
+    els.sleepChart.innerHTML = `
+      <article class="empty-state compact">
+        <strong>No sleep yet</strong>
+        <p>Add the date, time slept, and wake time.</p>
+      </article>
+    `;
+    els.sleepList.replaceChildren();
+    return;
+  }
+
+  els.sleepChart.replaceChildren(
+    ...summary.points.map((point) => {
+      const bar = document.createElement("div");
+      bar.className = "sleep-bar";
+      bar.innerHTML = `
+        <span class="sleep-bar-fill" style="height: ${point.percent}%"></span>
+        <strong>${point.label}</strong>
+        <small>${new Date(`${point.date}T00:00:00`).toLocaleDateString("en", { weekday: "short" })}</small>
+      `;
+      return bar;
+    }),
+  );
+
+  const sorted = [...state.sleepEntries].sort((a, b) => String(b.sleep_date).localeCompare(String(a.sleep_date)));
+  els.sleepList.replaceChildren(
+    ...sorted.slice(0, 6).map((entry) => {
+      const row = document.createElement("article");
+      row.className = "sleep-row";
+      const minutes = Number(entry.minutes) || calculateSleepMinutes(entry.slept_at, entry.woke_at);
+      row.innerHTML = `
+        <div>
+          <strong>${new Date(`${entry.sleep_date}T00:00:00`).toLocaleDateString("en", {
+            month: "short",
+            day: "numeric",
+          })}</strong>
+          <span>${formatTime(entry.slept_at)} - ${formatTime(entry.woke_at)}</span>
+        </div>
+        <b>${formatSleepDuration(minutes)}</b>
+        <button class="icon-button" type="button" aria-label="Delete sleep entry">Ã—</button>
+      `;
+      row.querySelector("button").addEventListener("click", () => deleteSleepEntry(entry.id));
+      return row;
+    }),
+  );
+}
+
 function renderMiniCalendar() {
   const clone = document.createElement("div");
   clone.innerHTML = `
@@ -406,6 +616,47 @@ function saveItemFromForm() {
   els.composeDialog.close();
   render();
   void upsertSupabase("life_flow_items", item);
+}
+
+function openSleepDialog() {
+  els.sleepForm.reset();
+  const tomorrow = new Date(`${today}T00:00:00`);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  els.sleepDateInput.value = today;
+  els.sleptAtInput.value = `${today}T22:30`;
+  els.wokeAtInput.value = `${formatDateKey(tomorrow)}T06:30`;
+  els.sleepDialog.showModal();
+  els.sleptAtInput.focus();
+}
+
+function saveSleepFromForm() {
+  const sleptAt = els.sleptAtInput.value;
+  const wokeAt = els.wokeAtInput.value;
+  const minutes = calculateSleepMinutes(sleptAt, wokeAt);
+  if (!minutes) return;
+
+  const entry = {
+    id: crypto.randomUUID(),
+    owner_key: settings.ownerKey,
+    sleep_date: els.sleepDateInput.value,
+    slept_at: sleptAt,
+    woke_at: wokeAt,
+    minutes,
+    created_at: new Date().toISOString(),
+  };
+
+  state.sleepEntries = [entry, ...state.sleepEntries.filter((candidate) => candidate.sleep_date !== entry.sleep_date)];
+  persist();
+  els.sleepDialog.close();
+  renderSleep();
+  void upsertSupabase("life_flow_sleep_entries", entry, "owner_key,sleep_date");
+}
+
+function deleteSleepEntry(id) {
+  state.sleepEntries = state.sleepEntries.filter((entry) => entry.id !== id);
+  persist();
+  renderSleep();
+  if (canSync()) void supabaseFetch(`life_flow_sleep_entries?id=eq.${id}`, { method: "DELETE" });
 }
 
 function toggleItem(id) {
@@ -608,10 +859,11 @@ async function syncFromSupabase() {
 
   try {
     setSyncStatus("Syncing from Supabase...");
-    const [items, moodsList, focusSessions] = await Promise.all([
+    const [items, moodsList, focusSessions, sleepEntries] = await Promise.all([
       supabaseFetch("life_flow_items?select=*&order=created_at.desc"),
       supabaseFetch("life_flow_moods?select=*&order=created_at.desc"),
       supabaseFetch("life_flow_focus_sessions?select=*&order=completed_at.desc"),
+      supabaseFetch("life_flow_sleep_entries?select=*&order=sleep_date.desc"),
     ]);
 
     state = {
@@ -619,6 +871,7 @@ async function syncFromSupabase() {
       items: mergeById(state.items, items),
       moods: mergeById(state.moods, moodsList),
       focusSessions: mergeById(state.focusSessions, focusSessions),
+      sleepEntries: mergeById(state.sleepEntries, sleepEntries),
     };
     persist();
     render();
@@ -635,6 +888,7 @@ async function syncToSupabase() {
     ...state.items.map((item) => upsertSupabase("life_flow_items", item)),
     ...state.moods.map((mood) => upsertSupabase("life_flow_moods", mood, "owner_key,entry_date")),
     ...state.focusSessions.map((session) => upsertSupabase("life_flow_focus_sessions", session)),
+    ...state.sleepEntries.map((entry) => upsertSupabase("life_flow_sleep_entries", entry, "owner_key,sleep_date")),
   ]);
   setSyncStatus("Saved");
 }
@@ -707,6 +961,12 @@ function itemsForDate(dateKey) {
   return state.items.filter((item) => item.due_date === dateKey || String(item.scheduled_at || "").slice(0, 10) === dateKey);
 }
 
+function formatTime(value) {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString("en", { hour: "numeric", minute: "2-digit" });
+}
+
 function sortItems(a, b) {
   return Number(a.completed) - Number(b.completed) || priorityWeight(b.priority) - priorityWeight(a.priority);
 }
@@ -731,6 +991,19 @@ function loadJson(key, fallback) {
   } catch {
     return fallback;
   }
+}
+
+function ensureStarterTasks(savedState) {
+  if (savedState.starterTasksSeeded) return savedState;
+  const existingTitles = new Set((savedState.items || []).map((item) => item.title.toLowerCase()));
+  return {
+    ...savedState,
+    items: [
+      ...starterTasks.filter((task) => !existingTitles.has(task.title.toLowerCase())),
+      ...(savedState.items || []),
+    ],
+    starterTasksSeeded: true,
+  };
 }
 
 function saveJson(key, value) {

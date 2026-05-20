@@ -1,15 +1,16 @@
 # Aran Life Flow
 
-A calm personal planner for daily tasks, long-term to-dos, calendar-style events, focus sessions, moods, and motivational quotes.
+A calm personal planner for daily tasks, long-term to-dos, calendar-style events, focus sessions, sleep tracking, moods, and motivational quotes.
 
 ## Features
 
-- Empty task list by default so Aran can add real tasks
+- Starter task list with Aran's current school tasks
 - Daily tasks and long-term to-dos
 - Calendar view with manual events and optional iCal import
 - Pomodoro-style focus mode
+- Sleep tracker with calculated duration and a weekly graph
 - Mood check-in, streak, coins, and quotes
-- Supabase sync through browser settings
+- Supabase sync for tasks, calendar items, moods, focus sessions, and sleep logs
 
 ## Supabase
 
@@ -18,6 +19,7 @@ The app uses these public tables:
 - `life_flow_items`
 - `life_flow_moods`
 - `life_flow_focus_sessions`
+- `life_flow_sleep_entries`
 
 Open **Settings** in the app and add:
 

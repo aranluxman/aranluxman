@@ -23,6 +23,7 @@
           <button class="nav-item active" data-view="home" type="button">Home</button>
           <button class="nav-item" data-view="tasks" type="button">Tasks</button>
           <button class="nav-item" data-view="calendar" type="button">Cal</button>
+          <button class="nav-item" data-view="sleep" type="button">Sleep</button>
           <button class="nav-item" data-view="focus" type="button">Focus</button>
         </nav>
         <button class="ghost-button" id="settingsButton" type="button">Settings</button>
@@ -38,14 +39,6 @@
             </div>
             <div class="sparkle" aria-hidden="true">✦</div>
           </header>
-
-          <section class="word-card" aria-labelledby="wordTitle">
-            <p id="wordTitle">Word of the day</p>
-            <h2 id="wordTerm">Sillage</h2>
-            <blockquote id="wordDefinition">
-              The scent that lingers in the air after someone passes by.
-            </blockquote>
-          </section>
 
           <section class="quote-card" aria-label="Motivational quote">
             <p id="quoteText">Small steps count. Show up once, then again.</p>
@@ -79,6 +72,36 @@
               <small>Coins</small>
             </article>
           </section>
+        </section>
+
+        <section class="view" id="sleepView" aria-labelledby="sleepTitle">
+          <div class="section-heading">
+            <div>
+              <h1 id="sleepTitle">Sleep</h1>
+              <p class="section-subtitle">Track bedtime, wake time, and your weekly rhythm.</p>
+            </div>
+            <button class="add-button" id="addSleepButton" type="button" aria-label="Add sleep">+</button>
+          </div>
+          <section class="sleep-summary-grid" aria-label="Sleep summary">
+            <article class="stat-card">
+              <span>Night</span>
+              <strong id="latestSleepStat">0h</strong>
+              <small>Last sleep</small>
+            </article>
+            <article class="stat-card">
+              <span>Week</span>
+              <strong id="averageSleepStat">0h</strong>
+              <small>Average</small>
+            </article>
+          </section>
+          <section class="sleep-card" aria-labelledby="sleepGraphTitle">
+            <div class="card-heading">
+              <h2 id="sleepGraphTitle">Last 7 entries</h2>
+              <span id="sleepHint">Add your first sleep log to start the graph.</span>
+            </div>
+            <div class="sleep-chart" id="sleepChart"></div>
+          </section>
+          <div class="sleep-list" id="sleepList"></div>
         </section>
 
         <section class="view" id="tasksView" aria-labelledby="tasksTitle">
@@ -203,6 +226,30 @@
           <textarea id="itemNotesInput" name="notes" rows="3"></textarea>
         </label>
         <button class="primary-button" type="submit">Save</button>
+      </form>
+    </dialog>
+
+    <dialog class="compose-dialog" id="sleepDialog">
+      <form id="sleepForm" method="dialog">
+        <div class="dialog-heading">
+          <h2>Add sleep</h2>
+          <button class="icon-button" value="cancel" type="button" id="closeSleepButton" aria-label="Close">X</button>
+        </div>
+        <label>
+          Date
+          <input id="sleepDateInput" name="sleep_date" type="date" required />
+        </label>
+        <div class="form-grid">
+          <label>
+            Time slept
+            <input id="sleptAtInput" name="slept_at" type="datetime-local" required />
+          </label>
+          <label>
+            Time woken up
+            <input id="wokeAtInput" name="woke_at" type="datetime-local" required />
+          </label>
+        </div>
+        <button class="primary-button" type="submit">Save sleep</button>
       </form>
     </dialog>
 

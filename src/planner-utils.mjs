@@ -115,6 +115,46 @@ export function parseIcsEvents(icsText) {
     .filter(Boolean);
 }
 
+export function calculateSleepMinutes(sleptAt, wokeAt) {
+  const slept = new Date(sleptAt);
+  const woke = new Date(wokeAt);
+  if (Number.isNaN(slept.getTime()) || Number.isNaN(woke.getTime())) return 0;
+  return Math.max(0, Math.round((woke - slept) / 60000));
+}
+
+export function getSleepSummary(entries) {
+  const sorted = [...entries]
+    .map((entry) => ({
+      ...entry,
+      minutes: Number(entry.minutes) || calculateSleepMinutes(entry.slept_at, entry.woke_at),
+    }))
+    .filter((entry) => entry.minutes > 0)
+    .sort((a, b) => String(a.sleep_date).localeCompare(String(b.sleep_date)))
+    .slice(-7);
+
+  const maxMinutes = Math.max(1, ...sorted.map((entry) => entry.minutes));
+  const total = sorted.reduce((sum, entry) => sum + entry.minutes, 0);
+
+  return {
+    averageMinutes: sorted.length ? Math.round(total / sorted.length) : 0,
+    latestMinutes: sorted.at(-1)?.minutes || 0,
+    points: sorted.map((entry) => ({
+      date: entry.sleep_date,
+      minutes: entry.minutes,
+      label: formatSleepDuration(entry.minutes),
+      percent: Math.round((entry.minutes / maxMinutes) * 100),
+    })),
+  };
+}
+
+export function formatSleepDuration(minutes) {
+  const hours = Math.floor(minutes / 60);
+  const remainder = minutes % 60;
+  if (!minutes) return "0h";
+  if (!remainder) return `${hours}h`;
+  return `${hours}h ${remainder}m`;
+}
+
 function calculateFocusStreak(focusSessions, dateKey) {
   const sessionDays = new Set(
     focusSessions.map((session) => String(session.completed_at || "").slice(0, 10)).filter(Boolean),

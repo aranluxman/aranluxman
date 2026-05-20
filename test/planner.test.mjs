@@ -4,9 +4,11 @@ import test from "node:test";
 import {
   buildMonthDays,
   calculateStats,
+  calculateSleepMinutes,
   filterItems,
   formatDateKey,
   getGreeting,
+  getSleepSummary,
   parseIcsEvents,
   sanitizeFocusMinutes,
 } from "../src/planner-utils.mjs";
@@ -86,4 +88,22 @@ test("sanitizeFocusMinutes keeps custom focus lengths practical", () => {
   assert.equal(sanitizeFocusMinutes("0"), 1);
   assert.equal(sanitizeFocusMinutes("999"), 240);
   assert.equal(sanitizeFocusMinutes("not a number"), 25);
+});
+
+test("calculateSleepMinutes handles overnight sleep", () => {
+  assert.equal(calculateSleepMinutes("2026-05-19T22:45", "2026-05-20T06:30"), 465);
+});
+
+test("getSleepSummary calculates average and graph percentages", () => {
+  const summary = getSleepSummary([
+    { sleep_date: "2026-05-18", slept_at: "2026-05-18T23:00", woke_at: "2026-05-19T06:00" },
+    { sleep_date: "2026-05-19", slept_at: "2026-05-19T22:30", woke_at: "2026-05-20T07:00" },
+  ]);
+
+  assert.equal(summary.averageMinutes, 465);
+  assert.equal(summary.latestMinutes, 510);
+  assert.deepEqual(
+    summary.points.map((point) => point.percent),
+    [82, 100],
+  );
 });

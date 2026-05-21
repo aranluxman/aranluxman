@@ -14,6 +14,28 @@ export function getGreeting(date = new Date()) {
   return "Good evening";
 }
 
+export function getGreetingEmoji(date = new Date()) {
+  const hour = date.getHours();
+  if (hour < 12) return "☀️";
+  if (hour < 18) return "🌤️";
+  return "🌙";
+}
+
+export function formatDisplayDate(date = new Date()) {
+  return date.toLocaleDateString("en", { weekday: "long", month: "long", day: "numeric" });
+}
+
+export function getHomeSubtitle(date = new Date()) {
+  const lines = [
+    "Start clean. Pick one thing and move.",
+    "Make today lighter with one honest finish.",
+    "Small wins count when you collect them.",
+    "Focus first, then enjoy the calm.",
+    "Build the day one clear choice at a time.",
+  ];
+  return lines[date.getDate() % lines.length];
+}
+
 export function sanitizeFocusMinutes(value, fallback = 25) {
   const minutes = Number.parseInt(value, 10);
   if (!Number.isFinite(minutes)) return fallback;
@@ -64,6 +86,14 @@ export function calculateStats(items, focusSessions, dateKey = todayKey()) {
 export function filterItems(items, mode, dateKey = todayKey()) {
   const weekEnd = addDays(dateKey, 6);
   const active = items.filter((item) => item.kind === "daily_task" || item.kind === "long_term");
+
+  if (mode === "today") {
+    return active.filter((item) => item.kind === "daily_task" && item.due_date === dateKey && !item.completed);
+  }
+
+  if (mode === "all") {
+    return active;
+  }
 
   if (mode === "weekly") {
     return active.filter((item) => item.kind === "daily_task" && item.due_date >= dateKey && item.due_date <= weekEnd);
@@ -122,7 +152,11 @@ export function calculateSleepMinutes(sleptAt, wokeAt) {
   return Math.max(0, Math.round((woke - slept) / 60000));
 }
 
-export function getSleepSummary(entries) {
+export function getSleepSummary(entries, goalMinutes = 480) {
+  return summarizeSleep(entries, goalMinutes);
+}
+
+export function summarizeSleep(entries, goalMinutes = 480) {
   const sorted = [...entries]
     .map((entry) => ({
       ...entry,
@@ -132,12 +166,16 @@ export function getSleepSummary(entries) {
     .sort((a, b) => String(a.sleep_date).localeCompare(String(b.sleep_date)))
     .slice(-7);
 
-  const maxMinutes = Math.max(1, ...sorted.map((entry) => entry.minutes));
+  const maxMinutes = Math.max(1, goalMinutes, ...sorted.map((entry) => entry.minutes));
   const total = sorted.reduce((sum, entry) => sum + entry.minutes, 0);
+  const averageMinutes = sorted.length ? Math.round(total / sorted.length) : 0;
 
   return {
-    averageMinutes: sorted.length ? Math.round(total / sorted.length) : 0,
+    averageMinutes,
     latestMinutes: sorted.at(-1)?.minutes || 0,
+    goalMinutes,
+    averagePercent: goalMinutes ? Math.round((averageMinutes / goalMinutes) * 100) : 0,
+    latestPercent: goalMinutes ? Math.round(((sorted.at(-1)?.minutes || 0) / goalMinutes) * 100) : 0,
     points: sorted.map((entry) => ({
       date: entry.sleep_date,
       minutes: entry.minutes,
@@ -147,10 +185,14 @@ export function getSleepSummary(entries) {
   };
 }
 
+export function countSessionsForDate(focusSessions, dateKey = todayKey()) {
+  return focusSessions.filter((session) => String(session.completed_at || "").slice(0, 10) === dateKey).length;
+}
+
 export function formatSleepDuration(minutes) {
   const hours = Math.floor(minutes / 60);
   const remainder = minutes % 60;
-  if (!minutes) return "0h";
+  if (!minutes) return "—";
   if (!remainder) return `${hours}h`;
   return `${hours}h ${remainder}m`;
 }

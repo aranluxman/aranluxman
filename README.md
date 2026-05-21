@@ -9,6 +9,7 @@ A calm personal planner for daily tasks, long-term to-dos, calendar-style events
 - Calendar view with manual events and optional iCal import
 - Pomodoro-style focus mode
 - Sleep tracker with calculated duration and a weekly graph
+- Masked Supabase settings, dark mode, and iOS-friendly PWA metadata
 - Mood check-in, streak, coins, and quotes
 - Supabase sync for tasks, calendar items, moods, focus sessions, and sleep logs
 
@@ -29,3 +30,7 @@ Open **Settings** in the app and add:
 - Optional Google Calendar secret iCal URL
 
 The owner key is stored in the browser and sent as `x-owner-key` so row-level security can keep each owner key separate without requiring Google sign-in.
+
+## Cloudflare
+
+The repo includes a Cloudflare Pages Function at `functions/api/calendar.js` so `/api/calendar` works when deployed to Cloudflare Pages.

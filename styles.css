@@ -73,6 +73,11 @@ button {
   display: flex;
   align-items: center;
   gap: 0.75rem;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  color: inherit;
+  text-align: left;
 }
 
 .brand-mark {
@@ -115,7 +120,20 @@ button {
 }
 
 .nav-item {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
   text-align: left;
+}
+
+.nav-item svg,
+.ghost-button svg,
+.icon-button svg,
+.play-button svg,
+.info-button svg {
+  width: 1.05rem;
+  height: 1.05rem;
+  flex: 0 0 auto;
 }
 
 .nav-item.active,
@@ -127,8 +145,17 @@ button {
 
 .ghost-button {
   margin-top: auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.55rem;
   background: rgba(255, 255, 255, 0.7);
   border: 1px solid var(--line);
+}
+
+.ghost-button.compact {
+  margin: 0;
+  padding: 0.6rem 0.9rem;
 }
 
 .workspace {
@@ -159,10 +186,16 @@ button {
 
 .greeting,
 .fresh-line,
+.current-date,
 .focus-heading p {
   margin: 0;
   color: var(--muted);
   font-size: 1.25rem;
+}
+
+.current-date {
+  margin-bottom: 0.25rem;
+  font-size: 0.98rem;
 }
 
 h1,
@@ -184,18 +217,13 @@ h1 {
   font-size: clamp(2.15rem, 4vw, 3.6rem);
 }
 
-.sparkle {
-  color: var(--gold);
-  font-size: 4rem;
-}
-
 .mood-panel,
 .quote-card,
 .day-agenda,
 .sleep-card,
 .compose-dialog form,
 .timer-card,
-.mini-calendar,
+.focus-task-panel,
 .ambient-grid button {
   background: rgba(251, 253, 255, 0.92);
   border: 1px solid rgba(13, 37, 56, 0.06);
@@ -207,10 +235,11 @@ h1 {
 .ambient-panel h2,
 .card-heading h2 {
   margin: 0 0 0.8rem;
-  color: var(--lavender);
-  font-size: 0.86rem;
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  color: var(--purple-dark);
+  font-size: 1rem;
+  letter-spacing: 0;
+  text-transform: none;
+  font-family: Inter, ui-sans-serif, system-ui, sans-serif;
 }
 
 .quote-card {
@@ -265,6 +294,16 @@ h1 {
 .mood-button.active {
   background: #dbeaf4;
   color: var(--purple);
+  box-shadow: inset 0 0 0 2px var(--purple);
+}
+
+.mood-button.active::after {
+  content: "Selected";
+  display: block;
+  margin-top: 0.3rem;
+  color: var(--purple);
+  font-size: 0.75rem;
+  font-weight: 800;
 }
 
 .stats-grid,
@@ -369,6 +408,20 @@ h1 {
 }
 
 .stat-card small {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: var(--muted);
+}
+
+.info-button {
+  display: inline-grid;
+  width: 1.1rem;
+  height: 1.1rem;
+  place-items: center;
+  border: 0;
+  padding: 0;
+  background: transparent;
   color: var(--muted);
 }
 
@@ -385,6 +438,17 @@ h1 {
   font-size: 2rem;
   line-height: 1;
   box-shadow: 0 16px 28px rgba(21, 90, 138, 0.24);
+}
+
+.add-button.labeled {
+  width: auto;
+  min-width: 3.3rem;
+  padding: 0 1rem;
+  grid-auto-flow: column;
+  gap: 0.45rem;
+  border-radius: 999px;
+  font-size: 0.9rem;
+  font-weight: 800;
 }
 
 .filter-row,
@@ -564,17 +628,23 @@ h1 {
 }
 
 .focus-stage {
-  min-height: 29rem;
+  min-height: 20rem;
   display: grid;
-  grid-template-columns: minmax(14rem, 1fr) minmax(18rem, 1.1fr);
-  align-items: center;
+  grid-template-columns: minmax(14rem, 0.85fr) minmax(18rem, 1.1fr);
+  align-items: start;
   gap: 2rem;
 }
 
-.mini-calendar {
+.focus-task-panel {
   padding: 1.2rem;
-  transform: scale(0.92);
-  transform-origin: left center;
+}
+
+.focus-task-panel h2 {
+  margin: 0 0 1rem;
+}
+
+.focus-task-panel select {
+  margin-bottom: 1rem;
 }
 
 .timer-card {
@@ -622,7 +692,7 @@ h1 {
 }
 
 .ambient-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .ambient-grid button {
@@ -638,6 +708,7 @@ h1 {
   border-color: var(--gold);
   background: #fff7df;
   color: var(--ink);
+  box-shadow: inset 0 0 0 2px var(--gold);
 }
 
 .ambient-grid span {
@@ -663,6 +734,122 @@ h1 {
   margin: 0.7rem 0 0;
   color: var(--muted);
   font-size: 0.9rem;
+}
+
+.sleep-goal {
+  width: fit-content;
+  grid-template-columns: auto 5rem auto;
+  align-items: center;
+  gap: 0.55rem;
+  margin-top: 1rem;
+}
+
+.sleep-goal input {
+  padding: 0.55rem 0.7rem;
+  text-align: center;
+}
+
+.secret-field {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.45rem;
+}
+
+.secret-field button {
+  border: 1px solid var(--line);
+  border-radius: 0.9rem;
+  padding: 0 0.85rem;
+  background: var(--panel-soft);
+  color: var(--purple);
+  font-weight: 800;
+}
+
+.toggle-row {
+  display: flex;
+  grid-template-columns: none;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.toggle-row input {
+  width: auto;
+}
+
+.sync-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+  padding: 0.65rem 0.9rem;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: rgba(251, 253, 255, 0.88);
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.sync-banner[hidden] {
+  display: none;
+}
+
+.sync-banner.error {
+  border-color: #e6a097;
+  color: #9f372c;
+}
+
+.spinner {
+  width: 0.9rem;
+  height: 0.9rem;
+  border: 2px solid var(--line);
+  border-top-color: var(--purple);
+  border-radius: 999px;
+  animation: spin 800ms linear infinite;
+}
+
+.section-heading-tasks,
+.section-heading-calendar,
+.section-heading-sleep,
+.section-heading-focus {
+  border-left: 0.3rem solid var(--gold);
+  padding-left: 1rem;
+}
+
+.section-heading-tasks {
+  border-left-color: var(--rose);
+}
+
+.section-heading-calendar {
+  border-left-color: var(--mint);
+}
+
+.section-heading-sleep {
+  border-left-color: var(--purple);
+}
+
+.section-heading-focus {
+  border-left-color: var(--gold);
+}
+
+.dark-mode {
+  --bg: #0c1420;
+  --panel: #111d2b;
+  --panel-soft: #17283a;
+  --ink: #edf6ff;
+  --muted: #a8bfd2;
+  --line: #294157;
+  --purple-dark: #f4f8fb;
+  --shadow: 0 22px 60px rgba(0, 0, 0, 0.28);
+}
+
+.dark-mode .quote-card,
+.dark-mode .mood-panel,
+.dark-mode .day-agenda,
+.dark-mode .sleep-card,
+.dark-mode .compose-dialog form,
+.dark-mode .timer-card,
+.dark-mode .focus-task-panel,
+.dark-mode .ambient-grid button {
+  background: rgba(17, 29, 43, 0.92);
 }
 
 .compose-dialog {
@@ -741,6 +928,12 @@ textarea {
   }
 }
 
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 @media (max-width: 820px) {
   .app-shell {
     grid-template-columns: 1fr;
@@ -781,11 +974,18 @@ textarea {
 
   .nav-item {
     min-width: 0;
+    flex-direction: column;
+    gap: 0.12rem;
     text-align: center;
     padding: 0.64rem 0;
-    font-size: 0.76rem;
+    font-size: 0.68rem;
     line-height: 1;
     white-space: nowrap;
+  }
+
+  .nav-item svg {
+    width: 0.9rem;
+    height: 0.9rem;
   }
 
   .ghost-button {
@@ -802,6 +1002,42 @@ textarea {
     flex-wrap: nowrap;
     overflow-x: auto;
     padding-bottom: 0.25rem;
+  }
+
+  .section-heading {
+    align-items: flex-start;
+    width: min(100%, 21.5rem);
+    min-width: 0;
+  }
+
+  .add-button.labeled {
+    flex: 0 0 auto;
+    width: 3.3rem;
+    padding: 0;
+  }
+
+  .add-button.labeled span {
+    display: none;
+  }
+
+  .calendar-toolbar {
+    width: min(100%, 21.5rem);
+    min-width: 0;
+    max-width: 100%;
+    display: grid;
+    grid-template-columns: 2.45rem minmax(0, 1fr) 3.7rem 2.45rem;
+    gap: 0.35rem;
+  }
+
+  .calendar-toolbar strong {
+    text-align: center;
+    font-size: 0.95rem;
+  }
+
+  .calendar-toolbar .ghost-button {
+    display: inline-flex;
+    padding: 0.55rem 0;
+    font-size: 0.76rem;
   }
 
   .filter-pill {
@@ -822,6 +1058,20 @@ textarea {
   .ambient-grid,
   .focus-stage {
     grid-template-columns: 1fr;
+  }
+
+  .focus-stage {
+    gap: 1rem;
+  }
+
+  .timer-card {
+    gap: 1rem;
+    padding: 1rem;
+  }
+
+  .timer-ring {
+    width: 10.5rem;
+    height: 10.5rem;
   }
 
   .mood-row {
@@ -869,7 +1119,8 @@ textarea {
   }
 
   .task-actions {
-    display: none;
+    grid-column: 2;
+    justify-self: start;
   }
 }
 

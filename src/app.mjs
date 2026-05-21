@@ -2,10 +2,14 @@ import {
   buildMonthDays,
   calculateSleepMinutes,
   calculateStats,
+  countSessionsForDate,
   filterItems,
+  formatDisplayDate,
   formatSleepDuration,
   formatDateKey,
   getGreeting,
+  getGreetingEmoji,
+  getHomeSubtitle,
   getSleepSummary,
   parseIcsEvents,
   sanitizeFocusMinutes,
@@ -16,6 +20,7 @@ const STORE_KEY = "aran-life-flow-state";
 const SETTINGS_KEY = "aran-life-flow-settings";
 const colors = ["#ef6f75", "#95cfb7", "#efc963", "#6f3aa5", "#b99be1"];
 const today = todayKey();
+const todayMonth = () => `${todayKey().slice(0, 7)}-01`;
 const starterTasks = [
   {
     id: "0b7c7939-4a28-4d4e-8e96-b4d3a78ff101",
@@ -55,9 +60,10 @@ const defaultState = {
   focusSessions: [],
   sleepEntries: [],
   starterTasksSeeded: true,
-  selectedDate: today,
-  activeFilter: "all",
-  monthCursor: `${today.slice(0, 7)}-01`,
+  selectedDate: todayKey(),
+  activeFilter: "today",
+  monthCursor: todayMonth(),
+  focusedTaskId: "",
 };
 
 const moods = [
@@ -90,7 +96,7 @@ const quotes = [
   "Do not wait for a perfect mood to do useful work.",
   "Finish the little thing. It will change the whole room.",
   "Study like you are helping tomorrow-you breathe easier.",
-  "Put your phone down and give your brain a fair chance.",
+  "Give one task your full attention and watch the day open up.",
   "The hard part gets smaller once it is named.",
   "Tiny progress still counts as proof.",
   "Do it badly for two minutes. Then make it better.",
@@ -188,12 +194,15 @@ const words = [
   ["Komorebi", "Sunlight filtering through trees."],
 ];
 
-let state = ensureStarterTasks(loadJson(STORE_KEY, defaultState));
+let state = refreshDailyState(ensureStarterTasks(loadJson(STORE_KEY, defaultState)));
 let settings = loadJson(SETTINGS_KEY, {
   supabaseUrl: "https://hcvjiveloioftozvnbhe.supabase.co",
   supabaseAnonKey: "sb_publishable_DGZFZUhnMLgFpdYzcHWRmw_wqOPu2Aq",
   ownerKey: "",
   calendarUrl: "",
+  sleepGoalHours: 8,
+  darkMode: false,
+  plannerSubtitle: "Personal planner",
 });
 let timer = {
   secondsLeft: 25 * 60,
@@ -210,6 +219,7 @@ document.addEventListener("DOMContentLoaded", () => {
   bindElements();
   wireEvents();
   hydrateSettingsForm();
+  applySettings();
   render();
   const initialView = new URLSearchParams(window.location.search).get("view");
   if (["home", "tasks", "calendar", "sleep", "focus"].includes(initialView)) setView(initialView);
@@ -221,6 +231,7 @@ document.addEventListener("DOMContentLoaded", () => {
 function bindElements() {
   [
     "greeting",
+    "currentDateText",
     "freshLine",
     "quoteText",
     "moodRow",
@@ -230,28 +241,34 @@ function bindElements() {
     "coinsStat",
     "taskFilters",
     "taskList",
+    "todayButton",
     "calendarGrid",
     "monthLabel",
     "agendaTitle",
     "agendaList",
-    "miniCalendar",
+    "focusTaskSelect",
+    "sessionsTodayText",
     "timerText",
     "customMinutesInput",
     "soundStatus",
     "addSleepButton",
+    "sleepGoalInput",
     "sleepDialog",
     "sleepForm",
     "sleepDateInput",
     "sleptAtInput",
     "wokeAtInput",
     "latestSleepStat",
+    "latestSleepContext",
     "averageSleepStat",
+    "averageSleepContext",
     "sleepChart",
     "sleepHint",
     "sleepList",
     "composeDialog",
     "composeForm",
     "composeTitle",
+    "editingItemIdInput",
     "itemTitleInput",
     "itemKindInput",
     "itemDateInput",
@@ -261,11 +278,17 @@ function bindElements() {
     "settingsDialog",
     "settingsForm",
     "settingsButton",
+    "brandHomeButton",
+    "sidebarSubtitle",
     "syncButton",
     "syncStatus",
+    "syncBanner",
+    "syncBannerText",
     "supabaseUrlInput",
     "supabaseAnonInput",
     "ownerKeyInput",
+    "plannerSubtitleInput",
+    "darkModeInput",
     "calendarUrlInput",
   ].forEach((id) => {
     els[id] = document.getElementById(id);
@@ -277,6 +300,8 @@ function wireEvents() {
     button.addEventListener("click", () => setView(button.dataset.view));
   });
 
+  els.brandHomeButton.addEventListener("click", () => setView("home"));
+
   document.querySelectorAll("[data-open-compose]").forEach((button) => {
     button.addEventListener("click", () => openCompose(button.dataset.openCompose));
   });
@@ -286,6 +311,7 @@ function wireEvents() {
   document.getElementById("closeSettingsButton").addEventListener("click", () => els.settingsDialog.close());
   document.getElementById("prevMonthButton").addEventListener("click", () => moveMonth(-1));
   document.getElementById("nextMonthButton").addEventListener("click", () => moveMonth(1));
+  els.todayButton.addEventListener("click", goToToday);
   document.getElementById("nextQuoteButton").addEventListener("click", nextQuote);
   document.getElementById("playTimerButton").addEventListener("click", toggleTimer);
   document.getElementById("resetTimerButton").addEventListener("click", resetTimer);
@@ -293,6 +319,21 @@ function wireEvents() {
   els.settingsButton.addEventListener("click", () => els.settingsDialog.showModal());
   els.syncButton.addEventListener("click", () => syncAll());
   els.addSleepButton.addEventListener("click", openSleepDialog);
+  els.sleepGoalInput.addEventListener("change", () => {
+    settings.sleepGoalHours = clampSleepGoal(els.sleepGoalInput.value);
+    els.sleepGoalInput.value = settings.sleepGoalHours;
+    saveJson(SETTINGS_KEY, settings);
+    renderSleep();
+  });
+
+  els.focusTaskSelect.addEventListener("change", () => {
+    state.focusedTaskId = els.focusTaskSelect.value;
+    persist();
+  });
+
+  document.querySelectorAll("[data-toggle-secret]").forEach((button) => {
+    button.addEventListener("click", () => toggleSecret(button));
+  });
 
   els.taskFilters.addEventListener("click", (event) => {
     const button = event.target.closest("[data-filter]");
@@ -343,8 +384,12 @@ function wireEvents() {
       supabaseAnonKey: els.supabaseAnonInput.value.trim(),
       ownerKey: els.ownerKeyInput.value.trim(),
       calendarUrl: els.calendarUrlInput.value.trim(),
+      plannerSubtitle: els.plannerSubtitleInput.value.trim() || "Personal planner",
+      darkMode: els.darkModeInput.checked,
+      sleepGoalHours: clampSleepGoal(els.sleepGoalInput.value || settings.sleepGoalHours),
     };
     saveJson(SETTINGS_KEY, settings);
+    applySettings();
     els.settingsDialog.close();
     void syncAll();
   });
@@ -357,18 +402,21 @@ function render() {
   renderTasks();
   renderCalendar();
   renderSleep();
-  renderMiniCalendar();
+  renderFocusTasks();
   renderTimer();
+  refreshIcons();
 }
 
 function renderHome() {
   const date = new Date();
-  els.greeting.textContent = `${getGreeting(date)} 🌙`;
-  els.freshLine.textContent = "Today is a fresh start 🌷";
+  els.greeting.textContent = `${getGreeting(date)} ${getGreetingEmoji(date)}`;
+  els.currentDateText.textContent = formatDisplayDate(date);
+  els.freshLine.textContent = getHomeSubtitle(date);
   els.quoteText.textContent = quotes[date.getDate() % quotes.length];
 }
 
 function renderMoods() {
+  const today = todayKey();
   const moodToday = state.moods.find((mood) => mood.entry_date === today);
   els.moodRow.replaceChildren(
     ...moods.map(([emoji, label]) => {
@@ -396,14 +444,16 @@ function renderMoods() {
 }
 
 function renderStats() {
+  const today = todayKey();
   const stats = calculateStats(state.items, state.focusSessions, today);
   els.doneTodayStat.textContent = stats.doneToday;
   els.openTasksStat.textContent = stats.openTasks;
-  els.streakStat.textContent = `${stats.streakDays}d`;
+  els.streakStat.textContent = stats.streakDays ? String(stats.streakDays) : "—";
   els.coinsStat.textContent = stats.coins;
 }
 
 function renderTasks() {
+  const today = todayKey();
   els.taskFilters.querySelectorAll("[data-filter]").forEach((button) => {
     button.classList.toggle("active", button.dataset.filter === state.activeFilter);
   });
@@ -414,10 +464,8 @@ function renderTasks() {
       <article class="empty-state">
         <strong>No tasks yet</strong>
         <p>Add what you need to complete today or keep a long-term to-do for later.</p>
-        <button class="primary-button" type="button" data-empty-add>Add your first task</button>
       </article>
     `;
-    els.taskList.querySelector("[data-empty-add]").addEventListener("click", () => openCompose("daily_task"));
     return;
   }
 
@@ -437,14 +485,22 @@ function renderTasks() {
           <button class="icon-button" type="button" aria-label="Delete task">×</button>
         </div>
       `;
+      row.querySelector(".task-meta").textContent = `${item.category || "Personal"} · ${item.duration_minutes || 30}min${item.due_date ? ` · Due ${item.due_date}` : ""}`;
+      row.querySelector(".task-actions").innerHTML = `
+        <button class="icon-button" type="button" data-edit-task aria-label="Edit task" title="Edit task"><i data-lucide="pencil"></i></button>
+        <button class="icon-button" type="button" data-delete-task aria-label="Delete task" title="Delete task"><i data-lucide="trash-2"></i></button>
+      `;
       row.querySelector(".task-check").addEventListener("click", () => toggleItem(item.id));
-      row.querySelector(".icon-button").addEventListener("click", () => deleteItem(item.id));
+      row.querySelector("[data-edit-task]").addEventListener("click", () => openCompose(item.kind, item));
+      row.querySelector("[data-delete-task]").addEventListener("click", () => deleteItem(item.id));
       return row;
     }),
   );
+  refreshIcons();
 }
 
 function renderCalendar() {
+  const today = todayKey();
   const cursor = new Date(`${state.monthCursor}T00:00:00`);
   const monthDays = buildMonthDays(cursor.getFullYear(), cursor.getMonth());
   const formatter = new Intl.DateTimeFormat("en", { month: "long", year: "numeric" });
@@ -496,18 +552,22 @@ function renderCalendar() {
 }
 
 function renderSleep() {
-  const summary = getSleepSummary(state.sleepEntries);
+  const goalHours = clampSleepGoal(settings.sleepGoalHours);
+  const summary = getSleepSummary(state.sleepEntries, goalHours * 60);
+  els.sleepGoalInput.value = goalHours;
   els.latestSleepStat.textContent = formatSleepDuration(summary.latestMinutes);
   els.averageSleepStat.textContent = formatSleepDuration(summary.averageMinutes);
+  els.latestSleepContext.textContent = summary.latestMinutes ? `${summary.latestPercent}% of goal` : "No data";
+  els.averageSleepContext.textContent = summary.averageMinutes ? `${summary.averagePercent}% of goal` : "No data";
   els.sleepHint.textContent = summary.points.length
-    ? "Your latest sleep entries, scaled to your best night."
+    ? `Goal: ${formatSleepDuration(summary.goalMinutes)} per night.`
     : "Add your first sleep log to start the graph.";
 
   if (!summary.points.length) {
     els.sleepChart.innerHTML = `
       <article class="empty-state compact">
         <strong>No sleep yet</strong>
-        <p>Add the date, time slept, and wake time.</p>
+        <p>Add the date, bedtime, and wake time.</p>
       </article>
     `;
     els.sleepList.replaceChildren();
@@ -548,54 +608,60 @@ function renderSleep() {
       return row;
     }),
   );
+  refreshIcons();
 }
 
-function renderMiniCalendar() {
-  const clone = document.createElement("div");
-  clone.innerHTML = `
-    <div class="calendar-toolbar">
-      <span></span>
-      <strong>${els.monthLabel?.textContent || ""}</strong>
-      <span></span>
-    </div>
-    <div class="weekday-row"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
-    <div class="calendar-grid">${Array.from(els.calendarGrid?.children || [])
-      .map((child) => child.outerHTML)
-      .join("")}</div>
-  `;
-  clone.querySelectorAll("button").forEach((button) => button.setAttribute("tabindex", "-1"));
-  els.miniCalendar.replaceChildren(clone);
+function renderFocusTasks() {
+  const focusable = state.items.filter((item) => !item.completed && (item.kind === "daily_task" || item.kind === "long_term"));
+  els.focusTaskSelect.replaceChildren(
+    new Option(focusable.length ? "Pick a task" : "No open tasks yet", ""),
+    ...focusable.map((item) => new Option(item.title, item.id)),
+  );
+  if (state.focusedTaskId && focusable.some((item) => item.id === state.focusedTaskId)) {
+    els.focusTaskSelect.value = state.focusedTaskId;
+  }
+  els.sessionsTodayText.textContent = `Sessions today: ${countSessionsForDate(state.focusSessions, todayKey())}`;
 }
 
 function renderTimer() {
   const minutes = Math.floor(timer.secondsLeft / 60);
   const seconds = timer.secondsLeft % 60;
   els.timerText.textContent = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  document.getElementById("playTimerButton").textContent = timer.intervalId ? "Ⅱ" : "▷";
+  const playButton = document.getElementById("playTimerButton");
+  playButton.innerHTML = timer.intervalId ? '<i data-lucide="pause"></i>' : '<i data-lucide="play"></i>';
+  playButton.setAttribute("aria-label", timer.intervalId ? "Pause" : "Start");
+  playButton.title = timer.intervalId ? "Pause" : "Start";
+  refreshIcons();
 }
-
 function setView(view) {
   document.querySelectorAll(".nav-item").forEach((button) => button.classList.toggle("active", button.dataset.view === view));
   document.querySelectorAll(".view").forEach((section) => section.classList.remove("active"));
   document.getElementById(`${view}View`).classList.add("active");
-  if (view === "focus") renderMiniCalendar();
+  refreshIcons();
 }
 
-function openCompose(kind) {
+function openCompose(kind, item = null) {
   els.composeForm.reset();
-  els.itemKindInput.value = kind;
-  els.itemDateInput.value = kind === "long_term" ? "" : state.selectedDate || today;
-  els.itemCategoryInput.value = kind === "calendar_event" ? "Calendar" : "School";
+  const effectiveKind = item?.kind || kind;
+  els.editingItemIdInput.value = item?.id || "";
+  els.itemKindInput.value = effectiveKind;
+  els.itemTitleInput.value = item?.title || "";
+  els.itemDateInput.value = item?.due_date || (effectiveKind === "long_term" ? "" : todayKey());
+  els.itemCategoryInput.value = item?.category || (effectiveKind === "calendar_event" ? "Calendar" : "School");
+  els.itemPriorityInput.value = item?.priority || "medium";
+  els.itemNotesInput.value = item?.notes || "";
   els.composeTitle.textContent =
-    kind === "long_term" ? "Add long-term to-do" : kind === "calendar_event" ? "Add calendar item" : "Add daily task";
+    item ? "Edit item" : effectiveKind === "long_term" ? "Add long-term to-do" : effectiveKind === "calendar_event" ? "Add calendar item" : "Add daily task";
   els.composeDialog.showModal();
   els.itemTitleInput.focus();
 }
 
 function saveItemFromForm() {
   const kind = els.itemKindInput.value;
+  const editingId = els.editingItemIdInput.value;
+  const existing = state.items.find((item) => item.id === editingId);
   const item = {
-    id: crypto.randomUUID(),
+    id: existing?.id || crypto.randomUUID(),
     owner_key: settings.ownerKey,
     kind,
     title: els.itemTitleInput.value.trim(),
@@ -604,14 +670,14 @@ function saveItemFromForm() {
     priority: els.itemPriorityInput.value,
     due_date: els.itemDateInput.value || null,
     scheduled_at: kind === "calendar_event" && els.itemDateInput.value ? `${els.itemDateInput.value}T12:00:00.000Z` : null,
-    duration_minutes: 30,
-    completed: false,
-    color: colorFor(els.itemCategoryInput.value),
-    source: "manual",
-    created_at: new Date().toISOString(),
+    duration_minutes: existing?.duration_minutes || 30,
+    completed: existing?.completed || false,
+    color: existing?.color || colorFor(els.itemCategoryInput.value),
+    source: existing?.source || "manual",
+    created_at: existing?.created_at || new Date().toISOString(),
     updated_at: new Date().toISOString(),
   };
-  state.items.unshift(item);
+  state.items = editingId ? state.items.map((candidate) => (candidate.id === editingId ? item : candidate)) : [item, ...state.items];
   persist();
   els.composeDialog.close();
   render();
@@ -620,6 +686,7 @@ function saveItemFromForm() {
 
 function openSleepDialog() {
   els.sleepForm.reset();
+  const today = todayKey();
   const tomorrow = new Date(`${today}T00:00:00`);
   tomorrow.setDate(tomorrow.getDate() + 1);
   els.sleepDateInput.value = today;
@@ -682,7 +749,14 @@ function moveMonth(direction) {
   state.monthCursor = formatDateKey(cursor);
   persist();
   renderCalendar();
-  renderMiniCalendar();
+}
+
+function goToToday() {
+  const today = todayKey();
+  state.selectedDate = today;
+  state.monthCursor = `${today.slice(0, 7)}-01`;
+  persist();
+  renderCalendar();
 }
 
 function nextQuote() {
@@ -720,6 +794,7 @@ function finishFocusSession() {
     id: crypto.randomUUID(),
     owner_key: settings.ownerKey,
     minutes: timer.durationMinutes,
+    task_id: state.focusedTaskId || null,
     completed_at: new Date().toISOString(),
     created_at: new Date().toISOString(),
   };
@@ -727,6 +802,7 @@ function finishFocusSession() {
   timer.secondsLeft = timer.durationMinutes * 60;
   persist();
   renderStats();
+  renderFocusTasks();
   renderTimer();
   void upsertSupabase("life_flow_focus_sessions", session);
 }
@@ -760,12 +836,15 @@ async function toggleAmbient(sound, button) {
 
 function createAmbientSound(context, sound) {
   const master = context.createGain();
-  master.gain.value = sound === "library" ? 0.035 : 0.055;
+  master.gain.value = sound === "library" || sound === "white-noise" ? 0.035 : 0.055;
   master.connect(context.destination);
 
   if (sound === "rain") return createRain(context, master);
   if (sound === "cafe") return createCafe(context, master);
-  return createLibrary(context, master);
+  if (sound === "library") return createLibrary(context, master);
+  if (sound === "nature") return createTone(context, master, "sine", 196, 0.018);
+  if (sound === "lofi") return createCafe(context, master);
+  return createRain(context, master);
 }
 
 function createRain(context, master) {
@@ -798,11 +877,15 @@ function createCafe(context, master) {
 }
 
 function createLibrary(context, master) {
+  return createTone(context, master, "triangle", 174, 0.02);
+}
+
+function createTone(context, master, type, frequency, volume) {
   const oscillator = context.createOscillator();
   const gain = context.createGain();
-  oscillator.type = "triangle";
-  oscillator.frequency.value = 174;
-  gain.gain.value = 0.02;
+  oscillator.type = type;
+  oscillator.frequency.value = frequency;
+  gain.gain.value = volume;
   oscillator.connect(gain).connect(master);
   oscillator.start();
   return { sources: [oscillator], master };
@@ -906,6 +989,7 @@ async function importCalendar() {
     state.items = [...fresh, ...state.items];
     persist();
     render();
+    if (canSync()) await Promise.all(fresh.map((item) => upsertSupabase("life_flow_items", item)));
   } catch {
     setSyncStatus("Calendar import skipped");
   }
@@ -943,6 +1027,7 @@ async function supabaseFetch(path, options = {}) {
 }
 
 function canSync() {
+  // Security note: confirm Supabase RLS policies only allow rows whose owner_key matches the x-owner-key header.
   return Boolean(settings.supabaseUrl && settings.supabaseAnonKey && settings.ownerKey);
 }
 
@@ -951,10 +1036,19 @@ function hydrateSettingsForm() {
   els.supabaseAnonInput.value = settings.supabaseAnonKey;
   els.ownerKeyInput.value = settings.ownerKey;
   els.calendarUrlInput.value = settings.calendarUrl;
+  els.plannerSubtitleInput.value = settings.plannerSubtitle || "Personal planner";
+  els.darkModeInput.checked = Boolean(settings.darkMode);
+  els.sleepGoalInput.value = clampSleepGoal(settings.sleepGoalHours);
 }
 
 function setSyncStatus(message) {
   els.syncStatus.textContent = message;
+  if (!els.syncBanner) return;
+  const isBusy = /syncing|saving|loading/i.test(message);
+  const isProblem = /paused|failed|unavailable|skipped/i.test(message);
+  els.syncBanner.hidden = !isBusy && !isProblem;
+  els.syncBanner.classList.toggle("error", isProblem);
+  els.syncBannerText.textContent = message;
 }
 
 function itemsForDate(dateKey) {
@@ -993,6 +1087,16 @@ function loadJson(key, fallback) {
   }
 }
 
+function refreshDailyState(savedState) {
+  const today = todayKey();
+  return {
+    ...savedState,
+    activeFilter: savedState.activeFilter === "all" ? "today" : savedState.activeFilter || "today",
+    selectedDate: today,
+    monthCursor: `${today.slice(0, 7)}-01`,
+  };
+}
+
 function ensureStarterTasks(savedState) {
   if (savedState.starterTasksSeeded) return savedState;
   const existingTitles = new Set((savedState.items || []).map((item) => item.title.toLowerCase()));
@@ -1004,6 +1108,28 @@ function ensureStarterTasks(savedState) {
     ],
     starterTasksSeeded: true,
   };
+}
+
+function applySettings() {
+  document.body.classList.toggle("dark-mode", Boolean(settings.darkMode));
+  els.sidebarSubtitle.textContent = settings.plannerSubtitle || "Personal planner";
+}
+
+function toggleSecret(button) {
+  const input = document.getElementById(button.dataset.toggleSecret);
+  const shouldShow = input.type === "password";
+  input.type = shouldShow ? "text" : "password";
+  button.textContent = shouldShow ? "Hide" : "Show";
+}
+
+function clampSleepGoal(value) {
+  const goal = Number.parseFloat(value);
+  if (!Number.isFinite(goal)) return 8;
+  return Math.min(14, Math.max(1, Math.round(goal * 2) / 2));
+}
+
+function refreshIcons() {
+  if (window.lucide?.createIcons) window.lucide.createIcons();
 }
 
 function saveJson(key, value) {

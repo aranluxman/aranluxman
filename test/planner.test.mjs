@@ -5,9 +5,13 @@ import {
   buildMonthDays,
   calculateStats,
   calculateSleepMinutes,
+  countSessionsForDate,
   filterItems,
   formatDateKey,
+  formatDisplayDate,
   getGreeting,
+  getGreetingEmoji,
+  getHomeSubtitle,
   getSleepSummary,
   parseIcsEvents,
   sanitizeFocusMinutes,
@@ -53,7 +57,11 @@ test("filterItems supports all, weekly, priorities, and long-term modes", () => 
     { kind: "long_term", title: "Build portfolio", priority: "high" },
   ];
 
-  assert.equal(filterItems(items, "all", "2026-05-19").length, 2);
+  assert.deepEqual(
+    filterItems(items, "today", "2026-05-19").map((item) => item.title),
+    ["Study"],
+  );
+  assert.equal(filterItems(items, "all", "2026-05-19").length, 3);
   assert.equal(filterItems(items, "weekly", "2026-05-19").length, 2);
   assert.equal(filterItems(items, "priorities", "2026-05-19").length, 2);
   assert.equal(filterItems(items, "long-term", "2026-05-19").length, 1);
@@ -81,6 +89,11 @@ test("parseIcsEvents extracts dated events safely", () => {
 test("getGreeting is date-aware", () => {
   assert.equal(getGreeting(new Date("2026-05-19T23:00:00")), "Good evening");
   assert.equal(getGreeting(new Date("2026-05-19T09:00:00")), "Good morning");
+  assert.equal(getGreetingEmoji(new Date("2026-05-19T09:00:00")), "☀️");
+  assert.equal(getGreetingEmoji(new Date("2026-05-19T14:00:00")), "🌤️");
+  assert.equal(getGreetingEmoji(new Date("2026-05-19T23:00:00")), "🌙");
+  assert.equal(formatDisplayDate(new Date("2026-05-21T09:00:00")), "Thursday, May 21");
+  assert.notEqual(getHomeSubtitle(new Date("2026-05-19T09:00:00")), getHomeSubtitle(new Date("2026-05-20T09:00:00")));
 });
 
 test("sanitizeFocusMinutes keeps custom focus lengths practical", () => {
@@ -98,12 +111,28 @@ test("getSleepSummary calculates average and graph percentages", () => {
   const summary = getSleepSummary([
     { sleep_date: "2026-05-18", slept_at: "2026-05-18T23:00", woke_at: "2026-05-19T06:00" },
     { sleep_date: "2026-05-19", slept_at: "2026-05-19T22:30", woke_at: "2026-05-20T07:00" },
-  ]);
+  ], 480);
 
   assert.equal(summary.averageMinutes, 465);
   assert.equal(summary.latestMinutes, 510);
+  assert.equal(summary.goalMinutes, 480);
+  assert.equal(summary.averagePercent, 97);
   assert.deepEqual(
     summary.points.map((point) => point.percent),
     [82, 100],
+  );
+});
+
+test("countSessionsForDate counts only completed focus sessions for that day", () => {
+  assert.equal(
+    countSessionsForDate(
+      [
+        { completed_at: "2026-05-21T10:00:00Z" },
+        { completed_at: "2026-05-21T15:00:00Z" },
+        { completed_at: "2026-05-20T15:00:00Z" },
+      ],
+      "2026-05-21",
+    ),
+    2,
   );
 });

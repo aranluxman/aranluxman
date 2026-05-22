@@ -16,9 +16,9 @@ export function getGreeting(date = new Date()) {
 
 export function getGreetingEmoji(date = new Date()) {
   const hour = date.getHours();
-  if (hour < 12) return "☀️";
-  if (hour < 18) return "🌤️";
-  return "🌙";
+  if (hour < 12) return "\u2600\ufe0f";
+  if (hour < 18) return "\ud83c\udf24\ufe0f";
+  return "\ud83c\udf19";
 }
 
 export function formatDisplayDate(date = new Date()) {
@@ -116,33 +116,33 @@ export function parseIcsEvents(icsText) {
   if (!icsText) return [];
 
   return icsText
+    .replace(/\r?\n[ \t]/g, "")
     .split("BEGIN:VEVENT")
     .slice(1)
-    .map((block) => {
+    .flatMap((block) => {
       const title = readIcsField(block, "SUMMARY") || "Calendar event";
       const start = readIcsField(block, "DTSTART");
       const end = readIcsField(block, "DTEND");
+      const rrule = readIcsField(block, "RRULE");
       const startDate = parseIcsDate(start);
       const endDate = parseIcsDate(end);
 
-      if (!startDate) return null;
+      if (!startDate) return [];
 
-      return {
-        id: `ics-${start}-${title}`.replace(/[^a-z0-9-]/gi, "-").toLowerCase(),
-        kind: "calendar_event",
-        title: unescapeIcs(title),
-        notes: "",
-        category: "Calendar",
-        priority: "medium",
-        due_date: formatDateKey(startDate),
-        scheduled_at: startDate.toISOString(),
-        duration_minutes: endDate ? Math.max(15, Math.round((endDate - startDate) / 60000)) : 30,
-        completed: false,
-        color: "#b99be1",
-        source: "ics",
-      };
+      const durationMinutes = endDate ? Math.max(15, Math.round((endDate - startDate) / 60000)) : 30;
+      const exclusions = new Set(
+        readIcsFields(block, "EXDATE")
+          .flatMap((value) => value.split(","))
+          .map((value) => parseIcsDate(value))
+          .filter(Boolean)
+          .map((date) => formatDateKey(date)),
+      );
+      const starts = rrule ? expandRecurrence(startDate, rrule).filter((date) => !exclusions.has(formatDateKey(date))) : [startDate];
+
+      return starts.map((instanceStart) => buildIcsItem({ start, title, instanceStart, durationMinutes }));
     })
-    .filter(Boolean);
+    .filter(Boolean)
+    .sort((a, b) => String(a.scheduled_at).localeCompare(String(b.scheduled_at)));
 }
 
 export function calculateSleepMinutes(sleptAt, wokeAt) {
@@ -192,7 +192,7 @@ export function countSessionsForDate(focusSessions, dateKey = todayKey()) {
 export function formatSleepDuration(minutes) {
   const hours = Math.floor(minutes / 60);
   const remainder = minutes % 60;
-  if (!minutes) return "—";
+  if (!minutes) return "\u2014";
   if (!remainder) return `${hours}h`;
   return `${hours}h ${remainder}m`;
 }
@@ -217,12 +217,107 @@ function addDays(dateKey, days) {
   return formatDateKey(date);
 }
 
+function buildIcsItem({ start, title, instanceStart, durationMinutes }) {
+  const key = `${start}-${title}-${instanceStart.toISOString()}`.replace(/[^a-z0-9-]/gi, "-").toLowerCase();
+  return {
+    id: `ics-${key}`,
+    kind: "calendar_event",
+    title: unescapeIcs(title),
+    notes: "",
+    category: "Calendar",
+    priority: "medium",
+    due_date: formatDateKey(instanceStart),
+    scheduled_at: instanceStart.toISOString(),
+    duration_minutes: durationMinutes,
+    completed: false,
+    color: "#155a8a",
+    source: "ics",
+  };
+}
+
+function expandRecurrence(startDate, rrule) {
+  const rule = parseRRule(rrule);
+  const interval = Number.parseInt(rule.INTERVAL || "1", 10) || 1;
+  const count = Math.min(Number.parseInt(rule.COUNT || "200", 10) || 200, 200);
+  const until = rule.UNTIL ? parseIcsDate(rule.UNTIL) : addMonthsDate(startDate, 12);
+  const dates = [];
+  const pushDate = (date) => {
+    if (date >= startDate && date <= until && dates.length < count) dates.push(new Date(date));
+  };
+
+  if (rule.FREQ === "DAILY") {
+    for (const date = new Date(startDate); dates.length < count && date <= until; date.setDate(date.getDate() + interval)) {
+      pushDate(date);
+    }
+    return dates;
+  }
+
+  if (rule.FREQ === "MONTHLY") {
+    for (const date = new Date(startDate); dates.length < count && date <= until; date.setMonth(date.getMonth() + interval)) {
+      pushDate(date);
+    }
+    return dates;
+  }
+
+  if (rule.FREQ === "WEEKLY") {
+    const byDays = (rule.BYDAY || weekdayCode(startDate)).split(",").map((day) => day.trim()).filter(Boolean);
+    for (const weekStart = startOfWeek(startDate); dates.length < count && weekStart <= until; weekStart.setDate(weekStart.getDate() + interval * 7)) {
+      byDays.forEach((dayCode) => {
+        const date = new Date(weekStart);
+        date.setDate(weekStart.getDate() + weekdayIndex(dayCode));
+        date.setHours(startDate.getHours(), startDate.getMinutes(), startDate.getSeconds(), startDate.getMilliseconds());
+        pushDate(date);
+      });
+    }
+    return dates.sort((a, b) => a - b).slice(0, count);
+  }
+
+  return [startDate];
+}
+
+function parseRRule(rrule) {
+  return Object.fromEntries(
+    rrule
+      .split(";")
+      .map((part) => part.split("="))
+      .filter(([key, value]) => key && value),
+  );
+}
+
+function startOfWeek(date) {
+  const result = new Date(date);
+  result.setDate(result.getDate() - result.getDay());
+  result.setHours(date.getHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds());
+  return result;
+}
+
+function addMonthsDate(date, months) {
+  const result = new Date(date);
+  result.setMonth(result.getMonth() + months);
+  return result;
+}
+
+function weekdayCode(date) {
+  return ["SU", "MO", "TU", "WE", "TH", "FR", "SA"][date.getDay()];
+}
+
+function weekdayIndex(dayCode) {
+  return { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 }[dayCode.slice(-2)] ?? 0;
+}
+
 function readIcsField(block, name) {
   const line = block
     .split(/\r?\n/)
     .find((candidate) => candidate.startsWith(`${name}:`) || candidate.startsWith(`${name};`));
   if (!line) return "";
   return line.slice(line.indexOf(":") + 1).trim();
+}
+
+function readIcsFields(block, name) {
+  return block
+    .split(/\r?\n/)
+    .filter((candidate) => candidate.startsWith(`${name}:`) || candidate.startsWith(`${name};`))
+    .map((line) => line.slice(line.indexOf(":") + 1).trim());
 }
 
 function parseIcsDate(value) {

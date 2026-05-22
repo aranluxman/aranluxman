@@ -3,11 +3,17 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#eaf1f6" />
+    <meta name="theme-color" content="#6366f1" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Life Flow" />
     <title>Aran Life Flow</title>
     <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap"
+      rel="stylesheet"
+    />
     <link rel="stylesheet" href="/styles.css" />
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
     <script type="module" src="/src/app.mjs"></script>
@@ -53,21 +59,16 @@
             <button class="icon-button" id="nextQuoteButton" type="button" aria-label="New quote" title="New quote"><i data-lucide="refresh-cw"></i></button>
           </section>
 
-          <section class="mood-panel page-accent" aria-labelledby="moodTitle">
-            <h2 id="moodTitle">How are you feeling?</h2>
-            <div class="mood-row" id="moodRow"></div>
-          </section>
-
           <section class="stats-grid" aria-label="Progress stats">
             <article class="stat-card">
               <span><i data-lucide="check-circle-2"></i></span>
               <strong id="doneTodayStat">0</strong>
-              <small>Done</small>
+              <small>Done today</small>
             </article>
             <article class="stat-card">
               <span><i data-lucide="circle-dot"></i></span>
               <strong id="openTasksStat">0</strong>
-              <small>To Do</small>
+              <small>To do</small>
             </article>
             <article class="stat-card">
               <span><i data-lucide="flame"></i></span>
@@ -83,10 +84,48 @@
         </section>
 
         <section class="view" id="tasksView" aria-labelledby="tasksTitle">
-          <div class="section-heading section-heading-tasks">
+          <div class="section-heading">
             <h1 id="tasksTitle">Tasks</h1>
-            <button class="add-button labeled" data-open-compose="daily_task" type="button" aria-label="New task" title="New task"><i data-lucide="plus"></i><span>New task</span></button>
           </div>
+
+          <form class="quick-task-card" id="quickTaskForm" autocomplete="off">
+            <div class="quick-task-row">
+              <input id="quickTaskInput" type="text" placeholder="What needs to get done?" maxlength="160" required />
+              <button class="quick-task-expand" type="button" id="quickTaskExpandButton" aria-expanded="false">
+                <i data-lucide="sliders-horizontal"></i><span>More</span>
+              </button>
+              <button type="submit"><i data-lucide="plus"></i></button>
+            </div>
+            <div class="quick-task-extra" id="quickTaskExtra" hidden>
+              <label>
+                Due
+                <input id="quickTaskDate" type="date" />
+              </label>
+              <label>
+                Category
+                <select id="quickTaskCategory">
+                  <option>School</option>
+                  <option>Personal</option>
+                  <option>Wellness</option>
+                  <option>Training</option>
+                  <option>Calendar</option>
+                </select>
+              </label>
+              <label>
+                Priority
+                <select id="quickTaskPriority">
+                  <option value="medium">Medium</option>
+                  <option value="high">High</option>
+                  <option value="low">Low</option>
+                </select>
+              </label>
+              <label>
+                Notes
+                <textarea id="quickTaskNotes" rows="2" placeholder="Optional notes"></textarea>
+              </label>
+            </div>
+          </form>
+
           <div class="filter-row" id="taskFilters" aria-label="Task filters">
             <button class="filter-pill active" data-filter="today" type="button">Today</button>
             <button class="filter-pill" data-filter="all" type="button">All</button>
@@ -98,7 +137,7 @@
         </section>
 
         <section class="view" id="calendarView" aria-labelledby="calendarTitle">
-          <div class="section-heading section-heading-calendar">
+          <div class="section-heading">
             <h1 id="calendarTitle">Calendar</h1>
             <button class="add-button labeled" data-open-compose="calendar_event" type="button" aria-label="Add event" title="Add event"><i data-lucide="plus"></i><span>Add event</span></button>
           </div>
@@ -119,7 +158,7 @@
         </section>
 
         <section class="view" id="sleepView" aria-labelledby="sleepTitle">
-          <div class="section-heading section-heading-sleep">
+          <div class="section-heading">
             <div>
               <h1 id="sleepTitle">Sleep</h1>
               <p class="section-subtitle">Track bedtime, wake time, and your weekly rhythm.</p>
@@ -128,19 +167,19 @@
           </div>
           <label class="sleep-goal">
             Sleep goal
-            <input id="sleepGoalInput" type="number" min="1" max="14" step="0.5" value="8" />
+            <input id="sleepGoalInput" type="number" min="1" max="11" step="0.5" value="8" />
             <span>hours</span>
           </label>
           <section class="sleep-summary-grid" aria-label="Sleep summary">
             <article class="stat-card">
-              <span>Night</span>
+              <span><i data-lucide="moon"></i></span>
               <strong id="latestSleepStat">—</strong>
-              <small id="latestSleepContext">No data</small>
+              <small id="latestSleepContext">No data yet</small>
             </article>
             <article class="stat-card">
-              <span>Week</span>
+              <span><i data-lucide="trending-up"></i></span>
               <strong id="averageSleepStat">—</strong>
-              <small id="averageSleepContext">No data</small>
+              <small id="averageSleepContext">No data yet</small>
             </article>
           </section>
           <section class="sleep-card" aria-labelledby="sleepGraphTitle">
@@ -154,9 +193,11 @@
         </section>
 
         <section class="view" id="focusView" aria-labelledby="focusTitle">
-          <header class="focus-heading section-heading-focus">
-            <h1 id="focusTitle">Focus Mode</h1>
-            <p>Deep work, no distractions</p>
+          <header class="focus-heading">
+            <div>
+              <h1 id="focusTitle">Focus Mode</h1>
+              <p>Deep work, no distractions</p>
+            </div>
           </header>
           <div class="focus-stage">
             <aside class="focus-task-panel" aria-labelledby="focusTaskTitle">
@@ -175,26 +216,14 @@
                 <button class="icon-button" id="finishTimerButton" type="button" aria-label="Break" title="Break"><i data-lucide="coffee"></i></button>
               </div>
               <div class="duration-row">
-                <button class="filter-pill active" data-minutes="25" type="button">Focus (25 min)</button>
-                <button class="filter-pill" data-minutes="50" type="button">Deep Work (50 min)</button>
-                <button class="filter-pill" data-minutes="15" type="button">Short Break (15 min)</button>
+                <button class="filter-pill active" data-minutes="25" type="button">Focus 25</button>
+                <button class="filter-pill" data-minutes="50" type="button">Deep 50</button>
+                <button class="filter-pill" data-minutes="15" type="button">Break 15</button>
                 <label class="custom-minutes">
                   <span>Custom</span>
                   <input id="customMinutesInput" type="number" min="1" max="240" value="25" aria-label="Custom focus minutes" />
                 </label>
               </div>
-            </section>
-            <section class="ambient-panel" aria-labelledby="ambientTitle">
-              <h2 id="ambientTitle">Ambient vibes</h2>
-              <div class="ambient-grid">
-                <button type="button" data-sound="rain">Rain<span>Soft rain</span></button>
-                <button type="button" data-sound="cafe">Cafe<span>Low buzz</span></button>
-                <button type="button" data-sound="library">Library<span>Quiet room</span></button>
-                <button type="button" data-sound="nature">Nature<span>Calm tone</span></button>
-                <button type="button" data-sound="white-noise">White Noise<span>Steady hush</span></button>
-                <button type="button" data-sound="lofi">Lo-fi<span>Warm loop</span></button>
-              </div>
-              <p class="sound-status" id="soundStatus">Pick a vibe to start background sound.</p>
             </section>
           </div>
         </section>
@@ -205,12 +234,12 @@
       <form id="composeForm" method="dialog">
         <div class="dialog-heading">
           <h2 id="composeTitle">Add item</h2>
-          <button class="icon-button" value="cancel" type="button" id="closeComposeButton" aria-label="Close">X</button>
+          <button class="icon-button" value="cancel" type="button" id="closeComposeButton" aria-label="Close"><i data-lucide="x"></i></button>
         </div>
         <input id="editingItemIdInput" type="hidden" />
         <label>
           Title
-          <input id="itemTitleInput" name="title" required maxlength="120" />
+          <input id="itemTitleInput" name="title" required maxlength="160" />
         </label>
         <div class="form-grid">
           <label>
@@ -256,8 +285,9 @@
       <form id="sleepForm" method="dialog">
         <div class="dialog-heading">
           <h2>Add sleep</h2>
-          <button class="icon-button" value="cancel" type="button" id="closeSleepButton" aria-label="Close">X</button>
+          <button class="icon-button" value="cancel" type="button" id="closeSleepButton" aria-label="Close"><i data-lucide="x"></i></button>
         </div>
+        <p class="form-error" id="sleepError" hidden></p>
         <label>
           Date
           <input id="sleepDateInput" name="sleep_date" type="date" required />
@@ -280,10 +310,10 @@
       <form id="settingsForm" method="dialog">
         <div class="dialog-heading">
           <h2>Settings</h2>
-          <button class="icon-button" value="cancel" type="button" id="closeSettingsButton" aria-label="Close">X</button>
+          <button class="icon-button" value="cancel" type="button" id="closeSettingsButton" aria-label="Close"><i data-lucide="x"></i></button>
         </div>
         <p class="settings-note">
-          Local mode means no cloud sync; your data stays in this browser only. Add Supabase settings to sync privately.
+          Your Supabase project syncs tasks, sleep, focus sessions, and calendar events. Paste the secret iCal URL from Google Calendar to pull in all your events automatically.
         </p>
         <label>
           Supabase URL
@@ -295,7 +325,7 @@
         </label>
         <label>
           Owner key
-          <input id="ownerKeyInput" name="ownerKey" />
+          <input id="ownerKeyInput" name="ownerKey" placeholder="A private phrase only you know" />
         </label>
         <label>
           Sidebar subtitle
@@ -306,8 +336,8 @@
           Dark mode
         </label>
         <label>
-          Optional Google Calendar secret iCal URL
-          <input id="calendarUrlInput" name="calendarUrl" />
+          Google Calendar secret iCal URL
+          <input id="calendarUrlInput" name="calendarUrl" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics" />
         </label>
         <div class="dialog-actions">
           <button class="ghost-button compact" id="syncButton" type="button">Sync now</button>

@@ -11,6 +11,8 @@ import {
   getGreetingEmoji,
   getHomeSubtitle,
   getSleepSummary,
+  isSleepDurationValid,
+  MAX_SLEEP_MINUTES,
   parseIcsEvents,
   sanitizeFocusMinutes,
   todayKey,
@@ -18,7 +20,7 @@ import {
 
 const STORE_KEY = "aran-life-flow-state";
 const SETTINGS_KEY = "aran-life-flow-settings";
-const colors = ["#ef6f75", "#95cfb7", "#efc963", "#6f3aa5", "#b99be1"];
+const colors = ["#6366f1", "#8b5cf6", "#f59e0b", "#10b981", "#f43f5e"];
 const today = todayKey();
 const todayMonth = () => `${todayKey().slice(0, 7)}-01`;
 const starterTasks = [
@@ -66,14 +68,6 @@ const defaultState = {
   focusedTaskId: "",
 };
 
-const moods = [
-  ["\ud83d\ude35\u200d\ud83d\udcab", "Overwhelmed"],
-  ["\ud83d\ude34", "Tired"],
-  ["\ud83d\ude42", "Okay"],
-  ["\ud83d\udcaa", "Productive"],
-  ["\ud83d\udd25", "Locked In"],
-];
-
 const quotes = [
   "Small steps count. Show up once, then again.",
   "The day gets easier when the first honest task is finished.",
@@ -95,103 +89,26 @@ const quotes = [
   "You can reset the day at any minute.",
   "Do not wait for a perfect mood to do useful work.",
   "Finish the little thing. It will change the whole room.",
-  "Study like you are helping tomorrow-you breathe easier.",
   "Give one task your full attention and watch the day open up.",
-  "The hard part gets smaller once it is named.",
   "Tiny progress still counts as proof.",
   "Do it badly for two minutes. Then make it better.",
   "Momentum likes motion, not speeches.",
   "Your future is built in boring, brave minutes.",
-  "Start with the page, the problem, or the first sentence.",
   "Lock in now so you can relax properly later.",
   "A little discipline gives you a lot of freedom.",
   "The next right action is enough.",
-  "You do not need a perfect day to have a strong one.",
   "Make it simple. Make it done.",
   "One calm hour can rescue the whole afternoon.",
   "Energy follows action more often than action follows energy.",
-  "Give yourself one clean block of attention.",
   "Done is a door. Walk through it.",
-  "You can be tired and still take one good step.",
-  "Pick the important thing before the urgent noise picks for you.",
-  "Your attention is valuable. Spend it like it matters.",
-  "Small habits are how big goals learn to stand.",
-  "Do the work your future self keeps thanking you for.",
-  "A focused twenty-five minutes is a serious move.",
-  "The best comeback is a quiet restart.",
   "You are not behind. You are here, and here is workable.",
-  "Less scrolling, more becoming.",
   "Start where your feet are.",
-  "You do not have to crush the day. Just move it forward.",
-  "Protect the next hour like it belongs to your goals.",
-  "The first rep is the hardest. Do that one.",
-  "Progress is allowed to look ordinary.",
-  "Your brain likes proof. Give it one completed task.",
-  "Make the plan smaller until it moves.",
-  "The assignment gets less scary when it has a first line.",
-  "You can always choose focus again.",
   "Every finished task is a vote for the person you are becoming.",
   "A calm pace can still be a powerful pace.",
   "Start now. Confidence can catch up.",
-  "Build the streak one honest session at a time.",
-  "The goal is not drama. The goal is progress.",
-  "Do the useful thing before the easy distraction.",
-  "You only need enough courage for the next step.",
-  "If it matters, give it a block on the calendar.",
-  "Your work does not need to be loud to be strong.",
-  "Turn the big thing into a checklist and take the first check.",
-  "You are closer after one focused minute than after one worried hour.",
-  "Breathe, choose, begin.",
-  "Good work starts with attention.",
-  "You can make this lighter by starting.",
-  "Let the first draft be messy and real.",
-  "Respect the timer. It is here to help you win.",
-  "Focus is just returning, over and over.",
-  "A clean start is available right now.",
-  "Choose one thing and make it obvious.",
-  "The day bends when you act.",
-  "Do the thing that makes you proud at bedtime.",
-  "Your goals deserve a quiet yes today.",
-  "No rush, no panic, just steady pressure.",
-  "You can handle a small beginning.",
-  "A little order creates a lot of peace.",
-  "Put the next task where your eyes can find it.",
-  "Your effort is not wasted just because it is slow.",
-  "Focus first, polish later.",
-  "You are building evidence that you can trust yourself.",
-  "One task. One timer. One clean finish.",
-  "The page will not stay blank after the first word.",
-  "Study now so the test feels familiar later.",
-  "Your sleep, focus, and work all count. Track them honestly.",
-  "Make today easier by doing the next real thing.",
-  "The strongest routine is the one you actually repeat.",
-  "You can be low-energy and still be high-intent.",
-  "Start with what is due. Then take care of what matters.",
-  "The calendar is not pressure. It is a map.",
-  "Put your mind where your future is.",
-  "Short sessions are still sessions.",
-  "Every reset is a skill.",
+  "The best comeback is a quiet restart.",
+  "Less scrolling, more becoming.",
   "Win the next ten minutes.",
-  "Do not negotiate with the distraction. Start the timer.",
-  "You can make a hard day useful.",
-  "Clear beats crowded.",
-  "A task written down is a task you can beat.",
-  "Give the work your full attention, then give rest your full attention.",
-  "Your best days are made from small choices repeated.",
-  "The next focused block is always available.",
-  "Keep promises to yourself in small, specific ways.",
-  "Let steady be enough.",
-  "The finish line gets closer when you stop measuring and start moving.",
-  "You have done hard things before. This is another rep.",
-  "Be the person who starts.",
-];
-
-const words = [
-  ["Sillage", "The scent that lingers in the air after someone passes by."],
-  ["Eunoia", "Beautiful thinking; a well mind."],
-  ["Meraki", "Doing something with soul, care, and full attention."],
-  ["Areté", "Excellence through steady practice."],
-  ["Komorebi", "Sunlight filtering through trees."],
 ];
 
 const coachSuggestions = [
@@ -214,23 +131,24 @@ const arcadeBoosts = [
 ];
 
 let state = refreshDailyState(ensureStarterTasks(loadJson(STORE_KEY, defaultState)));
-let settings = ensureSettings(loadJson(SETTINGS_KEY, {
-  supabaseUrl: "https://hcvjiveloioftozvnbhe.supabase.co",
-  supabaseAnonKey: "sb_publishable_DGZFZUhnMLgFpdYzcHWRmw_wqOPu2Aq",
-  ownerKey: "",
-  calendarUrl: "",
-  sleepGoalHours: 8,
-  darkMode: false,
-  plannerSubtitle: "Personal planner",
-}));
+let settings = ensureSettings(
+  loadJson(SETTINGS_KEY, {
+    supabaseUrl: "https://hcvjiveloioftozvnbhe.supabase.co",
+    supabaseAnonKey: "sb_publishable_DGZFZUhnMLgFpdYzcHWRmw_wqOPu2Aq",
+    ownerKey: "",
+    calendarUrl: "",
+    sleepGoalHours: 8,
+    lightMode: false,
+    plannerSubtitle: "Personal planner",
+  }),
+);
+
 let timer = {
   secondsLeft: 25 * 60,
   durationMinutes: 25,
   intervalId: null,
 };
 let audioContext;
-let ambientNodes;
-let activeSound = "";
 let arcadeBoostOffset = 0;
 
 const els = {};
@@ -262,6 +180,14 @@ function bindElements() {
     "coinsStat",
     "taskFilters",
     "taskList",
+    "quickTaskForm",
+    "quickTaskInput",
+    "quickTaskExpandButton",
+    "quickTaskExtra",
+    "quickTaskDate",
+    "quickTaskCategory",
+    "quickTaskPriority",
+    "quickTaskNotes",
     "todayButton",
     "calendarGrid",
     "monthLabel",
@@ -274,7 +200,6 @@ function bindElements() {
     "sessionsTodayText",
     "timerText",
     "customMinutesInput",
-    "soundStatus",
     "addSleepButton",
     "sleepGoalInput",
     "sleepDialog",
@@ -315,7 +240,7 @@ function bindElements() {
     "supabaseAnonInput",
     "ownerKeyInput",
     "plannerSubtitleInput",
-    "darkModeInput",
+    "lightModeInput",
     "calendarUrlInput",
   ].forEach((id) => {
     els[id] = document.getElementById(id);
@@ -379,6 +304,17 @@ function wireEvents() {
     renderTasks();
   });
 
+  els.quickTaskForm.addEventListener("submit", (event) => {
+    event.preventDefault();
+    saveQuickTask();
+  });
+
+  els.quickTaskExpandButton.addEventListener("click", () => {
+    const expanded = els.quickTaskExtra.classList.toggle("open");
+    els.quickTaskExtra.hidden = !expanded;
+    els.quickTaskExpandButton.setAttribute("aria-expanded", String(expanded));
+  });
+
   document.querySelectorAll("[data-minutes]").forEach((button) => {
     button.addEventListener("click", () => {
       timer.durationMinutes = sanitizeFocusMinutes(button.dataset.minutes);
@@ -399,10 +335,6 @@ function wireEvents() {
     renderTimer();
   });
 
-  document.querySelectorAll("[data-sound]").forEach((button) => {
-    button.addEventListener("click", () => toggleAmbient(button.dataset.sound, button));
-  });
-
   els.composeForm.addEventListener("submit", (event) => {
     event.preventDefault();
     saveItemFromForm();
@@ -421,9 +353,10 @@ function wireEvents() {
       ownerKey: els.ownerKeyInput.value.trim() || settings.ownerKey || createOwnerKey(),
       calendarUrl: els.calendarUrlInput.value.trim(),
       plannerSubtitle: els.plannerSubtitleInput.value.trim() || "Personal planner",
-      darkMode: els.darkModeInput.checked,
+      lightMode: els.lightModeInput.checked,
       sleepGoalHours: clampSleepGoal(els.sleepGoalInput.value || settings.sleepGoalHours),
     };
+    els.ownerKeyInput.value = settings.ownerKey;
     saveJson(SETTINGS_KEY, settings);
     applySettings();
     els.settingsDialog.close();
@@ -466,35 +399,6 @@ function renderCoach() {
   els.coachText.textContent = `${template.replace("{task}", taskTitle)}${sleepLine}`;
 }
 
-function renderMoods() {
-  if (!els.moodRow) return;
-  const today = todayKey();
-  const moodToday = state.moods.find((mood) => mood.entry_date === today);
-  els.moodRow.replaceChildren(
-    ...moods.map(([emoji, label]) => {
-      const button = document.createElement("button");
-      button.className = `mood-button ${moodToday?.label === label ? "active" : ""}`;
-      button.type = "button";
-      button.innerHTML = `<strong>${emoji}</strong><span>${label}</span>`;
-      button.addEventListener("click", () => {
-        state.moods = state.moods.filter((mood) => mood.entry_date !== today);
-        state.moods.push({
-          id: crypto.randomUUID(),
-          owner_key: settings.ownerKey,
-          mood: emoji,
-          label,
-          entry_date: today,
-          created_at: new Date().toISOString(),
-        });
-        persist();
-        renderMoods();
-        void upsertSupabase("life_flow_moods", state.moods.at(-1), "owner_key,entry_date");
-      });
-      return button;
-    }),
-  );
-}
-
 function renderStats() {
   const today = todayKey();
   const stats = calculateStats(state.items, state.focusSessions, today);
@@ -531,7 +435,7 @@ function renderTasks() {
     els.taskList.innerHTML = `
       <article class="empty-state">
         <strong>No tasks yet</strong>
-        <p>Add what you need to complete today or keep a long-term to-do for later.</p>
+        <p>Type something above and hit enter to add it instantly.</p>
       </article>
     `;
     return;
@@ -545,19 +449,16 @@ function renderTasks() {
       row.innerHTML = `
         <button class="task-check" type="button" aria-label="Toggle ${escapeHtml(item.title)}"></button>
         <div>
-          <p class="task-title">${escapeHtml(item.title)}</p>
-          <div class="task-meta">${escapeHtml(item.category || "Personal")} · ${item.duration_minutes || 30}min${item.due_date ? ` · ${item.due_date}` : ""}</div>
+          <p class="task-title"></p>
+          <div class="task-meta"></div>
         </div>
         <div class="task-actions">
-          <span aria-hidden="true">♧</span>
-          <button class="icon-button" type="button" aria-label="Delete task">×</button>
+          <button class="icon-button" type="button" data-edit-task aria-label="Edit task" title="Edit task"><i data-lucide="pencil"></i></button>
+          <button class="icon-button" type="button" data-delete-task aria-label="Delete task" title="Delete task"><i data-lucide="trash-2"></i></button>
         </div>
       `;
-      row.querySelector(".task-meta").textContent = `${item.category || "Personal"} · ${item.duration_minutes || 30}min${item.due_date ? ` · Due ${item.due_date}` : ""}`;
-      row.querySelector(".task-actions").innerHTML = `
-        <button class="icon-button" type="button" data-edit-task aria-label="Edit task" title="Edit task"><i data-lucide="pencil"></i></button>
-        <button class="icon-button" type="button" data-delete-task aria-label="Delete task" title="Delete task"><i data-lucide="trash-2"></i></button>
-      `;
+      row.querySelector(".task-title").textContent = item.title;
+      row.querySelector(".task-meta").textContent = `${item.category || "Personal"}${item.priority === "high" ? " · High" : ""}${item.due_date ? ` · ${formatTaskDate(item.due_date)}` : ""}`;
       row.querySelector(".task-check").addEventListener("click", () => toggleItem(item.id));
       row.querySelector("[data-edit-task]").addEventListener("click", () => openCompose(item.kind, item));
       row.querySelector("[data-delete-task]").addEventListener("click", () => deleteItem(item.id));
@@ -604,19 +505,21 @@ function renderCalendar() {
       ? "Today"
       : selected.toLocaleDateString("en", { weekday: "long", month: "short", day: "numeric" });
 
-  const agenda = itemsForDate(state.selectedDate);
+  const agenda = itemsForDate(state.selectedDate).sort((a, b) =>
+    String(a.scheduled_at || "").localeCompare(String(b.scheduled_at || "")),
+  );
   els.agendaList.innerHTML = agenda.length
     ? agenda
         .map(
           (item) => `
             <div class="agenda-item">
               <strong>${escapeHtml(item.title)}</strong>
-              <div class="task-meta">${escapeHtml(item.category || "Calendar")} · ${item.duration_minutes || 30}min</div>
+              <div class="task-meta">${escapeHtml(item.category || "Calendar")}${item.scheduled_at ? ` · ${formatTime(item.scheduled_at)}` : ""}</div>
             </div>
           `,
         )
         .join("")
-    : `<div class="agenda-item"><strong>Open day</strong><div class="task-meta">No calendar items yet.</div></div>`;
+    : `<div class="agenda-item empty"><strong>Open day</strong><div class="task-meta">Nothing scheduled.</div></div>`;
 }
 
 function renderSleep() {
@@ -625,8 +528,8 @@ function renderSleep() {
   els.sleepGoalInput.value = goalHours;
   els.latestSleepStat.textContent = formatSleepDuration(summary.latestMinutes);
   els.averageSleepStat.textContent = formatSleepDuration(summary.averageMinutes);
-  els.latestSleepContext.textContent = summary.latestMinutes ? `${summary.latestPercent}% of goal` : "No data";
-  els.averageSleepContext.textContent = summary.averageMinutes ? `${summary.averagePercent}% of goal` : "No data";
+  els.latestSleepContext.textContent = summary.latestMinutes ? `${summary.latestPercent}% of goal` : "No data yet";
+  els.averageSleepContext.textContent = summary.averageMinutes ? `${summary.averagePercent}% of goal` : "No data yet";
   els.sleepHint.textContent = summary.points.length
     ? `Goal: ${formatSleepDuration(summary.goalMinutes)} per night.`
     : "Add your first sleep log to start the graph.";
@@ -667,10 +570,10 @@ function renderSleep() {
             month: "short",
             day: "numeric",
           })}</strong>
-          <span>${formatTime(entry.slept_at)} - ${formatTime(entry.woke_at)}</span>
+          <span>${formatTime(entry.slept_at)} – ${formatTime(entry.woke_at)}</span>
         </div>
         <b>${formatSleepDuration(minutes)}</b>
-        <button class="icon-button" type="button" aria-label="Delete sleep entry">Ã—</button>
+        <button class="icon-button" type="button" aria-label="Delete sleep entry"><i data-lucide="trash-2"></i></button>
       `;
       row.querySelector("button").addEventListener("click", () => deleteSleepEntry(entry.id));
       return row;
@@ -695,17 +598,30 @@ function renderTimer() {
   const minutes = Math.floor(timer.secondsLeft / 60);
   const seconds = timer.secondsLeft % 60;
   els.timerText.textContent = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  const ring = document.getElementById("timerRingFill");
+  if (ring) {
+    const total = Math.max(1, timer.durationMinutes * 60);
+    const progress = Math.min(1, Math.max(0, timer.secondsLeft / total));
+    const circumference = 2 * Math.PI * 100;
+    ring.style.strokeDasharray = String(circumference);
+    ring.style.strokeDashoffset = String(circumference * (1 - progress));
+  }
   const playButton = document.getElementById("playTimerButton");
   playButton.innerHTML = timer.intervalId ? '<i data-lucide="pause"></i>' : '<i data-lucide="play"></i>';
   playButton.setAttribute("aria-label", timer.intervalId ? "Pause" : "Start");
   playButton.title = timer.intervalId ? "Pause" : "Start";
   refreshIcons();
 }
+
 function setView(view) {
   const switchView = () => {
     document.querySelectorAll(".nav-item").forEach((button) => button.classList.toggle("active", button.dataset.view === view));
-    document.querySelectorAll(".view").forEach((section) => section.classList.remove("active"));
-    document.getElementById(`${view}View`).classList.add("active");
+    const current = document.querySelector(".view.active");
+    const next = document.getElementById(`${view}View`);
+    if (!next) return;
+    if (current === next) return;
+    if (current) current.classList.remove("active");
+    next.classList.add("active");
     refreshIcons();
   };
 
@@ -741,6 +657,38 @@ function setAdvancedFields(show) {
   });
   els.toggleAdvancedButton.textContent = show ? "Less options" : "More options";
   els.toggleAdvancedButton.setAttribute("aria-expanded", String(show));
+}
+
+function saveQuickTask() {
+  const title = els.quickTaskInput.value.trim();
+  if (!title) return;
+  const expanded = els.quickTaskExtra.classList.contains("open");
+  const category = expanded ? els.quickTaskCategory.value : "Personal";
+  const item = {
+    id: crypto.randomUUID(),
+    owner_key: settings.ownerKey,
+    kind: "daily_task",
+    title,
+    notes: expanded ? els.quickTaskNotes.value.trim() : "",
+    category,
+    priority: expanded ? els.quickTaskPriority.value : "medium",
+    due_date: expanded ? (els.quickTaskDate.value || todayKey()) : todayKey(),
+    scheduled_at: null,
+    duration_minutes: 30,
+    completed: false,
+    color: colorFor(category),
+    source: "manual",
+    created_at: new Date().toISOString(),
+    updated_at: new Date().toISOString(),
+  };
+  state.items = [item, ...state.items];
+  persist();
+  els.quickTaskForm.reset();
+  els.quickTaskExtra.classList.remove("open");
+  els.quickTaskExtra.hidden = true;
+  els.quickTaskExpandButton.setAttribute("aria-expanded", "false");
+  render();
+  void upsertSupabase("life_flow_items", item);
 }
 
 function saveItemFromForm() {
@@ -788,9 +736,13 @@ function saveSleepFromForm() {
   const sleptAt = els.sleptAtInput.value;
   const wokeAt = els.wokeAtInput.value;
   const minutes = calculateSleepMinutes(sleptAt, wokeAt);
-  if (!minutes || minutes > 11 * 60) {
-    els.sleepError.hidden = false;
-    els.wokeAtInput.focus();
+  if (!minutes) {
+    showSleepError("That doesn't look right — wake time should be after bedtime.");
+    return;
+  }
+  if (!isSleepDurationValid(minutes)) {
+    const hours = (minutes / 60).toFixed(1);
+    showSleepError(`Not valid: ${hours} hours is over the ${MAX_SLEEP_MINUTES / 60}-hour limit. Double-check your times and try again.`);
     return;
   }
   els.sleepError.hidden = true;
@@ -810,6 +762,11 @@ function saveSleepFromForm() {
   els.sleepDialog.close();
   renderSleep();
   void upsertSupabase("life_flow_sleep_entries", entry, "owner_key,sleep_date");
+}
+
+function showSleepError(message) {
+  els.sleepError.textContent = message;
+  els.sleepError.hidden = false;
 }
 
 function deleteSleepEntry(id) {
@@ -882,7 +839,7 @@ function resetTimer() {
 
 function finishFocusSession() {
   stopTimer();
-  playAlarm();
+  void playAlarm();
   const session = {
     id: crypto.randomUUID(),
     owner_key: settings.ownerKey,
@@ -907,120 +864,28 @@ function stopTimer() {
   timer.intervalId = null;
 }
 
-async function getAudioContext() {
-  audioContext ||= new AudioContext();
-  if (audioContext.state === "suspended") await audioContext.resume();
-  return audioContext;
-}
-
-async function toggleAmbient(sound, button) {
-  const context = await getAudioContext();
-  if (activeSound === sound) {
-    stopAmbient();
-    setSoundStatus("Sound off");
-    button.classList.remove("active-sound");
-    return;
-  }
-
-  stopAmbient();
-  activeSound = sound;
-  document.querySelectorAll("[data-sound]").forEach((item) => item.classList.toggle("active-sound", item === button));
-  ambientNodes = createAmbientSound(context, sound);
-  setSoundStatus(`${button.innerText.trim()} playing`);
-}
-
-function createAmbientSound(context, sound) {
-  const master = context.createGain();
-  master.gain.value = sound === "library" || sound === "white-noise" ? 0.035 : 0.055;
-  master.connect(context.destination);
-
-  if (sound === "rain") return createRain(context, master);
-  if (sound === "cafe") return createCafe(context, master);
-  if (sound === "library") return createLibrary(context, master);
-  if (sound === "nature") return createTone(context, master, "sine", 196, 0.018);
-  if (sound === "lofi") return createCafe(context, master);
-  return createRain(context, master);
-}
-
-function createRain(context, master) {
-  const buffer = context.createBuffer(1, context.sampleRate * 2, context.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let i = 0; i < data.length; i += 1) data[i] = Math.random() * 2 - 1;
-  const noise = context.createBufferSource();
-  const filter = context.createBiquadFilter();
-  filter.type = "lowpass";
-  filter.frequency.value = 950;
-  noise.buffer = buffer;
-  noise.loop = true;
-  noise.connect(filter).connect(master);
-  noise.start();
-  return { sources: [noise], master };
-}
-
-function createCafe(context, master) {
-  const sources = [220, 277, 330].map((frequency, index) => {
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-    oscillator.type = "sine";
-    oscillator.frequency.value = frequency;
-    gain.gain.value = 0.012 + index * 0.004;
-    oscillator.connect(gain).connect(master);
-    oscillator.start();
-    return oscillator;
-  });
-  return { sources, master };
-}
-
-function createLibrary(context, master) {
-  return createTone(context, master, "triangle", 174, 0.02);
-}
-
-function createTone(context, master, type, frequency, volume) {
-  const oscillator = context.createOscillator();
-  const gain = context.createGain();
-  oscillator.type = type;
-  oscillator.frequency.value = frequency;
-  gain.gain.value = volume;
-  oscillator.connect(gain).connect(master);
-  oscillator.start();
-  return { sources: [oscillator], master };
-}
-
-function stopAmbient() {
-  if (!ambientNodes) return;
-  ambientNodes.sources.forEach((source) => {
-    try {
-      source.stop();
-    } catch {
-      // The source may already be stopped by the browser.
-    }
-  });
-  ambientNodes.master.disconnect();
-  ambientNodes = null;
-  activeSound = "";
-  document.querySelectorAll("[data-sound]").forEach((button) => button.classList.remove("active-sound"));
-}
-
 async function playAlarm() {
-  const context = await getAudioContext();
-  const now = context.currentTime;
-  [0, 0.22, 0.44].forEach((offset) => {
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-    oscillator.type = "sine";
-    oscillator.frequency.setValueAtTime(880, now + offset);
-    oscillator.frequency.exponentialRampToValueAtTime(660, now + offset + 0.16);
-    gain.gain.setValueAtTime(0.0001, now + offset);
-    gain.gain.exponentialRampToValueAtTime(0.18, now + offset + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.18);
-    oscillator.connect(gain).connect(context.destination);
-    oscillator.start(now + offset);
-    oscillator.stop(now + offset + 0.2);
-  });
-}
-
-function setSoundStatus(message) {
-  els.soundStatus.textContent = message;
+  try {
+    audioContext ||= new AudioContext();
+    if (audioContext.state === "suspended") await audioContext.resume();
+    const context = audioContext;
+    const now = context.currentTime;
+    [0, 0.22, 0.44].forEach((offset) => {
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.type = "sine";
+      oscillator.frequency.setValueAtTime(880, now + offset);
+      oscillator.frequency.exponentialRampToValueAtTime(660, now + offset + 0.16);
+      gain.gain.setValueAtTime(0.0001, now + offset);
+      gain.gain.exponentialRampToValueAtTime(0.18, now + offset + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + offset + 0.18);
+      oscillator.connect(gain).connect(context.destination);
+      oscillator.start(now + offset);
+      oscillator.stop(now + offset + 0.2);
+    });
+  } catch {
+    // Audio is best-effort.
+  }
 }
 
 async function syncAll() {
@@ -1031,15 +896,14 @@ async function syncAll() {
 
 async function syncFromSupabase() {
   if (!canSync()) {
-    setSyncStatus("Local mode");
+    setSyncStatus("Local mode — add Supabase URL, key, and owner key in Settings to sync.");
     return;
   }
 
   try {
     setSyncStatus("Syncing from Supabase...");
-    const [items, moodsList, focusSessions, sleepEntries] = await Promise.all([
+    const [items, focusSessions, sleepEntries] = await Promise.all([
       supabaseFetch("life_flow_items?select=*&order=created_at.desc"),
-      supabaseFetch("life_flow_moods?select=*&order=created_at.desc"),
       supabaseFetch("life_flow_focus_sessions?select=*&order=completed_at.desc"),
       supabaseFetch("life_flow_sleep_entries?select=*&order=sleep_date.desc"),
     ]);
@@ -1047,13 +911,12 @@ async function syncFromSupabase() {
     state = {
       ...state,
       items: mergeById(state.items, items),
-      moods: mergeById(state.moods, moodsList),
       focusSessions: mergeById(state.focusSessions, focusSessions),
       sleepEntries: mergeById(state.sleepEntries, sleepEntries),
     };
     persist();
     render();
-    setSyncStatus("Synced");
+    setSyncStatus("Synced with Supabase");
   } catch (error) {
     setSyncStatus(`Sync paused: ${error.message}`);
   }
@@ -1062,29 +925,36 @@ async function syncFromSupabase() {
 async function syncToSupabase() {
   if (!canSync()) return;
   setSyncStatus("Saving to Supabase...");
-  await Promise.all([
-    ...state.items.map((item) => upsertSupabase("life_flow_items", item)),
-    ...state.moods.map((mood) => upsertSupabase("life_flow_moods", mood, "owner_key,entry_date")),
-    ...state.focusSessions.map((session) => upsertSupabase("life_flow_focus_sessions", session)),
-    ...state.sleepEntries.map((entry) => upsertSupabase("life_flow_sleep_entries", entry, "owner_key,sleep_date")),
-  ]);
-  setSyncStatus("Saved");
+  try {
+    await Promise.all([
+      ...state.items.map((item) => upsertSupabase("life_flow_items", item)),
+      ...state.focusSessions.map((session) => upsertSupabase("life_flow_focus_sessions", session)),
+      ...state.sleepEntries.map((entry) => upsertSupabase("life_flow_sleep_entries", entry, "owner_key,sleep_date")),
+    ]);
+    setSyncStatus("Saved to Supabase");
+  } catch (error) {
+    setSyncStatus(`Sync paused: ${error.message}`);
+  }
 }
 
 async function importCalendar() {
   if (!settings.calendarUrl) return;
   try {
+    setSyncStatus("Importing Google Calendar...");
     const response = await fetch(`/api/calendar?url=${encodeURIComponent(settings.calendarUrl)}`);
     if (!response.ok) throw new Error("calendar unavailable");
     const icsText = await response.text();
     const imported = parseIcsEvents(icsText).map((item) => ({ ...item, owner_key: settings.ownerKey }));
-    const existingIds = new Set(state.items.map((item) => item.id));
-    const fresh = imported.filter((item) => !existingIds.has(item.id));
-    if (!fresh.length) return;
-    state.items = [...fresh, ...state.items];
-    persist();
-    render();
-    if (canSync()) await Promise.all(fresh.map((item) => upsertSupabase("life_flow_items", item)));
+    const existingIcs = new Set(state.items.filter((item) => item.source === "ics").map((item) => item.id));
+    const fresh = imported.filter((item) => !existingIcs.has(item.id));
+    if (fresh.length) {
+      const importedIds = new Set(imported.map((item) => item.id));
+      state.items = [...fresh, ...state.items.filter((item) => item.source !== "ics" || importedIds.has(item.id))];
+      persist();
+      render();
+      if (canSync()) await Promise.all(fresh.map((item) => upsertSupabase("life_flow_items", item)));
+    }
+    setSyncStatus(`Imported ${imported.length} calendar event${imported.length === 1 ? "" : "s"}`);
   } catch {
     setSyncStatus("Calendar import skipped");
   }
@@ -1123,7 +993,6 @@ async function supabaseFetch(path, options = {}) {
 }
 
 function canSync() {
-  // Security note: confirm Supabase RLS policies only allow rows whose owner_key matches the x-owner-key header.
   return Boolean(settings.supabaseUrl && settings.supabaseAnonKey && settings.ownerKey);
 }
 
@@ -1133,18 +1002,23 @@ function hydrateSettingsForm() {
   els.ownerKeyInput.value = settings.ownerKey;
   els.calendarUrlInput.value = settings.calendarUrl;
   els.plannerSubtitleInput.value = settings.plannerSubtitle || "Personal planner";
-  els.darkModeInput.checked = Boolean(settings.darkMode);
+  els.lightModeInput.checked = Boolean(settings.lightMode);
   els.sleepGoalInput.value = clampSleepGoal(settings.sleepGoalHours);
 }
 
 function setSyncStatus(message) {
   els.syncStatus.textContent = message;
   if (!els.syncBanner) return;
-  const isBusy = /syncing|saving|loading/i.test(message);
+  const isBusy = /syncing|saving|loading|importing/i.test(message);
   const isProblem = /paused|failed|unavailable|skipped/i.test(message);
   els.syncBanner.hidden = !isBusy && !isProblem;
   els.syncBanner.classList.toggle("error", isProblem);
   els.syncBannerText.textContent = message;
+  if (!isBusy && !isProblem) {
+    window.setTimeout(() => {
+      els.syncBanner.hidden = true;
+    }, 2500);
+  }
 }
 
 function itemsForDate(dateKey) {
@@ -1164,6 +1038,17 @@ function formatTime(value) {
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return "";
   return date.toLocaleTimeString("en", { hour: "numeric", minute: "2-digit" });
+}
+
+function formatTaskDate(dateKey) {
+  const date = new Date(`${dateKey}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return "";
+  const today = todayKey();
+  if (dateKey === today) return "Today";
+  const tomorrow = new Date(`${today}T00:00:00`);
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  if (dateKey === formatDateKey(tomorrow)) return "Tomorrow";
+  return date.toLocaleDateString("en", { month: "short", day: "numeric" });
 }
 
 function sortItems(a, b) {
@@ -1195,14 +1080,15 @@ function loadJson(key, fallback) {
 function ensureSettings(savedSettings) {
   const normalized = {
     ...savedSettings,
-    ownerKey: savedSettings.ownerKey || createOwnerKey(),
+    ownerKey: (savedSettings.ownerKey && savedSettings.ownerKey.trim()) || createOwnerKey(),
   };
   if (normalized.ownerKey !== savedSettings.ownerKey) saveJson(SETTINGS_KEY, normalized);
   return normalized;
 }
 
 function createOwnerKey() {
-  return `owner_${crypto.randomUUID ? crypto.randomUUID() : `${Date.now()}_${Math.random().toString(36).slice(2)}`}`;
+  if (globalThis.crypto?.randomUUID) return `owner_${globalThis.crypto.randomUUID()}`;
+  return `owner_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`;
 }
 
 function refreshDailyState(savedState) {
@@ -1229,7 +1115,7 @@ function ensureStarterTasks(savedState) {
 }
 
 function applySettings() {
-  document.body.classList.toggle("dark-mode", Boolean(settings.darkMode));
+  document.body.classList.toggle("light-mode", Boolean(settings.lightMode));
   els.sidebarSubtitle.textContent = settings.plannerSubtitle || "Personal planner";
 }
 
@@ -1243,7 +1129,7 @@ function toggleSecret(button) {
 function clampSleepGoal(value) {
   const goal = Number.parseFloat(value);
   if (!Number.isFinite(goal)) return 8;
-  return Math.min(14, Math.max(1, Math.round(goal * 2) / 2));
+  return Math.min(11, Math.max(1, Math.round(goal * 2) / 2));
 }
 
 function refreshIcons() {

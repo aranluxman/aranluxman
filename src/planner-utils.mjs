@@ -16,9 +16,9 @@ export function getGreeting(date = new Date()) {
 
 export function getGreetingEmoji(date = new Date()) {
   const hour = date.getHours();
-  if (hour < 12) return "\u2600\ufe0f";
-  if (hour < 18) return "\ud83c\udf24\ufe0f";
-  return "\ud83c\udf19";
+  if (hour < 12) return "☀️";
+  if (hour < 18) return "🌤️";
+  return "🌙";
 }
 
 export function formatDisplayDate(date = new Date()) {
@@ -120,10 +120,12 @@ export function parseIcsEvents(icsText) {
     .split("BEGIN:VEVENT")
     .slice(1)
     .flatMap((block) => {
-      const title = readIcsField(block, "SUMMARY") || "Calendar event";
-      const start = readIcsField(block, "DTSTART");
-      const end = readIcsField(block, "DTEND");
-      const rrule = readIcsField(block, "RRULE");
+      const body = block.split("END:VEVENT")[0] || block;
+      const title = readIcsField(body, "SUMMARY") || "Calendar event";
+      const uid = readIcsField(body, "UID");
+      const start = readIcsField(body, "DTSTART");
+      const end = readIcsField(body, "DTEND");
+      const rrule = readIcsField(body, "RRULE");
       const startDate = parseIcsDate(start);
       const endDate = parseIcsDate(end);
 
@@ -131,7 +133,7 @@ export function parseIcsEvents(icsText) {
 
       const durationMinutes = endDate ? Math.max(15, Math.round((endDate - startDate) / 60000)) : 30;
       const exclusions = new Set(
-        readIcsFields(block, "EXDATE")
+        readIcsFields(body, "EXDATE")
           .flatMap((value) => value.split(","))
           .map((value) => parseIcsDate(value))
           .filter(Boolean)
@@ -139,7 +141,7 @@ export function parseIcsEvents(icsText) {
       );
       const starts = rrule ? expandRecurrence(startDate, rrule).filter((date) => !exclusions.has(formatDateKey(date))) : [startDate];
 
-      return starts.map((instanceStart) => buildIcsItem({ start, title, instanceStart, durationMinutes }));
+      return starts.map((instanceStart) => buildIcsItem({ uid, start, title, instanceStart, durationMinutes }));
     })
     .filter(Boolean)
     .sort((a, b) => String(a.scheduled_at).localeCompare(String(b.scheduled_at)));
@@ -150,6 +152,12 @@ export function calculateSleepMinutes(sleptAt, wokeAt) {
   const woke = new Date(wokeAt);
   if (Number.isNaN(slept.getTime()) || Number.isNaN(woke.getTime())) return 0;
   return Math.max(0, Math.round((woke - slept) / 60000));
+}
+
+export const MAX_SLEEP_MINUTES = 11 * 60;
+
+export function isSleepDurationValid(minutes) {
+  return minutes > 0 && minutes <= MAX_SLEEP_MINUTES;
 }
 
 export function getSleepSummary(entries, goalMinutes = 480) {
@@ -192,7 +200,7 @@ export function countSessionsForDate(focusSessions, dateKey = todayKey()) {
 export function formatSleepDuration(minutes) {
   const hours = Math.floor(minutes / 60);
   const remainder = minutes % 60;
-  if (!minutes) return "\u2014";
+  if (!minutes) return "—";
   if (!remainder) return `${hours}h`;
   return `${hours}h ${remainder}m`;
 }
@@ -217,8 +225,11 @@ function addDays(dateKey, days) {
   return formatDateKey(date);
 }
 
-function buildIcsItem({ start, title, instanceStart, durationMinutes }) {
-  const key = `${start}-${title}-${instanceStart.toISOString()}`.replace(/[^a-z0-9-]/gi, "-").toLowerCase();
+function buildIcsItem({ uid, start, title, instanceStart, durationMinutes }) {
+  const baseKey = uid
+    ? `${uid}-${formatDateKey(instanceStart)}`
+    : `${start}-${title}-${instanceStart.toISOString()}`;
+  const key = baseKey.replace(/[^a-z0-9-]/gi, "-").toLowerCase();
   return {
     id: `ics-${key}`,
     kind: "calendar_event",
@@ -230,7 +241,7 @@ function buildIcsItem({ start, title, instanceStart, durationMinutes }) {
     scheduled_at: instanceStart.toISOString(),
     duration_minutes: durationMinutes,
     completed: false,
-    color: "#155a8a",
+    color: "#8b5cf6",
     source: "ics",
   };
 }

@@ -11,7 +11,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Playfair+Display:wght@600;700&display=swap"
       rel="stylesheet"
     />
     <link rel="stylesheet" href="/styles.css" />
@@ -274,8 +274,14 @@
             </aside>
             <section class="timer-card" aria-label="Pomodoro timer">
               <div class="timer-ring">
-                <strong id="timerText">25:00</strong>
-                <span>Pomodoro</span>
+                <svg class="timer-ring-progress" viewBox="0 0 220 220" aria-hidden="true">
+                  <circle class="timer-ring-track" cx="110" cy="110" r="100" />
+                  <circle class="timer-ring-fill" id="timerRingFill" cx="110" cy="110" r="100" />
+                </svg>
+                <div class="timer-ring-label">
+                  <strong id="timerText">25:00</strong>
+                  <span>Pomodoro</span>
+                </div>
               </div>
               <div class="timer-controls">
                 <button class="icon-button" id="resetTimerButton" type="button" aria-label="Reset" title="Reset"><i data-lucide="rotate-ccw"></i></button>

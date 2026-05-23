@@ -598,6 +598,14 @@ function renderTimer() {
   const minutes = Math.floor(timer.secondsLeft / 60);
   const seconds = timer.secondsLeft % 60;
   els.timerText.textContent = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+  const ring = document.getElementById("timerRingFill");
+  if (ring) {
+    const total = Math.max(1, timer.durationMinutes * 60);
+    const progress = Math.min(1, Math.max(0, timer.secondsLeft / total));
+    const circumference = 2 * Math.PI * 100;
+    ring.style.strokeDasharray = String(circumference);
+    ring.style.strokeDashoffset = String(circumference * (1 - progress));
+  }
   const playButton = document.getElementById("playTimerButton");
   playButton.innerHTML = timer.intervalId ? '<i data-lucide="pause"></i>' : '<i data-lucide="play"></i>';
   playButton.setAttribute("aria-label", timer.intervalId ? "Pause" : "Start");

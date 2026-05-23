@@ -138,7 +138,7 @@ let settings = ensureSettings(
     ownerKey: "",
     calendarUrl: "",
     sleepGoalHours: 8,
-    darkMode: false,
+    lightMode: false,
     plannerSubtitle: "Personal planner",
   }),
 );
@@ -240,7 +240,7 @@ function bindElements() {
     "supabaseAnonInput",
     "ownerKeyInput",
     "plannerSubtitleInput",
-    "darkModeInput",
+    "lightModeInput",
     "calendarUrlInput",
   ].forEach((id) => {
     els[id] = document.getElementById(id);
@@ -353,7 +353,7 @@ function wireEvents() {
       ownerKey: els.ownerKeyInput.value.trim() || settings.ownerKey || createOwnerKey(),
       calendarUrl: els.calendarUrlInput.value.trim(),
       plannerSubtitle: els.plannerSubtitleInput.value.trim() || "Personal planner",
-      darkMode: els.darkModeInput.checked,
+      lightMode: els.lightModeInput.checked,
       sleepGoalHours: clampSleepGoal(els.sleepGoalInput.value || settings.sleepGoalHours),
     };
     els.ownerKeyInput.value = settings.ownerKey;
@@ -519,7 +519,7 @@ function renderCalendar() {
           `,
         )
         .join("")
-    : `<div class="agenda-item"><strong>Open day</strong><div class="task-meta">Nothing scheduled.</div></div>`;
+    : `<div class="agenda-item empty"><strong>Open day</strong><div class="task-meta">Nothing scheduled.</div></div>`;
 }
 
 function renderSleep() {
@@ -1002,7 +1002,7 @@ function hydrateSettingsForm() {
   els.ownerKeyInput.value = settings.ownerKey;
   els.calendarUrlInput.value = settings.calendarUrl;
   els.plannerSubtitleInput.value = settings.plannerSubtitle || "Personal planner";
-  els.darkModeInput.checked = Boolean(settings.darkMode);
+  els.lightModeInput.checked = Boolean(settings.lightMode);
   els.sleepGoalInput.value = clampSleepGoal(settings.sleepGoalHours);
 }
 
@@ -1115,7 +1115,7 @@ function ensureStarterTasks(savedState) {
 }
 
 function applySettings() {
-  document.body.classList.toggle("dark-mode", Boolean(settings.darkMode));
+  document.body.classList.toggle("light-mode", Boolean(settings.lightMode));
   els.sidebarSubtitle.textContent = settings.plannerSubtitle || "Personal planner";
 }
 

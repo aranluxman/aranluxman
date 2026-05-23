@@ -86,12 +86,32 @@ test("parseIcsEvents extracts dated events safely", () => {
   assert.equal(events[0].kind, "calendar_event");
 });
 
+test("parseIcsEvents expands weekly recurring calendar events", () => {
+  const ics = [
+    "BEGIN:VCALENDAR",
+    "BEGIN:VEVENT",
+    "SUMMARY:Track practice",
+    "DTSTART:20260518T220000Z",
+    "DTEND:20260518T233000Z",
+    "RRULE:FREQ=WEEKLY;COUNT=3;BYDAY=MO,FR",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\n");
+
+  const events = parseIcsEvents(ics);
+
+  assert.deepEqual(
+    events.map((event) => event.due_date),
+    ["2026-05-18", "2026-05-22", "2026-05-25"],
+  );
+});
+
 test("getGreeting is date-aware", () => {
   assert.equal(getGreeting(new Date("2026-05-19T23:00:00")), "Good evening");
   assert.equal(getGreeting(new Date("2026-05-19T09:00:00")), "Good morning");
-  assert.equal(getGreetingEmoji(new Date("2026-05-19T09:00:00")), "☀️");
-  assert.equal(getGreetingEmoji(new Date("2026-05-19T14:00:00")), "🌤️");
-  assert.equal(getGreetingEmoji(new Date("2026-05-19T23:00:00")), "🌙");
+  assert.equal(getGreetingEmoji(new Date("2026-05-19T09:00:00")), "\u2600\ufe0f");
+  assert.equal(getGreetingEmoji(new Date("2026-05-19T14:00:00")), "\ud83c\udf24\ufe0f");
+  assert.equal(getGreetingEmoji(new Date("2026-05-19T23:00:00")), "\ud83c\udf19");
   assert.equal(formatDisplayDate(new Date("2026-05-21T09:00:00")), "Thursday, May 21");
   assert.notEqual(getHomeSubtitle(new Date("2026-05-19T09:00:00")), getHomeSubtitle(new Date("2026-05-20T09:00:00")));
 });

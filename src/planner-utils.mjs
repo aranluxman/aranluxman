@@ -112,60 +112,39 @@ export function filterItems(items, mode, dateKey = todayKey()) {
   );
 }
 
-export function parseIcsEvents(icsText, options = {}) {
+export function parseIcsEvents(icsText) {
   if (!icsText) return [];
 
-  const horizonDays = options.horizonDays ?? 365;
-  const lookbackDays = options.lookbackDays ?? 60;
-  const today = new Date();
-  const windowStart = new Date(today);
-  windowStart.setDate(today.getDate() - lookbackDays);
-  const windowEnd = new Date(today);
-  windowEnd.setDate(today.getDate() + horizonDays);
-
-  const unfolded = unfoldIcsLines(icsText);
-  const events = [];
-
-  unfolded
+  return icsText
+    .replace(/\r?\n[ \t]/g, "")
     .split("BEGIN:VEVENT")
     .slice(1)
-    .forEach((block) => {
+    .flatMap((block) => {
       const body = block.split("END:VEVENT")[0] || block;
       const title = readIcsField(body, "SUMMARY") || "Calendar event";
       const uid = readIcsField(body, "UID");
-      const startRaw = readIcsLineValue(body, "DTSTART");
-      const endRaw = readIcsLineValue(body, "DTEND");
+      const start = readIcsField(body, "DTSTART");
+      const end = readIcsField(body, "DTEND");
       const rrule = readIcsField(body, "RRULE");
-      const startDate = parseIcsDate(startRaw?.value, startRaw?.allDay);
-      const endDate = parseIcsDate(endRaw?.value, endRaw?.allDay);
+      const startDate = parseIcsDate(start);
+      const endDate = parseIcsDate(end);
 
-      if (!startDate) return;
-      const allDay = startRaw?.allDay;
-      const baseDuration = endDate ? Math.max(15, Math.round((endDate - startDate) / 60000)) : allDay ? 1440 : 60;
+      if (!startDate) return [];
 
-      const occurrences = expandRrule(startDate, rrule, windowStart, windowEnd);
-      occurrences.forEach((occurrence, index) => {
-        const id = uid
-          ? `ics-${slugify(uid)}-${formatDateKey(occurrence)}`
-          : `ics-${slugify(`${startRaw?.value || ""}-${title}-${index}`)}`;
-        events.push({
-          id,
-          kind: "calendar_event",
-          title: unescapeIcs(title),
-          notes: "",
-          category: "Calendar",
-          priority: "medium",
-          due_date: formatDateKey(occurrence),
-          scheduled_at: occurrence.toISOString(),
-          duration_minutes: baseDuration,
-          completed: false,
-          color: "#8b5cf6",
-          source: "ics",
-        });
-      });
-    });
+      const durationMinutes = endDate ? Math.max(15, Math.round((endDate - startDate) / 60000)) : 30;
+      const exclusions = new Set(
+        readIcsFields(body, "EXDATE")
+          .flatMap((value) => value.split(","))
+          .map((value) => parseIcsDate(value))
+          .filter(Boolean)
+          .map((date) => formatDateKey(date)),
+      );
+      const starts = rrule ? expandRecurrence(startDate, rrule).filter((date) => !exclusions.has(formatDateKey(date))) : [startDate];
 
-  return events;
+      return starts.map((instanceStart) => buildIcsItem({ uid, start, title, instanceStart, durationMinutes }));
+    })
+    .filter(Boolean)
+    .sort((a, b) => String(a.scheduled_at).localeCompare(String(b.scheduled_at)));
 }
 
 export function calculateSleepMinutes(sleptAt, wokeAt) {
@@ -246,97 +225,122 @@ function addDays(dateKey, days) {
   return formatDateKey(date);
 }
 
-function unfoldIcsLines(icsText) {
-  return icsText.replace(/\r?\n[ \t]/g, "");
+function buildIcsItem({ uid, start, title, instanceStart, durationMinutes }) {
+  const baseKey = uid
+    ? `${uid}-${formatDateKey(instanceStart)}`
+    : `${start}-${title}-${instanceStart.toISOString()}`;
+  const key = baseKey.replace(/[^a-z0-9-]/gi, "-").toLowerCase();
+  return {
+    id: `ics-${key}`,
+    kind: "calendar_event",
+    title: unescapeIcs(title),
+    notes: "",
+    category: "Calendar",
+    priority: "medium",
+    due_date: formatDateKey(instanceStart),
+    scheduled_at: instanceStart.toISOString(),
+    duration_minutes: durationMinutes,
+    completed: false,
+    color: "#8b5cf6",
+    source: "ics",
+  };
+}
+
+function expandRecurrence(startDate, rrule) {
+  const rule = parseRRule(rrule);
+  const interval = Number.parseInt(rule.INTERVAL || "1", 10) || 1;
+  const count = Math.min(Number.parseInt(rule.COUNT || "200", 10) || 200, 200);
+  const until = rule.UNTIL ? parseIcsDate(rule.UNTIL) : addMonthsDate(startDate, 12);
+  const dates = [];
+  const pushDate = (date) => {
+    if (date >= startDate && date <= until && dates.length < count) dates.push(new Date(date));
+  };
+
+  if (rule.FREQ === "DAILY") {
+    for (const date = new Date(startDate); dates.length < count && date <= until; date.setDate(date.getDate() + interval)) {
+      pushDate(date);
+    }
+    return dates;
+  }
+
+  if (rule.FREQ === "MONTHLY") {
+    for (const date = new Date(startDate); dates.length < count && date <= until; date.setMonth(date.getMonth() + interval)) {
+      pushDate(date);
+    }
+    return dates;
+  }
+
+  if (rule.FREQ === "WEEKLY") {
+    const byDays = (rule.BYDAY || weekdayCode(startDate)).split(",").map((day) => day.trim()).filter(Boolean);
+    for (const weekStart = startOfWeek(startDate); dates.length < count && weekStart <= until; weekStart.setDate(weekStart.getDate() + interval * 7)) {
+      byDays.forEach((dayCode) => {
+        const date = new Date(weekStart);
+        date.setDate(weekStart.getDate() + weekdayIndex(dayCode));
+        date.setHours(startDate.getHours(), startDate.getMinutes(), startDate.getSeconds(), startDate.getMilliseconds());
+        pushDate(date);
+      });
+    }
+    return dates.sort((a, b) => a - b).slice(0, count);
+  }
+
+  return [startDate];
+}
+
+function parseRRule(rrule) {
+  return Object.fromEntries(
+    rrule
+      .split(";")
+      .map((part) => part.split("="))
+      .filter(([key, value]) => key && value),
+  );
+}
+
+function startOfWeek(date) {
+  const result = new Date(date);
+  result.setDate(result.getDate() - result.getDay());
+  result.setHours(date.getHours(), date.getMinutes(), date.getSeconds(), date.getMilliseconds());
+  return result;
+}
+
+function addMonthsDate(date, months) {
+  const result = new Date(date);
+  result.setMonth(result.getMonth() + months);
+  return result;
+}
+
+function weekdayCode(date) {
+  return ["SU", "MO", "TU", "WE", "TH", "FR", "SA"][date.getDay()];
+}
+
+function weekdayIndex(dayCode) {
+  return { SU: 0, MO: 1, TU: 2, WE: 3, TH: 4, FR: 5, SA: 6 }[dayCode.slice(-2)] ?? 0;
 }
 
 function readIcsField(block, name) {
-  const line = readIcsRawLine(block, name);
+  const line = block
+    .split(/\r?\n/)
+    .find((candidate) => candidate.startsWith(`${name}:`) || candidate.startsWith(`${name};`));
   if (!line) return "";
   return line.slice(line.indexOf(":") + 1).trim();
 }
 
-function readIcsRawLine(block, name) {
+function readIcsFields(block, name) {
   return block
     .split(/\r?\n/)
-    .find((candidate) => candidate.startsWith(`${name}:`) || candidate.startsWith(`${name};`));
+    .filter((candidate) => candidate.startsWith(`${name}:`) || candidate.startsWith(`${name};`))
+    .map((line) => line.slice(line.indexOf(":") + 1).trim());
 }
 
-function readIcsLineValue(block, name) {
-  const line = readIcsRawLine(block, name);
-  if (!line) return null;
-  const colonIndex = line.indexOf(":");
-  if (colonIndex === -1) return null;
-  const params = line.slice(0, colonIndex);
-  const value = line.slice(colonIndex + 1).trim();
-  const allDay = /VALUE=DATE(?:[;:]|$)/i.test(params) || /^\d{8}$/.test(value);
-  return { value, params, allDay };
-}
-
-function parseIcsDate(value, allDay) {
+function parseIcsDate(value) {
   if (!value) return null;
   if (/^\d{8}$/.test(value)) {
     return new Date(`${value.slice(0, 4)}-${value.slice(4, 6)}-${value.slice(6, 8)}T00:00:00`);
   }
-  const match = value.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})(Z)?$/);
+  const match = value.match(/^(\d{4})(\d{2})(\d{2})T(\d{2})(\d{2})(\d{2})Z?$/);
   if (!match) return null;
-  const [, year, month, day, hour, minute, second, zulu] = match;
-  const iso = `${year}-${month}-${day}T${hour}:${minute}:${second}${zulu ? "Z" : ""}`;
-  void allDay;
+  const [, year, month, day, hour, minute, second] = match;
+  const iso = `${year}-${month}-${day}T${hour}:${minute}:${second}${value.endsWith("Z") ? "Z" : ""}`;
   return new Date(iso);
-}
-
-function expandRrule(startDate, rrule, windowStart, windowEnd) {
-  if (!rrule) {
-    if (startDate >= windowStart && startDate <= windowEnd) return [startDate];
-    return [];
-  }
-
-  const rules = Object.fromEntries(
-    rrule.split(";").map((pair) => {
-      const [key, ...rest] = pair.split("=");
-      return [key.toUpperCase(), rest.join("=")];
-    }),
-  );
-
-  const freq = (rules.FREQ || "").toUpperCase();
-  const interval = Math.max(1, Number.parseInt(rules.INTERVAL || "1", 10));
-  const count = rules.COUNT ? Number.parseInt(rules.COUNT, 10) : Infinity;
-  const until = rules.UNTIL ? parseIcsDate(rules.UNTIL) : null;
-  const limit = Math.min(count, 500);
-  const stop = until && until < windowEnd ? until : windowEnd;
-  const occurrences = [];
-  const cursor = new Date(startDate);
-
-  const step = (date) => {
-    if (freq === "DAILY") date.setDate(date.getDate() + interval);
-    else if (freq === "WEEKLY") date.setDate(date.getDate() + 7 * interval);
-    else if (freq === "MONTHLY") date.setMonth(date.getMonth() + interval);
-    else if (freq === "YEARLY") date.setFullYear(date.getFullYear() + interval);
-    else date.setFullYear(date.getFullYear() + 100);
-  };
-
-  let safety = 0;
-  while (cursor <= stop && occurrences.length < limit && safety < 600) {
-    safety += 1;
-    if (cursor >= windowStart) {
-      occurrences.push(new Date(cursor));
-    }
-    step(cursor);
-    if (!freq || freq === "ONCE") break;
-  }
-  if (!occurrences.length && startDate >= windowStart && startDate <= windowEnd) {
-    occurrences.push(startDate);
-  }
-  return occurrences;
-}
-
-function slugify(value) {
-  return String(value)
-    .replace(/[^a-z0-9-]/gi, "-")
-    .replace(/-+/g, "-")
-    .toLowerCase()
-    .slice(0, 80);
 }
 
 function unescapeIcs(value) {

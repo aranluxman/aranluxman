@@ -111,8 +111,27 @@ const quotes = [
   "Win the next ten minutes.",
 ];
 
+const coachSuggestions = [
+  "Start with {task}. Put 25 minutes on the clock and only worry about the first step.",
+  "{task} is the move. Clear your desk, start focus mode, and make one visible piece of progress.",
+  "Your best next move is {task}. Keep it simple: open the work, set the timer, and begin.",
+  "Pick {task} before the day gets noisy. One focused block is enough to change the pace.",
+  "Do {task} first, then reward yourself with a short break. Clean effort, clean reset.",
+];
+
+const arcadeBoosts = [
+  "Quest: finish one task before opening a distraction.",
+  "Combo move: 25 minutes of focus, then mark one task done.",
+  "Power-up: write the first sentence or first line, even if it is rough.",
+  "Boss round: do the task you keep avoiding for only 10 minutes.",
+  "Clean streak: finish something small, then tidy the next action.",
+  "Focus sprint: start the timer and leave your phone across the room.",
+  "Planner bonus: add a due date to anything that feels vague.",
+  "Sleep bonus: protect bedtime tonight so tomorrow starts easier.",
+];
+
 let state = refreshDailyState(ensureStarterTasks(loadJson(STORE_KEY, defaultState)));
-let settings = ensureOwnerKey(
+let settings = ensureSettings(
   loadJson(SETTINGS_KEY, {
     supabaseUrl: "https://hcvjiveloioftozvnbhe.supabase.co",
     supabaseAnonKey: "sb_publishable_DGZFZUhnMLgFpdYzcHWRmw_wqOPu2Aq",
@@ -129,6 +148,8 @@ let timer = {
   durationMinutes: 25,
   intervalId: null,
 };
+let audioContext;
+let arcadeBoostOffset = 0;
 
 const els = {};
 
@@ -139,7 +160,7 @@ document.addEventListener("DOMContentLoaded", () => {
   applySettings();
   render();
   const initialView = new URLSearchParams(window.location.search).get("view");
-  if (["home", "tasks", "calendar", "sleep", "focus"].includes(initialView)) setView(initialView);
+  if (["home", "tasks", "calendar", "sleep", "focus", "arcade"].includes(initialView)) setView(initialView);
   persist();
   void syncFromSupabase();
   void importCalendar();
@@ -151,6 +172,8 @@ function bindElements() {
     "currentDateText",
     "freshLine",
     "quoteText",
+    "coachText",
+    "coachButton",
     "doneTodayStat",
     "openTasksStat",
     "streakStat",
@@ -170,6 +193,9 @@ function bindElements() {
     "monthLabel",
     "agendaTitle",
     "agendaList",
+    "arcadeCoins",
+    "arcadeBoost",
+    "arcadeBoostButton",
     "focusTaskSelect",
     "sessionsTodayText",
     "timerText",
@@ -193,6 +219,8 @@ function bindElements() {
     "composeForm",
     "composeTitle",
     "editingItemIdInput",
+    "advancedFields",
+    "toggleAdvancedButton",
     "itemTitleInput",
     "itemKindInput",
     "itemDateInput",
@@ -237,12 +265,21 @@ function wireEvents() {
   document.getElementById("nextMonthButton").addEventListener("click", () => moveMonth(1));
   els.todayButton.addEventListener("click", goToToday);
   document.getElementById("nextQuoteButton").addEventListener("click", nextQuote);
+  els.coachButton.addEventListener("click", renderCoach);
+  els.arcadeBoostButton.addEventListener("click", () => {
+    arcadeBoostOffset += 1;
+    renderArcadeBoost();
+  });
   document.getElementById("playTimerButton").addEventListener("click", toggleTimer);
   document.getElementById("resetTimerButton").addEventListener("click", resetTimer);
   document.getElementById("finishTimerButton").addEventListener("click", finishFocusSession);
   els.settingsButton.addEventListener("click", () => els.settingsDialog.showModal());
   els.syncButton.addEventListener("click", () => syncAll());
   els.addSleepButton.addEventListener("click", openSleepDialog);
+  els.toggleAdvancedButton.addEventListener("click", () => setAdvancedFields(els.advancedFields.hidden));
+  els.itemKindInput.addEventListener("change", () => {
+    if (els.itemKindInput.value === "calendar_event") setAdvancedFields(true);
+  });
   els.sleepGoalInput.addEventListener("change", () => {
     settings.sleepGoalHours = clampSleepGoal(els.sleepGoalInput.value);
     els.sleepGoalInput.value = settings.sleepGoalHours;
@@ -313,7 +350,7 @@ function wireEvents() {
     settings = {
       supabaseUrl: els.supabaseUrlInput.value.trim(),
       supabaseAnonKey: els.supabaseAnonInput.value.trim(),
-      ownerKey: els.ownerKeyInput.value.trim() || generateOwnerKey(),
+      ownerKey: els.ownerKeyInput.value.trim() || settings.ownerKey || createOwnerKey(),
       calendarUrl: els.calendarUrlInput.value.trim(),
       plannerSubtitle: els.plannerSubtitleInput.value.trim() || "Personal planner",
       darkMode: els.darkModeInput.checked,
@@ -329,11 +366,13 @@ function wireEvents() {
 
 function render() {
   renderHome();
+  renderCoach();
   renderStats();
   renderTasks();
   renderCalendar();
   renderSleep();
   renderFocusTasks();
+  renderArcade();
   renderTimer();
   refreshIcons();
 }
@@ -346,6 +385,20 @@ function renderHome() {
   els.quoteText.textContent = quotes[date.getDate() % quotes.length];
 }
 
+function renderCoach() {
+  const today = todayKey();
+  const nextTask = getNextOpenTask(today);
+  const taskTitle = nextTask?.title || "one small task";
+  const sessions = countSessionsForDate(state.focusSessions, today);
+  const sleepSummary = getSleepSummary(state.sleepEntries, settings.sleepGoalHours * 60);
+  const template = coachSuggestions[(new Date().getDate() + sessions) % coachSuggestions.length];
+  const sleepLine =
+    sleepSummary.averageMinutes && sleepSummary.averageMinutes < sleepSummary.goalMinutes
+      ? ` Your sleep average is ${formatSleepDuration(sleepSummary.averageMinutes)}, so keep tonight calmer.`
+      : "";
+  els.coachText.textContent = `${template.replace("{task}", taskTitle)}${sleepLine}`;
+}
+
 function renderStats() {
   const today = todayKey();
   const stats = calculateStats(state.items, state.focusSessions, today);
@@ -353,6 +406,22 @@ function renderStats() {
   els.openTasksStat.textContent = stats.openTasks;
   els.streakStat.textContent = stats.streakDays ? String(stats.streakDays) : "—";
   els.coinsStat.textContent = stats.coins;
+}
+
+function renderArcade() {
+  const stats = calculateStats(state.items, state.focusSessions, todayKey());
+  els.arcadeCoins.textContent = String(stats.coins);
+  renderArcadeBoost();
+}
+
+function renderArcadeBoost() {
+  const today = todayKey();
+  const stats = calculateStats(state.items, state.focusSessions, today);
+  const completedToday = state.items.filter((item) => item.completed && item.due_date === today).length;
+  const index =
+    (stats.coins + completedToday + countSessionsForDate(state.focusSessions, today) + arcadeBoostOffset) %
+    arcadeBoosts.length;
+  els.arcadeBoost.textContent = arcadeBoosts[index];
 }
 
 function renderTasks() {
@@ -537,13 +606,23 @@ function renderTimer() {
 }
 
 function setView(view) {
-  document.querySelectorAll(".nav-item").forEach((button) => button.classList.toggle("active", button.dataset.view === view));
-  const current = document.querySelector(".view.active");
-  const next = document.getElementById(`${view}View`);
-  if (current === next) return;
-  if (current) current.classList.remove("active");
-  next.classList.add("active");
-  refreshIcons();
+  const switchView = () => {
+    document.querySelectorAll(".nav-item").forEach((button) => button.classList.toggle("active", button.dataset.view === view));
+    const current = document.querySelector(".view.active");
+    const next = document.getElementById(`${view}View`);
+    if (!next) return;
+    if (current === next) return;
+    if (current) current.classList.remove("active");
+    next.classList.add("active");
+    refreshIcons();
+  };
+
+  if (document.startViewTransition) {
+    document.startViewTransition(switchView);
+    return;
+  }
+
+  switchView();
 }
 
 function openCompose(kind, item = null) {
@@ -558,27 +637,38 @@ function openCompose(kind, item = null) {
   els.itemNotesInput.value = item?.notes || "";
   els.composeTitle.textContent =
     item ? "Edit item" : effectiveKind === "long_term" ? "Add long-term to-do" : effectiveKind === "calendar_event" ? "Add calendar item" : "Add daily task";
+  setAdvancedFields(Boolean(item || effectiveKind === "calendar_event"));
   els.composeDialog.showModal();
   els.itemTitleInput.focus();
+}
+
+function setAdvancedFields(show) {
+  els.advancedFields.hidden = !show;
+  document.querySelectorAll("[data-advanced-field]").forEach((field) => {
+    field.hidden = !show;
+  });
+  els.toggleAdvancedButton.textContent = show ? "Less options" : "More options";
+  els.toggleAdvancedButton.setAttribute("aria-expanded", String(show));
 }
 
 function saveQuickTask() {
   const title = els.quickTaskInput.value.trim();
   if (!title) return;
   const expanded = els.quickTaskExtra.classList.contains("open");
+  const category = expanded ? els.quickTaskCategory.value : "Personal";
   const item = {
     id: crypto.randomUUID(),
     owner_key: settings.ownerKey,
     kind: "daily_task",
     title,
     notes: expanded ? els.quickTaskNotes.value.trim() : "",
-    category: expanded ? els.quickTaskCategory.value : "Personal",
+    category,
     priority: expanded ? els.quickTaskPriority.value : "medium",
     due_date: expanded ? (els.quickTaskDate.value || todayKey()) : todayKey(),
     scheduled_at: null,
     duration_minutes: 30,
     completed: false,
-    color: colorFor(expanded ? els.quickTaskCategory.value : "Personal"),
+    color: colorFor(category),
     source: "manual",
     created_at: new Date().toISOString(),
     updated_at: new Date().toISOString(),
@@ -755,6 +845,8 @@ function finishFocusSession() {
   persist();
   renderStats();
   renderFocusTasks();
+  renderCoach();
+  renderArcade();
   renderTimer();
   void upsertSupabase("life_flow_focus_sessions", session);
 }
@@ -763,8 +855,6 @@ function stopTimer() {
   if (timer.intervalId) window.clearInterval(timer.intervalId);
   timer.intervalId = null;
 }
-
-let audioContext;
 
 async function playAlarm() {
   try {
@@ -850,7 +940,8 @@ async function importCalendar() {
     const existingIcs = new Set(state.items.filter((item) => item.source === "ics").map((item) => item.id));
     const fresh = imported.filter((item) => !existingIcs.has(item.id));
     if (fresh.length) {
-      state.items = [...fresh, ...state.items.filter((item) => item.source !== "ics" || imported.some((candidate) => candidate.id === item.id))];
+      const importedIds = new Set(imported.map((item) => item.id));
+      state.items = [...fresh, ...state.items.filter((item) => item.source !== "ics" || importedIds.has(item.id))];
       persist();
       render();
       if (canSync()) await Promise.all(fresh.map((item) => upsertSupabase("life_flow_items", item)));
@@ -887,9 +978,10 @@ async function supabaseFetch(path, options = {}) {
       ...(options.headers || {}),
     },
   });
-  if (!response.ok) throw new Error(await response.text());
-  if (response.status === 204) return null;
-  return response.json();
+  const text = await response.text();
+  if (!response.ok) throw new Error(text || response.statusText);
+  if (!text) return null;
+  return JSON.parse(text);
 }
 
 function canSync() {
@@ -923,6 +1015,15 @@ function setSyncStatus(message) {
 
 function itemsForDate(dateKey) {
   return state.items.filter((item) => item.due_date === dateKey || String(item.scheduled_at || "").slice(0, 10) === dateKey);
+}
+
+function getNextOpenTask(dateKey) {
+  return (
+    filterItems(state.items, "today", dateKey).sort(sortItems)[0] ||
+    state.items
+      .filter((item) => !item.completed && (item.kind === "daily_task" || item.kind === "long_term"))
+      .sort(sortItems)[0]
+  );
 }
 
 function formatTime(value) {
@@ -968,6 +1069,20 @@ function loadJson(key, fallback) {
   }
 }
 
+function ensureSettings(savedSettings) {
+  const normalized = {
+    ...savedSettings,
+    ownerKey: (savedSettings.ownerKey && savedSettings.ownerKey.trim()) || createOwnerKey(),
+  };
+  if (normalized.ownerKey !== savedSettings.ownerKey) saveJson(SETTINGS_KEY, normalized);
+  return normalized;
+}
+
+function createOwnerKey() {
+  if (globalThis.crypto?.randomUUID) return `owner_${globalThis.crypto.randomUUID()}`;
+  return `owner_${Date.now().toString(36)}_${Math.random().toString(36).slice(2)}`;
+}
+
 function refreshDailyState(savedState) {
   const today = todayKey();
   return {
@@ -989,18 +1104,6 @@ function ensureStarterTasks(savedState) {
     ],
     starterTasksSeeded: true,
   };
-}
-
-function ensureOwnerKey(loadedSettings) {
-  if (loadedSettings.ownerKey && loadedSettings.ownerKey.trim()) return loadedSettings;
-  const next = { ...loadedSettings, ownerKey: generateOwnerKey() };
-  saveJson(SETTINGS_KEY, next);
-  return next;
-}
-
-function generateOwnerKey() {
-  if (globalThis.crypto?.randomUUID) return `owner-${globalThis.crypto.randomUUID()}`;
-  return `owner-${Math.random().toString(36).slice(2)}-${Date.now().toString(36)}`;
 }
 
 function applySettings() {

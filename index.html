@@ -34,6 +34,7 @@
           <button class="nav-item" data-view="calendar" type="button"><i data-lucide="calendar-days"></i><span>Calendar</span></button>
           <button class="nav-item" data-view="sleep" type="button"><i data-lucide="moon"></i><span>Sleep</span></button>
           <button class="nav-item" data-view="focus" type="button"><i data-lucide="timer"></i><span>Focus</span></button>
+          <button class="nav-item" data-view="arcade" type="button"><i data-lucide="gamepad-2"></i><span>Arcade</span></button>
         </nav>
         <button class="ghost-button" id="settingsButton" type="button"><i data-lucide="settings"></i><span>Settings</span></button>
       </aside>
@@ -57,6 +58,35 @@
           <section class="quote-card" aria-label="Motivational quote">
             <p id="quoteText">Small steps count. Show up once, then again.</p>
             <button class="icon-button" id="nextQuoteButton" type="button" aria-label="New quote" title="New quote"><i data-lucide="refresh-cw"></i></button>
+          </section>
+
+          <section class="coach-card glass-card" aria-labelledby="coachTitle">
+            <div>
+              <h2 id="coachTitle">AI coach</h2>
+              <p id="coachText">Pick one task, start a timer, and make the next move obvious.</p>
+            </div>
+            <button class="ghost-button compact" id="coachButton" type="button" title="Suggest next move"><i data-lucide="sparkles"></i><span>Suggest</span></button>
+          </section>
+
+          <section class="reminder-gallery" aria-labelledby="remindersTitle">
+            <div class="card-heading">
+              <h2 id="remindersTitle">People to remember</h2>
+              <span>Keep the why close.</span>
+            </div>
+            <div class="photo-rail">
+              <figure>
+                <img src="/assets/reminders/family-birthday.jpg" alt="Family birthday reminder" />
+                <figcaption>Family first</figcaption>
+              </figure>
+              <figure>
+                <img src="/assets/reminders/reminder-1.jpg" alt="Family meal reminder" />
+                <figcaption>Good moments</figcaption>
+              </figure>
+              <figure>
+                <img src="/assets/reminders/reminder-2.jpg" alt="Family trip reminder" />
+                <figcaption>Work for this</figcaption>
+              </figure>
+            </div>
           </section>
 
           <section class="stats-grid" aria-label="Progress stats">
@@ -94,7 +124,7 @@
               <button class="quick-task-expand" type="button" id="quickTaskExpandButton" aria-expanded="false">
                 <i data-lucide="sliders-horizontal"></i><span>More</span>
               </button>
-              <button type="submit"><i data-lucide="plus"></i></button>
+              <button type="submit" aria-label="Add task"><i data-lucide="plus"></i></button>
             </div>
             <div class="quick-task-extra" id="quickTaskExtra" hidden>
               <label>
@@ -153,7 +183,44 @@
           <div class="calendar-grid" id="calendarGrid"></div>
           <section class="day-agenda" aria-labelledby="agendaTitle">
             <h2 id="agendaTitle">Today</h2>
+            <p class="section-subtitle" id="agendaHint">Your selected day, grouped like a planner.</p>
             <div id="agendaList"></div>
+          </section>
+        </section>
+
+        <section class="view" id="arcadeView" aria-labelledby="arcadeTitle">
+          <div class="section-heading">
+            <div>
+              <h1 id="arcadeTitle">Arcade</h1>
+              <p class="section-subtitle">Earn coins by finishing real work.</p>
+            </div>
+          </div>
+          <section class="arcade-grid">
+            <article class="arcade-card">
+              <span class="arcade-icon"><i data-lucide="gamepad-2"></i></span>
+              <h2>Focus Quest</h2>
+              <p>Complete one Pomodoro to unlock a reward boost.</p>
+              <button class="primary-button" type="button" data-view="focus">Start focus</button>
+            </article>
+            <article class="arcade-card">
+              <span class="arcade-icon"><i data-lucide="trophy"></i></span>
+              <h2>Coins</h2>
+              <strong id="arcadeCoins">0</strong>
+              <p>Tasks and focus sessions add coins automatically.</p>
+            </article>
+            <article class="arcade-card">
+              <span class="arcade-icon"><i data-lucide="brain"></i></span>
+              <h2>Daily Boost</h2>
+              <p id="arcadeBoost">Start with the smallest task that still matters.</p>
+              <button class="ghost-button compact" id="arcadeBoostButton" type="button">New boost</button>
+            </article>
+            <article class="arcade-card arcade-photo-card">
+              <img src="/assets/reminders/family-birthday.jpg" alt="Family reminder" />
+              <div>
+                <h2>Reward reminder</h2>
+                <p>Finish the work so you can be fully present for moments like this.</p>
+              </div>
+            </article>
           </section>
         </section>
 
@@ -239,9 +306,10 @@
         <input id="editingItemIdInput" type="hidden" />
         <label>
           Title
-          <input id="itemTitleInput" name="title" required maxlength="160" />
+          <input id="itemTitleInput" name="title" required maxlength="160" placeholder="Write the task..." />
         </label>
-        <div class="form-grid">
+        <button class="ghost-button compact more-options-button" id="toggleAdvancedButton" type="button" aria-expanded="false">More options</button>
+        <div class="form-grid advanced-fields" id="advancedFields" hidden>
           <label>
             Type
             <select id="itemKindInput" name="kind">
@@ -273,7 +341,7 @@
             </select>
           </label>
         </div>
-        <label>
+        <label class="advanced-fields" data-advanced-field hidden>
           Notes
           <textarea id="itemNotesInput" name="notes" rows="3"></textarea>
         </label>
@@ -287,7 +355,7 @@
           <h2>Add sleep</h2>
           <button class="icon-button" value="cancel" type="button" id="closeSleepButton" aria-label="Close"><i data-lucide="x"></i></button>
         </div>
-        <p class="form-error" id="sleepError" hidden></p>
+        <p class="form-error" id="sleepError" role="alert" hidden>Not valid. Sleep must be 11 hours or less.</p>
         <label>
           Date
           <input id="sleepDateInput" name="sleep_date" type="date" required />

@@ -22,6 +22,7 @@ import {
 
 const STORE_KEY = "aran-life-flow-state";
 const SETTINGS_KEY = "aran-life-flow-settings";
+const legacySharedIds = new Set(["0b7c7939-4a28-4d4e-8e96-b4d3a78ff101", "f47ba22f-b0db-4d3d-853d-a3091caaaf20"]);
 const categoryColors = {
   School: "#3e9cff",
   "Track & Field": "#ff9738",
@@ -151,14 +152,14 @@ const defaultSettings = {
   trackGoal: 3,
   darkMode: true,
 };
-const recurringSeeds = [
-  createCalendarSeed("70aee203-a751-4baf-8b52-20861e797201", "Track Training", "Track & Field", "2026-01-01", "15:30", "17:30", [1, 3, 5]),
-  createCalendarSeed("70aee203-a751-4baf-8b52-20861e797202", "YMCA - Basketball & Volleyball Coaching", "YMCA", "2026-01-01", "10:00", "12:00", [6]),
-  createCalendarSeed("70aee203-a751-4baf-8b52-20861e797203", "Duke of Ed Log Entry", "Duke of Ed", "2026-01-01", "", "", [0]),
+const recurringTemplates = [
+  ["seed-track", "Track Training", "Track & Field", "2026-01-01", "15:30", "17:30", [1, 3, 5]],
+  ["seed-ymca", "YMCA - Basketball & Volleyball Coaching", "YMCA", "2026-01-01", "10:00", "12:00", [6]],
+  ["seed-duke", "Duke of Ed Log Entry", "Duke of Ed", "2026-01-01", "", "", [0]],
 ];
 
-let state = normalizeState(loadJson(STORE_KEY, defaultState));
 let settings = normalizeSettings(loadJson(SETTINGS_KEY, defaultSettings));
+let state = normalizeState(loadJson(STORE_KEY, defaultState));
 let timer = { secondsLeft: 25 * 60, durationMinutes: 25, intervalId: null, isBreak: false };
 let activeSound = "";
 let audioContext;
@@ -268,6 +269,7 @@ function wireEvents() {
     saveJson(SETTINGS_KEY, settings);
     renderSleep();
     renderStats();
+    void upsertAppState();
   });
   els.focusTaskSelect.addEventListener("change", () => {
     state.focusedTaskId = els.focusTaskSelect.value;
@@ -1053,7 +1055,10 @@ function saveSettings() {
   applySettings();
   els.settingsDialog.close();
   render();
-  void syncAll();
+  void (async () => {
+    await importCalendar();
+    await syncToSupabase();
+  })();
 }
 
 function applySettings() {
@@ -1094,9 +1099,6 @@ async function syncFromSupabase() {
       supabaseFetch("life_flow_sleep_entries?select=*&order=sleep_date.desc"),
       supabaseFetch("life_flow_app_state?select=*"),
     ]);
-    const canonicalSeedIds = new Set(recurringSeeds.map((seed) => seed.id));
-    const staleSeeds = (items || []).filter((item) => item.source === "seed" && !canonicalSeedIds.has(item.id));
-    await Promise.all(staleSeeds.map((item) => deleteSupabaseItem(item.id)));
     state.items = seedRecurring(mergeById(state.items, items || []));
     state.focusSessions = mergeById(state.focusSessions, focus || []);
     state.sleepEntries = mergeById(state.sleepEntries, sleep || []);
@@ -1108,27 +1110,28 @@ async function syncFromSupabase() {
       state.memoryNotes = { ...state.memoryNotes, ...(saved.memory_notes || {}) };
       state.reactionAttempts = saved.reaction_attempts || state.reactionAttempts;
       state.goalReminder = saved.goal_reminder || state.goalReminder;
+      settings = normalizeSettings({ ...settings, ...(saved.preferences || {}) });
+      hydrateSettingsForm();
+      applySettings();
     }
     persist();
     render();
     setSyncStatus("Synced with Supabase");
   } catch (error) {
-    setSyncStatus(`Sync paused: ${error.message}`);
+    setSyncStatus(`Loading paused: ${error.message}`);
   }
 }
 
 async function syncToSupabase() {
   if (!canSync()) return;
   try {
-    await Promise.all([
-      ...state.items.map((item) => upsertSupabase("life_flow_items", item)),
-      ...state.focusSessions.map((session) => upsertSupabase("life_flow_focus_sessions", session)),
-      ...state.sleepEntries.map((entry) => upsertSupabase("life_flow_sleep_entries", entry, "owner_key,sleep_date")),
-      upsertAppState(),
-    ]);
+    for (const item of state.items) await upsertItemSafely(item);
+    for (const session of state.focusSessions) await upsertSupabase("life_flow_focus_sessions", session);
+    for (const entry of state.sleepEntries) await upsertSupabase("life_flow_sleep_entries", entry, "owner_key,sleep_date");
+    await upsertAppState();
     setSyncStatus("Synced with Supabase");
   } catch (error) {
-    setSyncStatus(`Sync paused: ${error.message}`);
+    setSyncStatus(`Saving paused: ${error.message}`);
   }
 }
 
@@ -1137,7 +1140,7 @@ async function importCalendar() {
   try {
     const response = await fetch(`/api/calendar?url=${encodeURIComponent(settings.calendarUrl)}`);
     if (!response.ok) throw new Error("Calendar unavailable");
-    const imported = parseIcsEvents(await response.text()).map((event) => ({ ...event, id: stableUuid(event.id), owner_key: settings.ownerKey }));
+    const imported = parseIcsEvents(await response.text()).map((event) => ({ ...event, id: stableUuid(`${settings.ownerKey}:${event.id}`), owner_key: settings.ownerKey }));
     state.items = mergeById(state.items, imported);
     persist();
     render();
@@ -1154,6 +1157,23 @@ async function upsertSupabase(table, row, onConflict = "id") {
   });
 }
 
+async function upsertItemSafely(item) {
+  try {
+    return await upsertSupabase("life_flow_items", item);
+  } catch (error) {
+    if (!String(error.message).includes("42501")) throw error;
+    const previousId = item.id;
+    item.id = crypto.randomUUID();
+    if (state.focusedTaskId === previousId) state.focusedTaskId = item.id;
+    persist();
+    try {
+      return await upsertSupabase("life_flow_items", item);
+    } catch (retryError) {
+      throw new Error(`Unable to save "${item.title}": ${retryError.message}`);
+    }
+  }
+}
+
 async function upsertAppState() {
   if (!canSync()) return;
   return upsertSupabase("life_flow_app_state", {
@@ -1164,6 +1184,15 @@ async function upsertAppState() {
     memory_notes: state.memoryNotes,
     reaction_attempts: state.reactionAttempts,
     goal_reminder: state.goalReminder,
+    preferences: {
+      displayName: settings.displayName,
+      plannerSubtitle: settings.plannerSubtitle,
+      sleepGoalHours: settings.sleepGoalHours,
+      focusGoal: settings.focusGoal,
+      pushupGoal: settings.pushupGoal,
+      trackGoal: settings.trackGoal,
+      darkMode: settings.darkMode,
+    },
     updated_at: new Date().toISOString(),
   }, "owner_key");
 }
@@ -1248,10 +1277,16 @@ function createCalendarSeed(id, title, category, date, start, end, days) {
   };
 }
 
+function getRecurringSeeds() {
+  return recurringTemplates.map(([key, title, category, date, start, end, days]) =>
+    createCalendarSeed(stableUuid(`${settings.ownerKey}:${key}`), title, category, date, start, end, days),
+  );
+}
+
 function seedRecurring(items) {
   items = items.filter((item) => item.source !== "seed" && !["seed-track", "seed-ymca", "seed-duke"].includes(item.id));
   const ids = new Set(items.map((item) => item.id));
-  return [...items, ...recurringSeeds.filter((seed) => !ids.has(seed.id))];
+  return [...items, ...getRecurringSeeds().filter((seed) => !ids.has(seed.id))];
 }
 
 function normalizeItemIds(items) {
@@ -1265,7 +1300,9 @@ function normalizeItemIds(items) {
     start_time: item.start_time || "",
     end_time: item.end_time || "",
     duration_minutes: Number(item.duration_minutes) > 0 ? Number(item.duration_minutes) : 30,
-    id: /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(item.id)
+    id: legacySharedIds.has(item.id)
+      ? stableUuid(`${settings.ownerKey}:${item.id}`)
+      : /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(item.id)
       ? item.id
       : stableUuid(item.id),
   }));

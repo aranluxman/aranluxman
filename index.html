@@ -2,429 +2,221 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#0a1024" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#071a25" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Life Flow" />
-    <title>Aran Life Flow</title>
+    <title>Life Flow | Aran</title>
     <link rel="manifest" href="/manifest.webmanifest" />
-    <link rel="preconnect" href="https://fonts.googleapis.com" />
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&display=swap"
-      rel="stylesheet"
-    />
     <link rel="stylesheet" href="/styles.css" />
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
     <script type="module" src="/src/app.mjs"></script>
   </head>
-  <body>
+  <body class="dark-mode">
     <div class="app-shell">
-      <header class="topbar">
+      <aside class="sidebar" aria-label="Primary navigation">
         <button class="brand" id="brandHomeButton" type="button" aria-label="Go to Home">
           <span class="brand-mark">A</span>
-          <span class="brand-text">
-            <strong>Life Flow</strong>
-            <small id="sidebarSubtitle">Personal planner</small>
-          </span>
+          <span><strong>Life Flow</strong><small id="sidebarSubtitle">Grade 9 &middot; Athlete &middot; Builder</small></span>
         </button>
-        <button class="icon-button topbar-settings" id="settingsButton" type="button" aria-label="Settings"><i data-lucide="settings"></i></button>
-      </header>
+        <nav class="nav-list">
+          <button class="nav-item active" data-view="home" type="button"><i data-lucide="home"></i><span>Home</span></button>
+          <button class="nav-item" data-view="tasks" type="button"><i data-lucide="list-checks"></i><span>Tasks</span></button>
+          <button class="nav-item" data-view="calendar" type="button"><i data-lucide="calendar-days"></i><span>Calendar</span></button>
+          <button class="nav-item" data-view="sleep" type="button"><i data-lucide="moon"></i><span>Sleep</span></button>
+          <button class="nav-item" data-view="focus" type="button"><i data-lucide="timer"></i><span>Focus</span></button>
+          <button class="nav-item" data-view="arcade" type="button"><i data-lucide="gamepad-2"></i><span>Arcade</span></button>
+        </nav>
+        <button class="ghost-button" id="settingsButton" type="button"><i data-lucide="settings"></i><span>Settings</span></button>
+      </aside>
 
-      <main class="screen">
-        <div class="sync-banner" id="syncBanner" hidden>
-          <span class="spinner" aria-hidden="true"></span>
-          <span id="syncBannerText">Syncing...</span>
-        </div>
+      <main class="workspace">
+        <div class="sync-banner" id="syncBanner" hidden><span class="spinner"></span><span id="syncBannerText">Syncing...</span></div>
 
         <section class="view active" id="homeView" aria-labelledby="homeTitle">
-          <header class="hero">
-            <p class="greeting" id="greeting">Good evening</p>
-            <h1 id="homeTitle">Aran</h1>
-            <p class="current-date" id="currentDateText">Thursday, May 21</p>
-            <p class="fresh-line" id="freshLine">Start clean. Pick one thing and move.</p>
-          </header>
-
-          <section class="stats-grid" aria-label="Progress stats">
-            <article class="stat-card">
-              <span><i data-lucide="check-circle-2"></i></span>
-              <strong id="doneTodayStat">0</strong>
-              <small>Done today</small>
-            </article>
-            <article class="stat-card">
-              <span><i data-lucide="circle-dot"></i></span>
-              <strong id="openTasksStat">0</strong>
-              <small>To do</small>
-            </article>
-            <article class="stat-card">
-              <span><i data-lucide="flame"></i></span>
-              <strong id="streakStat">—</strong>
-              <small>Streak</small>
-            </article>
-            <article class="stat-card">
-              <span><i data-lucide="trophy"></i></span>
-              <strong id="coinsStat">0</strong>
-              <small>Coins <button class="info-button" type="button" title="Earn coins by finishing tasks and completing focus sessions." aria-label="Coins info"><i data-lucide="info"></i></button></small>
-            </article>
-          </section>
-
-          <section class="coach-card glass-card" aria-labelledby="coachTitle">
-            <span class="coach-glyph"><i data-lucide="sparkles"></i></span>
+          <header class="hero-grid">
             <div>
-              <h2 id="coachTitle">AI coach</h2>
-              <p id="coachText">Pick one task, start a timer, and make the next move obvious.</p>
+              <p class="greeting" id="greeting">Good evening</p>
+              <h1 id="homeTitle">Aran</h1>
+              <p class="current-date" id="currentDateText"></p>
+              <p class="fresh-line" id="freshLine"></p>
             </div>
-            <button class="icon-button" id="coachButton" type="button" aria-label="Suggest next move" title="Suggest next move"><i data-lucide="refresh-cw"></i></button>
-          </section>
-
-          <section class="quote-card glass-card" aria-label="Motivational quote">
-            <p id="quoteText">Small steps count. Show up once, then again.</p>
+          </header>
+          <section class="quote-card">
+            <p id="quoteText"></p>
             <button class="icon-button" id="nextQuoteButton" type="button" aria-label="New quote" title="New quote"><i data-lucide="refresh-cw"></i></button>
           </section>
-
-          <section class="reminder-gallery glass-card" aria-labelledby="remindersTitle">
-            <div class="card-heading">
-              <h2 id="remindersTitle">People to remember</h2>
-              <span>Keep the why close.</span>
-            </div>
+          <section class="stats-grid athlete-stats" aria-label="Progress stats">
+            <article class="stat-card"><span><i data-lucide="check-circle-2"></i></span><strong id="doneTodayStat">0</strong><small>Done Today</small></article>
+            <article class="stat-card"><span><i data-lucide="list-todo"></i></span><strong id="openTasksStat">0</strong><small>To Do</small></article>
+            <article class="stat-card"><span><i data-lucide="flame"></i></span><strong id="streakStat">&mdash;</strong><small>Streak</small></article>
+            <article class="stat-card"><span><i data-lucide="trophy"></i></span><strong id="coinsStat">0</strong><small>Coins <button class="info-button" title="Earn coins from completed tasks, focus, sleep goals and training events." aria-label="Coins info"><i data-lucide="info"></i></button></small></article>
+            <article class="stat-card stat-action"><span><i data-lucide="timer"></i></span><strong id="trackWeekStat">0 / 3</strong><small>Track Sessions This Week</small><button class="mini-add" id="addTrackSessionButton" type="button" title="Log track session">+ Log</button></article>
+            <article class="stat-card stat-action"><span><i data-lucide="dumbbell"></i></span><strong id="pushupsWeekStat">0 / 60</strong><small>Pushups This Week</small><button class="mini-add" id="addPushupsButton" type="button" title="Log 10 pushups">+10</button></article>
+          </section>
+          <section class="upcoming-card surface" aria-labelledby="upcomingTitle">
+            <div class="card-heading"><h2 id="upcomingTitle">Upcoming Today</h2><span>Next on your schedule</span></div>
+            <div class="upcoming-pills" id="upcomingTodayList"></div>
+          </section>
+          <section class="coach-card surface" aria-labelledby="coachTitle">
+            <div><h2 id="coachTitle">AI Coach</h2><p id="coachText"></p></div>
+            <button class="ghost-button compact" id="coachButton" type="button" title="New coaching tip"><i data-lucide="sparkles"></i><span>New tip</span></button>
+          </section>
+          <section class="duke-card surface" aria-labelledby="homeDukeTitle">
+            <div class="card-heading"><h2 id="homeDukeTitle">Duke of Ed Bronze</h2><span>Tap a bar to advance 10%</span></div>
+            <div class="duke-bars" data-duke-bars="home"></div>
+          </section>
+          <section class="reminder-gallery surface" aria-labelledby="remindersTitle">
+            <div class="card-heading"><h2 id="remindersTitle">People to remember</h2><span>Tap a photo to reflect</span></div>
             <div class="photo-rail">
-              <figure>
-                <img src="/assets/reminders/family-birthday.jpg" alt="Family birthday reminder" loading="lazy" />
-                <figcaption>Family first</figcaption>
-              </figure>
-              <figure>
-                <img src="/assets/reminders/reminder-1.jpg" alt="Family meal reminder" loading="lazy" />
-                <figcaption>Good moments</figcaption>
-              </figure>
-              <figure>
-                <img src="/assets/reminders/reminder-2.jpg" alt="Family trip reminder" loading="lazy" />
-                <figcaption>Work for this</figcaption>
-              </figure>
+              <figure class="memory-card" data-memory-id="family"><img src="/assets/reminders/family-birthday.jpg" alt="Family birthday reminder" /><figcaption>Family first</figcaption><label class="memory-note">Why I work for this<textarea data-memory-note="family"></textarea></label></figure>
+              <figure class="memory-card" data-memory-id="moments"><img src="/assets/reminders/reminder-1.jpg" alt="Good family moment reminder" /><figcaption>Good moments</figcaption><label class="memory-note">Why I work for this<textarea data-memory-note="moments"></textarea></label></figure>
+              <figure class="memory-card" data-memory-id="future"><img src="/assets/reminders/reminder-2.jpg" alt="Goal reminder" /><figcaption>Work for this</figcaption><label class="memory-note">Why I work for this<textarea data-memory-note="future"></textarea></label></figure>
             </div>
           </section>
         </section>
 
         <section class="view" id="tasksView" aria-labelledby="tasksTitle">
-          <div class="section-heading">
-            <h1 id="tasksTitle">Tasks</h1>
-          </div>
-
-          <form class="quick-task-card glass-card" id="quickTaskForm" autocomplete="off">
-            <div class="quick-task-row">
-              <input id="quickTaskInput" type="text" placeholder="What needs to get done?" maxlength="160" required />
-              <button class="quick-task-expand" type="button" id="quickTaskExpandButton" aria-expanded="false" aria-label="More options">
-                <i data-lucide="sliders-horizontal"></i>
-              </button>
-              <button type="submit" class="quick-task-submit" aria-label="Add task"><i data-lucide="plus"></i></button>
-            </div>
-            <div class="quick-task-extra" id="quickTaskExtra" hidden>
-              <label>
-                Due
-                <input id="quickTaskDate" type="date" />
-              </label>
-              <label>
-                Category
-                <select id="quickTaskCategory">
-                  <option>School</option>
-                  <option>Personal</option>
-                  <option>Wellness</option>
-                  <option>Training</option>
-                  <option>Calendar</option>
-                </select>
-              </label>
-              <label>
-                Priority
-                <select id="quickTaskPriority">
-                  <option value="medium">Medium</option>
-                  <option value="high">High</option>
-                  <option value="low">Low</option>
-                </select>
-              </label>
-              <label>
-                Notes
-                <textarea id="quickTaskNotes" rows="2" placeholder="Optional notes"></textarea>
-              </label>
-            </div>
+          <div class="section-heading section-heading-tasks"><h1 id="tasksTitle">Tasks</h1><button class="add-button labeled" data-open-compose="daily_task" type="button" title="New Task"><i data-lucide="plus"></i><span>New Task</span></button></div>
+          <details class="duke-card surface tracker-panel" open>
+            <summary>Duke of Ed &mdash; Bronze Tracker</summary>
+            <div class="duke-bars" data-duke-bars="tasks"></div>
+          </details>
+          <section class="fitness-card surface" aria-label="Fitness quick log">
+            <div><strong id="pushupsTodayText">Pushups logged today: 0</strong><button class="mini-add" id="pushupsTodayButton" type="button">+10</button></div>
+            <div><strong>Track session today?</strong><div class="segmented" id="trackTodayToggle"><button type="button" data-track-value="true">Yes</button><button type="button" data-track-value="false">No</button></div></div>
+          </section>
+          <form class="quick-task surface" id="quickTaskForm">
+            <input id="quickTaskInput" type="text" maxlength="120" required placeholder="What needs to get done?" />
+            <select id="quickTaskCategory" aria-label="Task category">
+              <option>School</option><option>Track &amp; Field</option><option>YMCA</option><option>Duke of Ed</option><option>Web Dev</option><option>Personal</option>
+            </select>
+            <button class="primary-button" type="submit">Add</button>
           </form>
-
-          <div class="filter-row" id="taskFilters" aria-label="Task filters">
-            <button class="filter-pill active" data-filter="today" type="button">Today</button>
-            <button class="filter-pill" data-filter="all" type="button">All</button>
-            <button class="filter-pill" data-filter="weekly" type="button">Weekly</button>
-            <button class="filter-pill" data-filter="priorities" type="button">Priorities</button>
-            <button class="filter-pill" data-filter="long-term" type="button">Long-term</button>
+          <div class="filter-row" id="taskFilters">
+            <button class="filter-pill active" data-filter="today" type="button">Today</button><button class="filter-pill" data-filter="all" type="button">All</button><button class="filter-pill" data-filter="school" type="button">School</button><button class="filter-pill" data-filter="track" type="button">Track</button><button class="filter-pill" data-filter="ymca" type="button">YMCA</button><button class="filter-pill" data-filter="duke" type="button">Duke of Ed</button><button class="filter-pill" data-filter="web-dev" type="button">Web Dev</button>
           </div>
           <div class="task-list" id="taskList"></div>
         </section>
 
         <section class="view" id="calendarView" aria-labelledby="calendarTitle">
-          <div class="section-heading">
-            <h1 id="calendarTitle">Calendar</h1>
-            <button class="add-button" data-open-compose="calendar_event" type="button" aria-label="Add event" title="Add event"><i data-lucide="plus"></i></button>
-          </div>
-
-          <section class="calendar-card glass-card">
-            <div class="calendar-toolbar">
-              <button class="icon-button" id="prevMonthButton" type="button" aria-label="Previous month"><i data-lucide="chevron-left"></i></button>
-              <strong id="monthLabel">May 2026</strong>
-              <button class="icon-button" id="nextMonthButton" type="button" aria-label="Next month"><i data-lucide="chevron-right"></i></button>
-            </div>
-            <div class="weekday-row" aria-hidden="true">
-              <span>S</span><span>M</span><span>T</span><span>W</span><span>T</span><span>F</span><span>S</span>
-            </div>
+          <div class="section-heading section-heading-calendar"><h1 id="calendarTitle">Calendar</h1><button class="add-button labeled" data-open-compose="calendar_event" type="button" title="Add Event"><i data-lucide="plus"></i><span>Add Event</span></button></div>
+          <div class="calendar-topline"><div class="segmented" id="calendarViewToggle"><button class="active" data-calendar-view="month" type="button">Month</button><button data-calendar-view="week" type="button">Week</button></div><button class="ghost-button compact" id="todayButton" type="button">Jump to today</button></div>
+          <div class="calendar-toolbar"><button class="icon-button" id="prevMonthButton" type="button" aria-label="Previous"><i data-lucide="chevron-left"></i></button><strong id="monthLabel">May 2026</strong><button class="icon-button" id="nextMonthButton" type="button" aria-label="Next"><i data-lucide="chevron-right"></i></button></div>
+          <div id="monthCalendar">
+            <div class="weekday-row"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
             <div class="calendar-grid" id="calendarGrid"></div>
-            <button class="ghost-button compact today-jump" id="todayButton" type="button"><i data-lucide="calendar-check"></i><span>Jump to today</span></button>
-          </section>
-
-          <section class="day-agenda" aria-labelledby="agendaTitle">
-            <div class="agenda-head">
-              <h2 id="agendaTitle">Today</h2>
-              <span class="section-subtitle" id="agendaHint">Tap a day to see its events.</span>
-            </div>
-            <div id="agendaList"></div>
-          </section>
-        </section>
-
-        <section class="view" id="arcadeView" aria-labelledby="arcadeTitle">
-          <div class="section-heading">
-            <div>
-              <h1 id="arcadeTitle">Arcade</h1>
-              <p class="section-subtitle">Earn coins by finishing real work.</p>
-            </div>
           </div>
-          <section class="arcade-grid">
-            <article class="arcade-card glass-card">
-              <span class="arcade-icon"><i data-lucide="gamepad-2"></i></span>
-              <h2>Focus Quest</h2>
-              <p>Complete one Pomodoro to unlock a reward boost.</p>
-              <button class="primary-button" type="button" data-view="focus">Start focus</button>
-            </article>
-            <article class="arcade-card glass-card">
-              <span class="arcade-icon"><i data-lucide="trophy"></i></span>
-              <h2>Coins</h2>
-              <strong id="arcadeCoins">0</strong>
-              <p>Tasks and focus sessions add coins automatically.</p>
-            </article>
-            <article class="arcade-card glass-card">
-              <span class="arcade-icon"><i data-lucide="brain"></i></span>
-              <h2>Daily Boost</h2>
-              <p id="arcadeBoost">Start with the smallest task that still matters.</p>
-              <button class="ghost-button compact" id="arcadeBoostButton" type="button">New boost</button>
-            </article>
-            <article class="arcade-card arcade-photo-card glass-card">
-              <img src="/assets/reminders/family-birthday.jpg" alt="Family reminder" loading="lazy" />
-              <div>
-                <h2>Reward reminder</h2>
-                <p>Finish the work so you can be fully present for moments like this.</p>
-              </div>
-            </article>
+          <div class="week-grid" id="weekGrid" hidden></div>
+          <section class="day-agenda surface">
+            <h2 id="agendaTitle">Today</h2><p class="section-subtitle" id="agendaHint">Tap a day to see events.</p><div id="agendaList"></div>
           </section>
         </section>
 
         <section class="view" id="sleepView" aria-labelledby="sleepTitle">
-          <div class="section-heading">
-            <div>
-              <h1 id="sleepTitle">Sleep</h1>
-              <p class="section-subtitle">Track bedtime, wake time, and your weekly rhythm.</p>
-            </div>
-            <button class="add-button" id="addSleepButton" type="button" aria-label="Add sleep" title="Add sleep"><i data-lucide="plus"></i></button>
-          </div>
-          <label class="sleep-goal glass-card">
-            Sleep goal
-            <input id="sleepGoalInput" type="number" min="1" max="11" step="0.5" value="8" />
-            <span>hours</span>
-          </label>
-          <section class="sleep-summary-grid" aria-label="Sleep summary">
-            <article class="stat-card">
-              <span><i data-lucide="moon"></i></span>
-              <strong id="latestSleepStat">—</strong>
-              <small id="latestSleepContext">No data yet</small>
-            </article>
-            <article class="stat-card">
-              <span><i data-lucide="trending-up"></i></span>
-              <strong id="averageSleepStat">—</strong>
-              <small id="averageSleepContext">No data yet</small>
-            </article>
+          <div class="section-heading section-heading-sleep"><div><h1 id="sleepTitle">Sleep</h1><p class="section-subtitle">Track bedtime, wake time, and recovery.</p></div><button class="add-button labeled" id="addSleepButton" type="button" title="Add Sleep"><i data-lucide="plus"></i><span>Add Sleep</span></button></div>
+          <label class="sleep-goal">Sleep goal <input id="sleepGoalInput" type="number" min="6" max="10" step="0.5" value="8.5" /><span>hours</span></label>
+          <section class="last-night surface"><h2>Last night</h2><p id="lastNightSummary">Log your first night using the + button.</p></section>
+          <section class="sleep-summary-grid">
+            <article class="stat-card sleep-stat"><span><i data-lucide="moon"></i></span><strong id="averageSleepStat">&mdash;</strong><small>Avg Sleep This Week</small></article>
+            <article class="stat-card sleep-stat"><span><i data-lucide="trending-up"></i></span><strong id="sleepScoreStat">&mdash;</strong><small>Sleep Score</small></article>
           </section>
-          <section class="sleep-card glass-card" aria-labelledby="sleepGraphTitle">
-            <div class="card-heading">
-              <h2 id="sleepGraphTitle">Last 7 entries</h2>
-              <span id="sleepHint">Add your first sleep log to start the graph.</span>
-            </div>
-            <div class="sleep-chart" id="sleepChart"></div>
-          </section>
+          <section class="sleep-card surface"><div class="card-heading"><h2>Last 7 entries</h2><span id="sleepHint"></span></div><div class="sleep-chart" id="sleepChart"></div></section>
           <div class="sleep-list" id="sleepList"></div>
         </section>
 
         <section class="view" id="focusView" aria-labelledby="focusTitle">
-          <header class="focus-heading">
-            <div>
-              <h1 id="focusTitle">Focus Mode</h1>
-              <p>Deep work, no distractions</p>
-            </div>
-          </header>
+          <header class="focus-heading section-heading-focus"><div><h1 id="focusTitle">Focus Mode</h1><p>Deep work, no distractions.</p></div></header>
           <div class="focus-stage">
-            <section class="timer-card glass-card" aria-label="Pomodoro timer">
-              <div class="timer-ring">
-                <svg class="timer-ring-progress" viewBox="0 0 220 220" aria-hidden="true">
-                  <circle class="timer-ring-track" cx="110" cy="110" r="100" />
-                  <circle class="timer-ring-fill" id="timerRingFill" cx="110" cy="110" r="100" />
-                </svg>
-                <div class="timer-ring-label">
-                  <strong id="timerText">25:00</strong>
-                  <span>Pomodoro</span>
-                </div>
-              </div>
+            <aside class="focus-task-panel surface">
+              <h2>What are you working on?</h2>
+              <select id="focusTaskSelect" aria-label="Today's task"></select>
+              <input id="focusLabelInput" type="text" placeholder="e.g. Chemistry homework, Client website..." />
+              <div class="focus-metrics"><strong id="sessionsTodayText">Sessions today: 0 / 4</strong><span id="focusMinutesText">Total focus time today: 0 min</span><div class="session-dots" id="sessionDots"></div></div>
+            </aside>
+            <section class="timer-card">
+              <div class="timer-ring"><strong id="timerText">25:00</strong><span>Pomodoro</span></div>
               <div class="timer-controls">
-                <button class="icon-button" id="resetTimerButton" type="button" aria-label="Reset" title="Reset"><i data-lucide="rotate-ccw"></i></button>
-                <button class="play-button" id="playTimerButton" type="button" aria-label="Start" title="Start"><i data-lucide="play"></i></button>
-                <button class="icon-button" id="finishTimerButton" type="button" aria-label="Break" title="Break"><i data-lucide="coffee"></i></button>
+                <button class="icon-button" id="resetTimerButton" type="button" title="Reset" aria-label="Reset"><i data-lucide="rotate-ccw"></i></button>
+                <button class="play-button" id="playTimerButton" type="button" title="Start" aria-label="Start"><i data-lucide="play"></i></button>
+                <button class="icon-button" id="finishTimerButton" type="button" title="Complete session" aria-label="Complete session"><i data-lucide="check"></i></button>
               </div>
               <div class="duration-row">
-                <button class="filter-pill active" data-minutes="25" type="button">Focus 25</button>
-                <button class="filter-pill" data-minutes="50" type="button">Deep 50</button>
-                <button class="filter-pill" data-minutes="15" type="button">Break 15</button>
-                <label class="custom-minutes">
-                  <span>Custom</span>
-                  <input id="customMinutesInput" type="number" min="1" max="240" value="25" aria-label="Custom focus minutes" />
-                </label>
+                <button class="filter-pill active" data-minutes="25" type="button">Homework (25 min)</button><button class="filter-pill" data-minutes="50" type="button">Deep Work (50 min)</button><button class="filter-pill" data-minutes="15" type="button">Break (15 min)</button><button class="filter-pill" data-minutes="10" type="button">Track Planning (10 min)</button>
+                <label class="custom-minutes"><span>Custom</span><input id="customMinutesInput" type="number" min="1" max="240" value="25" /></label>
               </div>
             </section>
-            <aside class="focus-task-panel glass-card" aria-labelledby="focusTaskTitle">
-              <h2 id="focusTaskTitle">What are you working on?</h2>
-              <select id="focusTaskSelect" aria-label="Focus task"></select>
-              <p class="section-subtitle" id="sessionsTodayText">Sessions today: 0</p>
-            </aside>
+            <section class="ambient-panel surface"><h2>Focus sound</h2><button class="sound-chip" type="button" data-sound="rain"><i data-lucide="cloud-rain"></i> Rain ambience</button><p class="sound-status" id="soundStatus">Sound off</p></section>
+            <section class="history-panel surface"><h2>Session history</h2><div id="sessionHistoryList"></div></section>
           </div>
         </section>
-      </main>
 
-      <nav class="tabbar" aria-label="Primary navigation">
-        <button class="nav-item active" data-view="home" type="button"><i data-lucide="home"></i><span>Home</span></button>
-        <button class="nav-item" data-view="tasks" type="button"><i data-lucide="list-checks"></i><span>Tasks</span></button>
-        <button class="nav-item" data-view="calendar" type="button"><i data-lucide="calendar-days"></i><span>Calendar</span></button>
-        <button class="nav-item" data-view="sleep" type="button"><i data-lucide="moon"></i><span>Sleep</span></button>
-        <button class="nav-item" data-view="focus" type="button"><i data-lucide="timer"></i><span>Focus</span></button>
-        <button class="nav-item" data-view="arcade" type="button"><i data-lucide="gamepad-2"></i><span>Arcade</span></button>
-      </nav>
+        <section class="view" id="arcadeView" aria-labelledby="arcadeTitle">
+          <div class="section-heading section-heading-arcade"><div><h1 id="arcadeTitle">Arcade</h1><p class="section-subtitle">Earn coins by finishing real work.</p></div></div>
+          <section class="coins-banner"><i data-lucide="trophy"></i><div><span>COINS</span><strong id="arcadeCoins">0</strong><p id="arcadeCoinBreakdown">Earned from tasks: 0 | Earned from focus sessions: 0</p></div></section>
+          <section class="arcade-grid">
+            <article class="arcade-card daily-boost"><h2>Daily Boost</h2><p id="arcadeBoost"></p><button class="primary-button" id="arcadeBoostButton" type="button">Complete boost +20</button></article>
+            <article class="arcade-card rules-card"><h2>Earn Coins</h2><ul><li>Complete a task: +5</li><li>Complete a focus session: +10</li><li>Hit daily sleep goal: +5</li><li>Complete YMCA event: +15</li><li>Complete track training: +10</li></ul></article>
+            <article class="arcade-card game-card"><h2>Reaction Tap</h2><p>Sprint Start Trainer &middot; Free</p><button class="reaction-pad" id="reactionPad" type="button" disabled>Start when ready</button><button class="ghost-button compact" id="reactionStartButton" type="button">Start attempt</button><p><strong id="reactionBest">&mdash;</strong> best</p><ol class="attempts" id="reactionHistory"></ol></article>
+            <article class="arcade-card game-card memory-card-game"><h2>Memory Match</h2><p>Entry: 5 coins &middot; Win: +5 coins</p><button class="ghost-button compact" id="memoryStartButton" type="button">Play Memory Match</button><p id="memoryStatus">Match all 8 pairs.</p><div class="memory-grid" id="memoryGrid"></div></article>
+            <article class="arcade-card arcade-photo-card"><img src="/assets/reminders/family-birthday.jpg" alt="Family reminder" /><div><label>My goal<input id="goalReminderInput" value="Train hard. Give back. Build something." /></label><p>Finish the work so you can be fully present for moments like this.</p></div></article>
+          </section>
+        </section>
+      </main>
     </div>
 
     <dialog class="compose-dialog" id="composeDialog">
       <form id="composeForm" method="dialog">
-        <div class="dialog-heading">
-          <h2 id="composeTitle">Add item</h2>
-          <button class="icon-button" value="cancel" type="button" id="closeComposeButton" aria-label="Close"><i data-lucide="x"></i></button>
-        </div>
+        <div class="dialog-heading"><h2 id="composeTitle">Add item</h2><button class="icon-button" id="closeComposeButton" type="button" aria-label="Close">X</button></div>
         <input id="editingItemIdInput" type="hidden" />
-        <label>
-          Title
-          <input id="itemTitleInput" name="title" required maxlength="160" placeholder="Write the task..." />
-        </label>
+        <label>Title<input id="itemTitleInput" required maxlength="120" placeholder="Write the task..." /></label>
         <button class="ghost-button compact more-options-button" id="toggleAdvancedButton" type="button" aria-expanded="false">More options</button>
         <div class="form-grid advanced-fields" id="advancedFields" hidden>
-          <label>
-            Type
-            <select id="itemKindInput" name="kind">
-              <option value="daily_task">Daily task</option>
-              <option value="long_term">Long-term to-do</option>
-              <option value="calendar_event">Calendar item</option>
-            </select>
-          </label>
-          <label>
-            Due date
-            <input id="itemDateInput" name="due_date" type="date" />
-          </label>
-          <label>
-            Category
-            <select id="itemCategoryInput" name="category">
-              <option>School</option>
-              <option>Personal</option>
-              <option>Wellness</option>
-              <option>Training</option>
-              <option>Calendar</option>
-            </select>
-          </label>
-          <label>
-            Priority
-            <select id="itemPriorityInput" name="priority">
-              <option value="medium">Medium</option>
-              <option value="high">High</option>
-              <option value="low">Low</option>
-            </select>
-          </label>
+          <label>Type<select id="itemKindInput"><option value="daily_task">Task</option><option value="long_term">Long-term</option><option value="calendar_event">Calendar event</option></select></label>
+          <label>Due date<input id="itemDateInput" type="date" /></label>
+          <label>Category<select id="itemCategoryInput"><option>School</option><option>Track &amp; Field</option><option>YMCA</option><option>Duke of Ed</option><option>Web Dev</option><option>Personal</option></select></label>
+          <label>Priority<select id="itemPriorityInput"><option value="medium">Medium</option><option value="high">High</option><option value="low">Low</option></select></label>
+          <label class="calendar-field">Start time<input id="itemStartTimeInput" type="time" /></label>
+          <label class="calendar-field">End time<input id="itemEndTimeInput" type="time" /></label>
+          <label class="calendar-field">Repeat<select id="itemRepeatInput"><option value="none">None</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="specific">Specific days</option></select></label>
+          <div class="repeat-days calendar-field" id="repeatDays"><span>Days</span><button type="button" data-repeat-day="0">S</button><button type="button" data-repeat-day="1">M</button><button type="button" data-repeat-day="2">T</button><button type="button" data-repeat-day="3">W</button><button type="button" data-repeat-day="4">T</button><button type="button" data-repeat-day="5">F</button><button type="button" data-repeat-day="6">S</button></div>
         </div>
-        <label class="advanced-fields" data-advanced-field hidden>
-          Notes
-          <textarea id="itemNotesInput" name="notes" rows="3"></textarea>
-        </label>
-        <button class="primary-button" id="saveItemButton" type="submit">Save</button>
+        <label class="advanced-fields" data-advanced-field hidden>Notes<textarea id="itemNotesInput" rows="3"></textarea></label>
+        <button class="primary-button" type="submit">Save</button>
       </form>
     </dialog>
 
     <dialog class="compose-dialog" id="sleepDialog">
       <form id="sleepForm" method="dialog">
-        <div class="dialog-heading">
-          <h2>Add sleep</h2>
-          <button class="icon-button" value="cancel" type="button" id="closeSleepButton" aria-label="Close"><i data-lucide="x"></i></button>
-        </div>
+        <div class="dialog-heading"><h2>Add sleep</h2><button class="icon-button" id="closeSleepButton" type="button" aria-label="Close">X</button></div>
+        <label>Date<input id="sleepDateInput" type="date" required /></label>
+        <div class="form-grid"><label>Bedtime<input id="sleptAtInput" type="datetime-local" required /></label><label>Wake time<input id="wokeAtInput" type="datetime-local" required /></label></div>
         <p class="form-error" id="sleepError" role="alert" hidden>Not valid. Sleep must be 11 hours or less.</p>
-        <label>
-          Date
-          <input id="sleepDateInput" name="sleep_date" type="date" required />
-        </label>
-        <div class="form-grid">
-          <label>
-            Bedtime
-            <input id="sleptAtInput" name="slept_at" type="datetime-local" required />
-          </label>
-          <label>
-            Wake time
-            <input id="wokeAtInput" name="woke_at" type="datetime-local" required />
-          </label>
-        </div>
         <button class="primary-button" type="submit">Save sleep</button>
       </form>
     </dialog>
+    <dialog class="compose-dialog" id="sleepMoodDialog">
+      <form method="dialog"><h2>How do you feel this morning?</h2><div class="mood-options"><button data-sleep-mood="Exhausted" data-mood-emoji="&#128564;" type="button">&#128564; Exhausted</button><button data-sleep-mood="Okay" data-mood-emoji="&#128528;" type="button">&#128528; Okay</button><button data-sleep-mood="Good" data-mood-emoji="&#128578;" type="button">&#128578; Good</button><button data-sleep-mood="Great" data-mood-emoji="&#128515;" type="button">&#128515; Great</button><button data-sleep-mood="Energized" data-mood-emoji="&#9889;" type="button">&#9889; Energized</button></div></form>
+    </dialog>
+    <dialog class="compose-dialog" id="completionDialog">
+      <form method="dialog"><h2>Session complete! +10 coins earned.</h2><p id="completionMessage"></p><div class="dialog-actions"><button class="ghost-button compact" id="startBreakButton" type="button">Start break</button><button class="primary-button" id="startAgainButton" type="button">Start another session</button></div></form>
+    </dialog>
 
-    <dialog class="compose-dialog" id="settingsDialog">
+    <dialog class="compose-dialog settings-dialog" id="settingsDialog">
       <form id="settingsForm" method="dialog">
-        <div class="dialog-heading">
-          <h2>Settings</h2>
-          <button class="icon-button" value="cancel" type="button" id="closeSettingsButton" aria-label="Close"><i data-lucide="x"></i></button>
-        </div>
-        <p class="settings-note">
-          Your Supabase project syncs tasks, sleep, focus sessions, and calendar events. Paste the secret iCal URL from Google Calendar to pull in all your events automatically.
-        </p>
-        <label>
-          Supabase URL
-          <span class="secret-field"><input id="supabaseUrlInput" name="supabaseUrl" type="password" /><button type="button" data-toggle-secret="supabaseUrlInput">Show</button></span>
-        </label>
-        <label>
-          Supabase publishable key
-          <span class="secret-field"><input id="supabaseAnonInput" name="supabaseAnonKey" type="password" /><button type="button" data-toggle-secret="supabaseAnonInput">Show</button></span>
-        </label>
-        <label>
-          Owner key
-          <input id="ownerKeyInput" name="ownerKey" placeholder="A private phrase only you know" />
-        </label>
-        <label>
-          Sidebar subtitle
-          <input id="plannerSubtitleInput" name="plannerSubtitle" />
-        </label>
-        <label class="toggle-row">
-          <input id="lightModeInput" name="lightMode" type="checkbox" />
-          Light mode
-        </label>
-        <label>
-          Google Calendar secret iCal URL
-          <input id="calendarUrlInput" name="calendarUrl" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics" />
-        </label>
-        <div class="dialog-actions">
-          <button class="ghost-button compact" id="syncButton" type="button">Sync now</button>
-          <button class="primary-button" type="submit">Save settings</button>
-        </div>
+        <div class="dialog-heading"><h2>Settings</h2><button class="icon-button" id="closeSettingsButton" type="button" aria-label="Close">X</button></div>
+        <label>Display name<input id="displayNameInput" value="Aran" /></label>
+        <label>Sidebar subtitle<input id="plannerSubtitleInput" value="Grade 9 &middot; Athlete &middot; Builder" /></label>
+        <div class="form-grid"><label>Daily focus session goal<input id="focusGoalInput" type="number" min="1" max="20" value="4" /></label><label>Weekly pushup goal<input id="pushupGoalInput" type="number" min="1" max="1000" value="60" /></label><label>Weekly track sessions goal<input id="trackGoalInput" type="number" min="1" max="14" value="3" /></label></div>
+        <p class="settings-note">Local mode: use the app without cloud sync; data is stored in your browser only.</p>
+        <label>Supabase URL<span class="secret-field"><input id="supabaseUrlInput" type="password" /><button type="button" data-toggle-secret="supabaseUrlInput">Show</button></span></label>
+        <label>Supabase publishable key<span class="secret-field"><input id="supabaseAnonInput" type="password" /><button type="button" data-toggle-secret="supabaseAnonInput">Show</button></span></label>
+        <label>Owner key<input id="ownerKeyInput" /></label>
+        <label>Optional Google Calendar secret iCal URL<input id="calendarUrlInput" /></label>
+        <label class="toggle-row"><input id="darkModeInput" type="checkbox" /> Dark mode</label>
+        <div class="dialog-actions"><button class="ghost-button compact" id="syncButton" type="button">Sync now</button><button class="primary-button" type="submit">Save settings</button></div>
         <p class="sync-status" id="syncStatus">Local mode</p>
+        <button class="danger-button" id="resetDataButton" type="button">Reset all data</button>
       </form>
     </dialog>
   </body>

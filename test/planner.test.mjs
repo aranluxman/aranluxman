@@ -3,9 +3,12 @@ import test from "node:test";
 
 import {
   buildMonthDays,
+  calculateCoinBreakdown,
   calculateStats,
   calculateSleepMinutes,
+  calculateSleepScore,
   countSessionsForDate,
+  eventsForDate,
   filterItems,
   formatDateKey,
   formatDisplayDate,
@@ -13,6 +16,7 @@ import {
   getGreetingEmoji,
   getHomeSubtitle,
   getSleepSummary,
+  summarizeFitnessWeek,
   parseIcsEvents,
   sanitizeFocusMinutes,
 } from "../src/planner-utils.mjs";
@@ -26,7 +30,7 @@ test("buildMonthDays includes leading and trailing days for a stable calendar gr
   assert.equal(days[23].isCurrentMonth, true);
 });
 
-test("calculateStats separates daily tasks, long-term todos, streak, and coins", () => {
+test("calculateStats applies the requested task and focus coin rules", () => {
   const today = "2026-05-19";
   const stats = calculateStats(
     [
@@ -46,15 +50,15 @@ test("calculateStats separates daily tasks, long-term todos, streak, and coins",
     doneToday: 1,
     openTasks: 2,
     streakDays: 2,
-    coins: 90,
+    coins: 30,
   });
 });
 
-test("filterItems supports all, weekly, priorities, and long-term modes", () => {
+test("filterItems supports Today, All, and category modes", () => {
   const items = [
     { kind: "daily_task", title: "Study", priority: "high", due_date: "2026-05-19" },
-    { kind: "daily_task", title: "Practice", priority: "medium", due_date: "2026-05-24" },
-    { kind: "long_term", title: "Build portfolio", priority: "high" },
+    { kind: "daily_task", title: "Practice", category: "Track & Field", priority: "medium", due_date: "2026-05-24" },
+    { kind: "long_term", title: "Build portfolio", category: "Web Dev", priority: "high" },
   ];
 
   assert.deepEqual(
@@ -62,9 +66,64 @@ test("filterItems supports all, weekly, priorities, and long-term modes", () => 
     ["Study"],
   );
   assert.equal(filterItems(items, "all", "2026-05-19").length, 3);
-  assert.equal(filterItems(items, "weekly", "2026-05-19").length, 2);
-  assert.equal(filterItems(items, "priorities", "2026-05-19").length, 2);
-  assert.equal(filterItems(items, "long-term", "2026-05-19").length, 1);
+  assert.deepEqual(filterItems(items, "track", "2026-05-19").map((item) => item.title), ["Practice"]);
+  assert.deepEqual(filterItems(items, "web-dev", "2026-05-19").map((item) => item.title), ["Build portfolio"]);
+});
+
+test("eventsForDate expands seeded and user-created recurrence rules", () => {
+  const events = [
+    { id: "track", kind: "calendar_event", due_date: "2026-05-25", repeat_pattern: "specific", repeat_days: [1, 3, 5] },
+    { id: "weekly", kind: "calendar_event", due_date: "2026-05-26", repeat_pattern: "weekly" },
+  ];
+
+  assert.deepEqual(eventsForDate(events, "2026-05-27").map((event) => event.id), ["track"]);
+  assert.deepEqual(eventsForDate(events, "2026-06-02").map((event) => event.id), ["weekly"]);
+  assert.deepEqual(eventsForDate(events, "2026-05-24"), []);
+});
+
+test("summarizeFitnessWeek counts Monday-through-Sunday track sessions and pushups", () => {
+  const totals = summarizeFitnessWeek(
+    [
+      { entry_date: "2026-05-25", pushups: 20, track_session: true },
+      { entry_date: "2026-05-26", pushups: 15, track_session: false },
+      { entry_date: "2026-05-31", pushups: 25, track_session: true },
+      { entry_date: "2026-06-01", pushups: 99, track_session: true },
+    ],
+    "2026-05-26",
+  );
+
+  assert.deepEqual(totals, { pushups: 60, trackSessions: 2 });
+});
+
+test("calculateSleepScore returns athlete-facing letter bands", () => {
+  assert.deepEqual(calculateSleepScore(510), { grade: "A", tone: "green" });
+  assert.deepEqual(calculateSleepScore(450), { grade: "B", tone: "yellow" });
+  assert.deepEqual(calculateSleepScore(390), { grade: "C", tone: "orange" });
+  assert.deepEqual(calculateSleepScore(330), { grade: "D", tone: "red" });
+});
+
+test("calculateCoinBreakdown applies task, focus, sleep, completed event, and arcade rewards", () => {
+  const breakdown = calculateCoinBreakdown(
+    [
+      { kind: "daily_task", completed: true },
+      { kind: "calendar_event", category: "Track & Field", completed_dates: ["2026-05-25"] },
+      { kind: "calendar_event", category: "YMCA", completed_dates: ["2026-05-30"] },
+    ],
+    [{ minutes: 25 }, { minutes: 50 }, { minutes: 15, earns_coins: false, is_break: true }],
+    [{ minutes: 515 }],
+    [{ amount: 20, reason: "daily_boost" }, { amount: -5, reason: "memory_entry" }, { amount: 5, reason: "memory_win" }],
+    510,
+  );
+
+  assert.deepEqual(breakdown, {
+    tasks: 5,
+    focus: 20,
+    sleep: 5,
+    calendar: 25,
+    bonus: 25,
+    spent: 5,
+    total: 75,
+  });
 });
 
 test("parseIcsEvents extracts dated events safely", () => {

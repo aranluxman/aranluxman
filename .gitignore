@@ -1,3 +1,5 @@
 qa-*.png
+.preview.log
+.preview.err
 .vercel
 node_modules

@@ -16,9 +16,9 @@ export function getGreeting(date = new Date()) {
 
 export function getGreetingEmoji(date = new Date()) {
   const hour = date.getHours();
-  if (hour < 12) return "☀️";
-  if (hour < 18) return "🌤️";
-  return "🌙";
+  if (hour < 12) return "\u2600\ufe0f";
+  if (hour < 18) return "\ud83c\udf24\ufe0f";
+  return "\ud83c\udf19";
 }
 
 export function formatDisplayDate(date = new Date()) {
@@ -59,7 +59,7 @@ export function buildMonthDays(year, monthIndex) {
   });
 }
 
-export function calculateStats(items, focusSessions, dateKey = todayKey()) {
+export function calculateStats(items, focusSessions, dateKey = todayKey(), sleepEntries = [], rewards = [], sleepGoalMinutes = 510) {
   const doneToday = items.filter(
     (item) => item.kind === "daily_task" && item.completed && item.due_date === dateKey,
   ).length;
@@ -72,19 +72,17 @@ export function calculateStats(items, focusSessions, dateKey = todayKey()) {
   ).length;
 
   const streakDays = calculateFocusStreak(focusSessions, dateKey);
-  const completedTasks = items.filter((item) => item.completed).length;
-  const focusMinutes = focusSessions.reduce((sum, session) => sum + Number(session.minutes || 0), 0);
+  const coins = calculateCoinBreakdown(items, focusSessions, sleepEntries, rewards, sleepGoalMinutes).total;
 
   return {
     doneToday,
     openTasks,
     streakDays,
-    coins: completedTasks * 20 + Math.floor(focusMinutes / 5) * 5,
+    coins,
   };
 }
 
 export function filterItems(items, mode, dateKey = todayKey()) {
-  const weekEnd = addDays(dateKey, 6);
   const active = items.filter((item) => item.kind === "daily_task" || item.kind === "long_term");
 
   if (mode === "today") {
@@ -95,21 +93,88 @@ export function filterItems(items, mode, dateKey = todayKey()) {
     return active;
   }
 
-  if (mode === "weekly") {
-    return active.filter((item) => item.kind === "daily_task" && item.due_date >= dateKey && item.due_date <= weekEnd);
-  }
-
-  if (mode === "priorities") {
-    return active.filter((item) => item.priority === "high" && !item.completed);
-  }
-
-  if (mode === "long-term") {
-    return active.filter((item) => item.kind === "long_term");
+  const filters = {
+    school: "School",
+    track: "Track & Field",
+    ymca: "YMCA",
+    duke: "Duke of Ed",
+    "web-dev": "Web Dev",
+  };
+  if (filters[mode]) {
+    return active.filter((item) => item.category === filters[mode]);
   }
 
   return active.filter(
     (item) => item.kind === "long_term" || (item.kind === "daily_task" && (!item.due_date || item.due_date === dateKey)),
   );
+}
+
+export function eventsForDate(items, dateKey) {
+  return items.filter((item) => item.kind === "calendar_event" && occursOnDate(item, dateKey));
+}
+
+export function occursOnDate(item, dateKey) {
+  if (!item?.due_date || dateKey < item.due_date) return false;
+  const pattern = item.repeat_pattern || "none";
+  if (pattern === "none") return item.due_date === dateKey;
+
+  const start = new Date(`${item.due_date}T00:00:00`);
+  const target = new Date(`${dateKey}T00:00:00`);
+  const distance = Math.round((target - start) / 86400000);
+  if (pattern === "daily") return distance >= 0;
+  if (pattern === "weekly") return distance >= 0 && distance % 7 === 0;
+  if (pattern === "specific") return (item.repeat_days || []).includes(target.getDay());
+  return item.due_date === dateKey;
+}
+
+export function summarizeFitnessWeek(entries, dateKey = todayKey()) {
+  const target = new Date(`${dateKey}T00:00:00`);
+  const monday = new Date(target);
+  const offset = target.getDay() === 0 ? -6 : 1 - target.getDay();
+  monday.setDate(target.getDate() + offset);
+  const sunday = new Date(monday);
+  sunday.setDate(monday.getDate() + 6);
+  const start = formatDateKey(monday);
+  const end = formatDateKey(sunday);
+  const weekly = entries.filter((entry) => entry.entry_date >= start && entry.entry_date <= end);
+
+  return {
+    pushups: weekly.reduce((sum, entry) => sum + Number(entry.pushups || 0), 0),
+    trackSessions: weekly.filter((entry) => entry.track_session).length,
+  };
+}
+
+export function calculateSleepScore(minutes) {
+  if (minutes >= 480 && minutes <= 540) return { grade: "A", tone: "green" };
+  if (minutes >= 420) return { grade: "B", tone: "yellow" };
+  if (minutes >= 360) return { grade: "C", tone: "orange" };
+  return { grade: "D", tone: "red" };
+}
+
+export function calculateCoinBreakdown(items, focusSessions, sleepEntries = [], rewards = [], sleepGoalMinutes = 510) {
+  const tasks = items.filter((item) => item.kind !== "calendar_event" && item.completed).length * 5;
+  const focus = focusSessions.filter((session) => session.earns_coins !== false && !session.is_break).length * 10;
+  const sleep = sleepEntries.filter((entry) => Number(entry.minutes || 0) >= sleepGoalMinutes).length * 5;
+  const calendar = items
+    .filter((item) => item.kind === "calendar_event")
+    .reduce((sum, item) => {
+      const completions = Array.isArray(item.completed_dates) ? item.completed_dates.length : Number(Boolean(item.completed));
+      if (item.category === "YMCA") return sum + completions * 15;
+      if (item.category === "Track & Field") return sum + completions * 10;
+      return sum;
+    }, 0);
+  const bonus = rewards.filter((entry) => entry.amount > 0).reduce((sum, entry) => sum + entry.amount, 0);
+  const spent = Math.abs(rewards.filter((entry) => entry.amount < 0).reduce((sum, entry) => sum + entry.amount, 0));
+
+  return {
+    tasks,
+    focus,
+    sleep,
+    calendar,
+    bonus,
+    spent,
+    total: tasks + focus + sleep + calendar + bonus - spent,
+  };
 }
 
 export function parseIcsEvents(icsText) {
@@ -120,12 +185,10 @@ export function parseIcsEvents(icsText) {
     .split("BEGIN:VEVENT")
     .slice(1)
     .flatMap((block) => {
-      const body = block.split("END:VEVENT")[0] || block;
-      const title = readIcsField(body, "SUMMARY") || "Calendar event";
-      const uid = readIcsField(body, "UID");
-      const start = readIcsField(body, "DTSTART");
-      const end = readIcsField(body, "DTEND");
-      const rrule = readIcsField(body, "RRULE");
+      const title = readIcsField(block, "SUMMARY") || "Calendar event";
+      const start = readIcsField(block, "DTSTART");
+      const end = readIcsField(block, "DTEND");
+      const rrule = readIcsField(block, "RRULE");
       const startDate = parseIcsDate(start);
       const endDate = parseIcsDate(end);
 
@@ -133,7 +196,7 @@ export function parseIcsEvents(icsText) {
 
       const durationMinutes = endDate ? Math.max(15, Math.round((endDate - startDate) / 60000)) : 30;
       const exclusions = new Set(
-        readIcsFields(body, "EXDATE")
+        readIcsFields(block, "EXDATE")
           .flatMap((value) => value.split(","))
           .map((value) => parseIcsDate(value))
           .filter(Boolean)
@@ -141,7 +204,7 @@ export function parseIcsEvents(icsText) {
       );
       const starts = rrule ? expandRecurrence(startDate, rrule).filter((date) => !exclusions.has(formatDateKey(date))) : [startDate];
 
-      return starts.map((instanceStart) => buildIcsItem({ uid, start, title, instanceStart, durationMinutes }));
+      return starts.map((instanceStart) => buildIcsItem({ start, title, instanceStart, durationMinutes }));
     })
     .filter(Boolean)
     .sort((a, b) => String(a.scheduled_at).localeCompare(String(b.scheduled_at)));
@@ -152,12 +215,6 @@ export function calculateSleepMinutes(sleptAt, wokeAt) {
   const woke = new Date(wokeAt);
   if (Number.isNaN(slept.getTime()) || Number.isNaN(woke.getTime())) return 0;
   return Math.max(0, Math.round((woke - slept) / 60000));
-}
-
-export const MAX_SLEEP_MINUTES = 11 * 60;
-
-export function isSleepDurationValid(minutes) {
-  return minutes > 0 && minutes <= MAX_SLEEP_MINUTES;
 }
 
 export function getSleepSummary(entries, goalMinutes = 480) {
@@ -200,7 +257,7 @@ export function countSessionsForDate(focusSessions, dateKey = todayKey()) {
 export function formatSleepDuration(minutes) {
   const hours = Math.floor(minutes / 60);
   const remainder = minutes % 60;
-  if (!minutes) return "—";
+  if (!minutes) return "\u2014";
   if (!remainder) return `${hours}h`;
   return `${hours}h ${remainder}m`;
 }
@@ -225,11 +282,8 @@ function addDays(dateKey, days) {
   return formatDateKey(date);
 }
 
-function buildIcsItem({ uid, start, title, instanceStart, durationMinutes }) {
-  const baseKey = uid
-    ? `${uid}-${formatDateKey(instanceStart)}`
-    : `${start}-${title}-${instanceStart.toISOString()}`;
-  const key = baseKey.replace(/[^a-z0-9-]/gi, "-").toLowerCase();
+function buildIcsItem({ start, title, instanceStart, durationMinutes }) {
+  const key = `${start}-${title}-${instanceStart.toISOString()}`.replace(/[^a-z0-9-]/gi, "-").toLowerCase();
   return {
     id: `ics-${key}`,
     kind: "calendar_event",
@@ -241,7 +295,7 @@ function buildIcsItem({ uid, start, title, instanceStart, durationMinutes }) {
     scheduled_at: instanceStart.toISOString(),
     duration_minutes: durationMinutes,
     completed: false,
-    color: "#8b5cf6",
+    color: "#155a8a",
     source: "ics",
   };
 }

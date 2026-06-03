@@ -39,12 +39,12 @@
         <section class="view active" id="homeView" aria-labelledby="homeTitle">
           <header class="hero-grid">
             <div class="hero-profile">
-              <span class="hero-avatar" aria-hidden="true">A</span>
+              <button class="hero-avatar" id="heroAvatar" type="button" aria-label="Change profile photo"><span>A</span></button>
+              <input id="avatarFileInput" type="file" accept="image/*" hidden />
               <div>
                 <p class="greeting" id="greeting">Good evening</p>
                 <h1 id="homeTitle">Aran</h1>
                 <p class="current-date"><i data-lucide="calendar-days"></i><span id="currentDateText"></span></p>
-                <p class="fresh-line" id="freshLine"></p>
               </div>
             </div>
             <div class="coin-chip" title="Total coins">
@@ -53,40 +53,36 @@
             </div>
           </header>
           <section class="quote-card">
+            <span class="quote-mark" aria-hidden="true"><i data-lucide="quote"></i></span>
             <p id="quoteText"></p>
             <button class="icon-button" id="nextQuoteButton" type="button" aria-label="New quote" title="New quote"><i data-lucide="refresh-cw"></i></button>
           </section>
           <section class="stats-grid athlete-stats" aria-label="Progress stats">
             <article class="stat-card accent-blue"><span><i data-lucide="check-circle-2"></i></span><strong id="doneTodayStat">0</strong><small>Done Today</small></article>
             <article class="stat-card accent-teal"><span><i data-lucide="list-todo"></i></span><strong id="openTasksStat">0</strong><small>To Do</small></article>
-            <article class="stat-card accent-orange"><span><i data-lucide="flame"></i></span><strong id="streakStat">&mdash;</strong><small>Streak</small></article>
-            <article class="stat-card stat-action accent-orange stat-highlight"><span><i data-lucide="timer"></i></span><strong id="trackWeekStat">0 / 3</strong><small>Track Sessions This Week</small><button class="mini-add" id="addTrackSessionButton" type="button" title="Log track session">+ Log</button></article>
+            <article class="stat-card accent-orange"><span><i data-lucide="flame"></i></span><strong id="streakStat">&mdash;</strong><small>Day Streak</small></article>
+            <article class="stat-card stat-action accent-orange stat-highlight"><span><i data-lucide="footprints"></i></span><strong id="trackWeekStat">0 / 3</strong><small>Track Sessions This Week</small><button class="mini-add" id="addTrackSessionButton" type="button" title="Log track session">+ Log</button></article>
             <article class="stat-card stat-action accent-green stat-highlight"><span><i data-lucide="dumbbell"></i></span><strong id="pushupsWeekStat">0 / 60</strong><small>Pushups This Week</small><button class="mini-add" id="addPushupsButton" type="button" title="Log 10 pushups">+10</button></article>
-            <article class="stat-card accent-gold stat-highlight"><span><i data-lucide="trophy"></i></span><strong id="coinsStat">0</strong><small>Coins <button class="info-button" title="Earn coins from completed tasks, focus, sleep goals and training events." aria-label="Coins info"><i data-lucide="info"></i></button></small></article>
+            <article class="stat-card accent-gold stat-highlight"><span><i data-lucide="trophy"></i></span><strong id="coinsStat">0</strong><small>Total Coins</small></article>
           </section>
           <section class="upcoming-card surface" aria-labelledby="upcomingTitle">
             <div class="card-heading"><h2 id="upcomingTitle">Upcoming Today</h2><button class="see-all" data-view="calendar" type="button">See all <i data-lucide="chevron-right"></i></button></div>
-            <div class="upcoming-pills" id="upcomingTodayList"></div>
+            <div class="upcoming-rail" id="upcomingTodayList"></div>
           </section>
           <section class="coach-card surface" aria-labelledby="coachTitle">
-            <span class="coach-icon" aria-hidden="true"><i data-lucide="brain"></i></span>
-            <div class="coach-body">
-              <div class="coach-title-row"><h2 id="coachTitle">AI Coach</h2><span class="coach-badge">New tip</span></div>
-              <p id="coachText"></p>
-            </div>
-            <button class="icon-button coach-refresh" id="coachButton" type="button" title="New coaching tip" aria-label="New coaching tip"><i data-lucide="refresh-cw"></i></button>
+            <button class="coach-main" id="coachButton" type="button" title="New coaching tip" aria-label="New coaching tip">
+              <span class="coach-icon" aria-hidden="true"><i data-lucide="brain"></i></span>
+              <div class="coach-body">
+                <div class="coach-title-row"><h2 id="coachTitle">AI Coach</h2><span class="coach-badge">New tip</span></div>
+                <p id="coachText"></p>
+              </div>
+              <i data-lucide="chevron-right" class="coach-chevron" aria-hidden="true"></i>
+            </button>
+            <div class="coach-dots" id="coachDots" aria-hidden="true"></div>
           </section>
           <section class="duke-card surface" aria-labelledby="homeDukeTitle">
-            <div class="card-heading"><h2 id="homeDukeTitle">Duke of Edinburgh &ndash; Bronze Progress</h2><span>Tap a bar to advance 10%</span></div>
+            <div class="card-heading"><h2 id="homeDukeTitle">Duke of Edinburgh &ndash; Bronze Progress <i data-lucide="info" class="heading-info"></i></h2><span>Tap a bar to advance 10%</span></div>
             <div class="duke-bars" data-duke-bars="home"></div>
-          </section>
-          <section class="reminder-gallery surface" aria-labelledby="remindersTitle">
-            <div class="card-heading"><h2 id="remindersTitle">People to remember</h2><span>Tap a photo to reflect</span></div>
-            <div class="photo-rail">
-              <figure class="memory-card" data-memory-id="family"><img src="/assets/reminders/family-birthday.jpg" alt="Family birthday reminder" /><figcaption>Family first</figcaption><label class="memory-note">Why I work for this<textarea data-memory-note="family"></textarea></label></figure>
-              <figure class="memory-card" data-memory-id="moments"><img src="/assets/reminders/reminder-1.jpg" alt="Good family moment reminder" /><figcaption>Good moments</figcaption><label class="memory-note">Why I work for this<textarea data-memory-note="moments"></textarea></label></figure>
-              <figure class="memory-card" data-memory-id="future"><img src="/assets/reminders/reminder-2.jpg" alt="Goal reminder" /><figcaption>Work for this</figcaption><label class="memory-note">Why I work for this<textarea data-memory-note="future"></textarea></label></figure>
-            </div>
           </section>
         </section>
 
@@ -230,7 +226,8 @@
       <form id="sleepForm" method="dialog">
         <div class="dialog-heading"><h2>Add sleep</h2><button class="icon-button" id="closeSleepButton" type="button" aria-label="Close">X</button></div>
         <label>Date<input id="sleepDateInput" type="date" required /></label>
-        <div class="form-grid"><label>Bedtime<input id="sleptAtInput" type="datetime-local" required /></label><label>Wake time<input id="wokeAtInput" type="datetime-local" required /></label></div>
+        <div class="form-grid"><label>Fell asleep<input id="sleptAtInput" type="time" required /></label><label>Woke up<input id="wokeAtInput" type="time" required /></label></div>
+        <p class="sleep-help">Just pick when you fell asleep and woke up &mdash; crossing midnight is handled for you.</p>
         <p class="form-error" id="sleepError" role="alert" hidden>Not valid. Sleep must be 11 hours or less.</p>
         <button class="primary-button" type="submit">Save sleep</button>
       </form>

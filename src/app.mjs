@@ -32,6 +32,18 @@ const categoryColors = {
   Personal: "#9aa9ba",
   Calendar: "#22c6d6",
 };
+const categoryIcons = {
+  School: "book-open",
+  "Track & Field": "footprints",
+  YMCA: "users",
+  "Duke of Ed": "award",
+  "Web Dev": "code-2",
+  Personal: "user",
+  Calendar: "calendar-days",
+};
+function iconForCategory(category) {
+  return categoryIcons[category] || "calendar-days";
+}
 const dukeLabels = { physical: "Physical (Track & Field)", volunteering: "Volunteering (YMCA)", skill: "Skill (Web Dev)" };
 const dukeMeta = {
   physical: { icon: "footprints", accent: "#f97316" },
@@ -190,7 +202,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function bindElements() {
   [
-    "greeting", "homeTitle", "currentDateText", "freshLine", "quoteText", "nextQuoteButton", "coachText", "coachButton", "heroCoins",
+    "greeting", "homeTitle", "currentDateText", "quoteText", "nextQuoteButton", "coachText", "coachButton", "coachDots", "heroCoins",
     "doneTodayStat", "openTasksStat", "streakStat", "coinsStat", "trackWeekStat", "pushupsWeekStat", "addTrackSessionButton",
     "addPushupsButton", "upcomingTodayList", "taskFilters", "taskList", "quickTaskForm", "quickTaskInput", "quickTaskCategory",
     "pushupsTodayText", "pushupsTodayButton", "trackTodayToggle", "monthLabel", "todayButton", "calendarGrid", "monthCalendar",
@@ -223,6 +235,21 @@ function wireEvents() {
   document.getElementById("nextMonthButton").addEventListener("click", () => moveCalendar(1));
   els.brandHomeButton.addEventListener("click", () => setView("home"));
   els.settingsButton.addEventListener("click", () => els.settingsDialog.showModal());
+  const heroAvatar = document.getElementById("heroAvatar");
+  const avatarFileInput = document.getElementById("avatarFileInput");
+  heroAvatar?.addEventListener("click", () => avatarFileInput?.click());
+  avatarFileInput?.addEventListener("change", () => {
+    const file = avatarFileInput.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      settings.avatarUrl = String(reader.result);
+      saveJson(SETTINGS_KEY, settings);
+      applyAvatar();
+    };
+    reader.readAsDataURL(file);
+    avatarFileInput.value = "";
+  });
   els.nextQuoteButton.addEventListener("click", nextQuote);
   els.coachButton.addEventListener("click", () => renderCoach(true));
   els.addTrackSessionButton.addEventListener("click", () => logFitness({ track_session: true }));
@@ -352,11 +379,23 @@ function render() {
 
 function renderHome() {
   const date = new Date();
-  els.greeting.textContent = `${getGreeting(date)} ${getGreetingEmoji(date)}`;
+  els.greeting.textContent = `${getGreeting(date)},`;
   els.homeTitle.textContent = settings.displayName;
   els.currentDateText.textContent = formatDisplayDate(date);
-  els.freshLine.textContent = getHomeSubtitle(date);
   els.quoteText.textContent = quotePool[dailyIndex(quotePool.length)];
+  applyAvatar();
+}
+
+function applyAvatar() {
+  const avatar = document.getElementById("heroAvatar");
+  if (!avatar) return;
+  if (settings.avatarUrl) {
+    avatar.style.backgroundImage = `url("${settings.avatarUrl}")`;
+    avatar.classList.add("has-photo");
+  } else {
+    avatar.style.backgroundImage = "";
+    avatar.classList.remove("has-photo");
+  }
 }
 
 function nextQuote() {
@@ -367,6 +406,10 @@ function nextQuote() {
 function renderCoach(randomize = false) {
   const index = randomize ? Math.floor(Math.random() * coachTips.length) : (dailyIndex(coachTips.length) + state.focusSessions.length) % coachTips.length;
   els.coachText.textContent = coachTips[index];
+  if (els.coachDots) {
+    const count = Math.min(7, coachTips.length);
+    els.coachDots.innerHTML = Array.from({ length: count }, (_, i) => `<span class="${i === index % count ? "active" : ""}"></span>`).join("");
+  }
 }
 
 function renderStats() {
@@ -382,9 +425,17 @@ function renderStats() {
 }
 
 function renderUpcomingToday() {
-  const events = eventsForDate(state.items, todayKey()).sort(sortByTime).slice(0, 3);
+  const events = eventsForDate(state.items, todayKey()).sort(sortByTime).slice(0, 6);
   els.upcomingTodayList.innerHTML = events.length
-    ? events.map((event) => `<span class="event-pill" style="--accent:${colorFor(event.category)}"><b>${formatEventTime(event)}</b>${escapeHtml(event.title)}</span>`).join("")
+    ? events.map((event) => {
+        const start = event.start_time ? clock(event.start_time) : "All day";
+        return `<article class="upcoming-item" style="--accent:${colorFor(event.category)}">
+          <span class="upcoming-icon"><i data-lucide="${iconForCategory(event.category)}"></i></span>
+          <span class="upcoming-time">${start}</span>
+          <strong class="upcoming-name">${escapeHtml(event.title)}</strong>
+          <span class="upcoming-range"><i></i>${formatEventTime(event)}</span>
+        </article>`;
+      }).join("")
     : '<p class="empty-inline">No events today - free day.</p>';
 }
 
@@ -535,11 +586,11 @@ function renderSleep() {
   els.lastMood.textContent = latest ? `${latest.mood_emoji || ""} ${latest.mood_tag || ""}`.trim() || "\u2014" : "\u2014";
   els.sleepHint.textContent = `Goal: ${settings.sleepGoalHours} hours`;
   if (!summary.points.length) {
-    els.sleepChart.innerHTML = '<article class="empty-state compact"><strong>No sleep yet</strong><p>Add the date, bedtime, and wake time.</p></article>';
+    els.sleepChart.innerHTML = '<article class="empty-state compact"><strong>No sleep yet</strong><p>Add a date plus the time you fell asleep and woke up.</p></article>';
     els.sleepList.innerHTML = "";
     return;
   }
-  els.sleepChart.innerHTML = `<span class="goal-line" style="bottom:${Math.min(92, Math.round((goalMinutes / Math.max(goalMinutes, ...summary.points.map((point) => point.minutes))) * 100))}%"></span>${summary.points.map((point) => `<div class="sleep-bar"><span class="sleep-bar-fill" style="height:${point.percent}%"></span><strong>${point.label}</strong><small>${new Date(`${point.date}T00:00:00`).toLocaleDateString("en", { weekday: "short" })}</small></div>`).join("")}`;
+  renderSleepGraph(summary.points, goalMinutes);
   els.sleepList.innerHTML = sorted.slice(0, 7).map((entry) => {
     const entryScore = calculateSleepScore(Number(entry.minutes));
     const trained = eventsForDate(state.items, entry.sleep_date).some((event) => event.category === "Track & Field");
@@ -547,6 +598,79 @@ function renderSleep() {
   }).join("");
   els.sleepList.querySelectorAll("[data-delete-sleep]").forEach((button) => button.addEventListener("click", () => deleteSleepEntry(button.dataset.deleteSleep)));
   refreshIcons();
+}
+
+let sleepScrubPoints = [];
+
+function renderSleepGraph(points, goalMinutes) {
+  const W = 700, H = 240, ml = 38, mr = 16, mt = 16, mb = 30;
+  const plotW = W - ml - mr, plotH = H - mt - mb;
+  const minH = 4, maxH = 12; // 8 hours sits in the middle of the range
+  const yForHours = (hours) => mt + (1 - (Math.min(maxH, Math.max(minH, hours)) - minH) / (maxH - minH)) * plotH;
+  const yFor = (minutes) => yForHours(minutes / 60);
+  const xFor = (i) => points.length === 1 ? ml + plotW / 2 : ml + (i / (points.length - 1)) * plotW;
+  const coords = points.map((point, i) => ({ ...point, x: xFor(i), y: yFor(point.minutes) }));
+  sleepScrubPoints = coords;
+
+  const grid = [4, 6, 8, 10, 12].map((hours) => {
+    const y = yForHours(hours).toFixed(1);
+    return `<line class="sleep-grid" x1="${ml}" y1="${y}" x2="${W - mr}" y2="${y}"></line><text class="sleep-axis" x="${ml - 8}" y="${(Number(y) + 4).toFixed(1)}" text-anchor="end">${hours}h</text>`;
+  }).join("");
+  const goalHours = goalMinutes / 60;
+  const goalLine = goalHours >= minH && goalHours <= maxH
+    ? `<line class="sleep-goal-line" x1="${ml}" y1="${yForHours(goalHours).toFixed(1)}" x2="${W - mr}" y2="${yForHours(goalHours).toFixed(1)}"></line>`
+    : "";
+  const linePath = coords.map((c, i) => `${i === 0 ? "M" : "L"}${c.x.toFixed(1)} ${c.y.toFixed(1)}`).join(" ");
+  const areaPath = `${linePath} L${coords.at(-1).x.toFixed(1)} ${(mt + plotH).toFixed(1)} L${coords[0].x.toFixed(1)} ${(mt + plotH).toFixed(1)} Z`;
+  const dots = coords.map((c, i) => `<circle class="sleep-dot" cx="${c.x.toFixed(1)}" cy="${c.y.toFixed(1)}" r="4" data-i="${i}"></circle>`).join("");
+  const xLabels = coords.map((c) => `<text class="sleep-axis" x="${c.x.toFixed(1)}" y="${H - 8}" text-anchor="middle">${new Date(`${c.date}T00:00:00`).toLocaleDateString("en", { weekday: "short" })}</text>`).join("");
+
+  els.sleepChart.innerHTML = `
+    <div class="sleep-graph">
+      <svg class="sleep-svg" viewBox="0 0 ${W} ${H}" role="img" aria-label="Hours of sleep over time">
+        <defs><linearGradient id="sleepFill" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="rgba(56,189,248,0.35)"></stop>
+          <stop offset="100%" stop-color="rgba(56,189,248,0)"></stop>
+        </linearGradient></defs>
+        ${grid}${goalLine}
+        <path class="sleep-area" d="${areaPath}"></path>
+        <path class="sleep-line" d="${linePath}"></path>
+        ${dots}${xLabels}
+        <line class="sleep-scrub" id="sleepScrubLine" x1="0" y1="${mt}" x2="0" y2="${mt + plotH}" style="opacity:0"></line>
+        <circle class="sleep-scrub-dot" id="sleepScrubDot" r="6" style="opacity:0"></circle>
+      </svg>
+      <div class="sleep-tip" id="sleepTip" hidden></div>
+    </div>`;
+
+  const graph = els.sleepChart.querySelector(".sleep-graph");
+  const svg = graph.querySelector(".sleep-svg");
+  const tip = graph.querySelector("#sleepTip");
+  const scrubLine = graph.querySelector("#sleepScrubLine");
+  const scrubDot = graph.querySelector("#sleepScrubDot");
+
+  const showAt = (clientX) => {
+    const rect = svg.getBoundingClientRect();
+    if (!rect.width) return;
+    const vx = Math.min(1, Math.max(0, (clientX - rect.left) / rect.width)) * W;
+    let nearest = sleepScrubPoints[0];
+    for (const c of sleepScrubPoints) if (Math.abs(c.x - vx) < Math.abs(nearest.x - vx)) nearest = c;
+    scrubLine.setAttribute("x1", nearest.x);
+    scrubLine.setAttribute("x2", nearest.x);
+    scrubLine.style.opacity = "1";
+    scrubDot.setAttribute("cx", nearest.x);
+    scrubDot.setAttribute("cy", nearest.y);
+    scrubDot.style.opacity = "1";
+    const hours = Math.floor(nearest.minutes / 60), mins = nearest.minutes % 60;
+    tip.hidden = false;
+    tip.innerHTML = `<strong>${hours}h ${mins}m</strong><span>${new Date(`${nearest.date}T00:00:00`).toLocaleDateString("en", { weekday: "short", month: "short", day: "numeric" })}</span>`;
+    tip.style.left = `${(nearest.x / W) * 100}%`;
+    tip.style.top = `${(nearest.y / H) * 100}%`;
+  };
+  const hide = () => { tip.hidden = true; scrubLine.style.opacity = "0"; scrubDot.style.opacity = "0"; };
+
+  graph.addEventListener("pointerdown", (event) => { graph.setPointerCapture?.(event.pointerId); showAt(event.clientX); });
+  graph.addEventListener("pointermove", (event) => { if (event.buttons || event.pointerType === "mouse") showAt(event.clientX); });
+  graph.addEventListener("pointerleave", hide);
 }
 
 function renderFocus() {
@@ -783,24 +907,32 @@ function goToToday() {
 }
 
 function openSleepDialog() {
-  const date = todayKey();
-  const tomorrow = addDays(date, 1);
   els.sleepError.hidden = true;
-  els.sleepDateInput.value = date;
-  els.sleptAtInput.value = `${date}T22:30`;
-  els.wokeAtInput.value = `${tomorrow}T07:00`;
+  els.sleepDateInput.value = todayKey();
+  els.sleptAtInput.value = "22:30";
+  els.wokeAtInput.value = "07:00";
   els.sleepDialog.showModal();
 }
 
 function saveSleepFromForm() {
-  const minutes = calculateSleepMinutes(els.sleptAtInput.value, els.wokeAtInput.value);
+  const date = els.sleepDateInput.value;
+  const sleptTime = els.sleptAtInput.value;
+  const wokeTime = els.wokeAtInput.value;
+  if (!date || !sleptTime || !wokeTime) {
+    els.sleepError.hidden = false;
+    return;
+  }
+  const sleptAt = `${date}T${sleptTime}`;
+  // If you woke at or before your bedtime clock value, you slept past midnight.
+  const wokeAt = `${wokeTime <= sleptTime ? addDays(date, 1) : date}T${wokeTime}`;
+  const minutes = calculateSleepMinutes(sleptAt, wokeAt);
   if (!minutes || minutes > 660) {
     els.sleepError.hidden = false;
     return;
   }
   const entry = {
-    id: crypto.randomUUID(), owner_key: settings.ownerKey, sleep_date: els.sleepDateInput.value,
-    slept_at: els.sleptAtInput.value, woke_at: els.wokeAtInput.value, minutes, mood_tag: "", mood_emoji: "",
+    id: crypto.randomUUID(), owner_key: settings.ownerKey, sleep_date: date,
+    slept_at: sleptAt, woke_at: wokeAt, minutes, mood_tag: "", mood_emoji: "",
     created_at: new Date().toISOString(),
   };
   state.sleepEntries = [entry, ...state.sleepEntries.filter((item) => item.sleep_date !== entry.sleep_date)];

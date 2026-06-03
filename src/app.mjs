@@ -550,6 +550,18 @@ function renderTimer() {
   button.innerHTML = timer.intervalId ? '<i data-lucide="pause"></i>' : '<i data-lucide="play"></i>';
   button.title = timer.intervalId ? "Pause" : "Start";
   button.setAttribute("aria-label", button.title);
+
+  // Update Pomodoro SVG circular progress
+  const progressCircle = document.getElementById("timerProgressCircle");
+  if (progressCircle) {
+    const radius = 100; // matching r="100" in SVG
+    const circumference = radius * 2 * Math.PI;
+    progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
+    const totalSeconds = timer.durationMinutes * 60;
+    const fraction = totalSeconds > 0 ? (timer.secondsLeft / totalSeconds) : 0;
+    progressCircle.style.strokeDashoffset = circumference - (fraction * circumference);
+  }
+
   refreshIcons();
 }
 

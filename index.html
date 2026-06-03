@@ -7,6 +7,9 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Life Flow" />
     <title>Life Flow | Aran</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="stylesheet" href="/styles.css" />
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
@@ -135,7 +138,16 @@
               <div class="focus-metrics"><strong id="sessionsTodayText">Sessions today: 0 / 4</strong><span id="focusMinutesText">Total focus time today: 0 min</span><div class="session-dots" id="sessionDots"></div></div>
             </aside>
             <section class="timer-card">
-              <div class="timer-ring"><strong id="timerText">25:00</strong><span>Pomodoro</span></div>
+              <div class="timer-ring">
+                <svg class="timer-svg" viewBox="0 0 220 220">
+                  <circle class="timer-bg" cx="110" cy="110" r="100"></circle>
+                  <circle class="timer-progress" id="timerProgressCircle" cx="110" cy="110" r="100"></circle>
+                </svg>
+                <div class="timer-content">
+                  <strong id="timerText">25:00</strong>
+                  <span>Pomodoro</span>
+                </div>
+              </div>
               <div class="timer-controls">
                 <button class="icon-button" id="resetTimerButton" type="button" title="Reset" aria-label="Reset"><i data-lucide="rotate-ccw"></i></button>
                 <button class="play-button" id="playTimerButton" type="button" title="Start" aria-label="Start"><i data-lucide="play"></i></button>

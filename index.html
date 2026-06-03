@@ -13,7 +13,7 @@
     <link rel="manifest" href="/manifest.webmanifest" />
     <link rel="stylesheet" href="/styles.css" />
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
-    <script type="module" src="/src/app.mjs?v=20260526-2"></script>
+    <script type="module" src="/src/app.mjs?v=20260603-tasks"></script>
   </head>
   <body class="dark-mode">
     <div class="app-shell">
@@ -91,26 +91,42 @@
         </section>
 
         <section class="view" id="tasksView" aria-labelledby="tasksTitle">
-          <div class="section-heading section-heading-tasks"><h1 id="tasksTitle">Tasks</h1><button class="add-button labeled" data-open-compose="daily_task" type="button" title="New Task"><i data-lucide="plus"></i><span>New Task</span></button></div>
-          <details class="duke-card surface tracker-panel" open>
-            <summary>Duke of Ed &mdash; Bronze Tracker</summary>
-            <div class="duke-bars" data-duke-bars="tasks"></div>
-          </details>
-          <section class="fitness-card surface" aria-label="Fitness quick log">
-            <div><strong id="pushupsTodayText">Pushups logged today: 0</strong><button class="mini-add" id="pushupsTodayButton" type="button">+10</button></div>
-            <div><strong>Track session today?</strong><div class="segmented" id="trackTodayToggle"><button type="button" data-track-value="true">Yes</button><button type="button" data-track-value="false">No</button></div></div>
-          </section>
-          <form class="quick-task surface" id="quickTaskForm">
-            <input id="quickTaskInput" type="text" maxlength="120" required placeholder="What needs to get done?" />
-            <select id="quickTaskCategory" aria-label="Task category">
-              <option>School</option><option>Track &amp; Field</option><option>YMCA</option><option>Duke of Ed</option><option>Web Dev</option><option>Personal</option>
-            </select>
-            <button class="primary-button" type="submit">Add</button>
-          </form>
-          <div class="filter-row" id="taskFilters">
-            <button class="filter-pill active" data-filter="today" type="button">Today</button><button class="filter-pill" data-filter="all" type="button">All</button><button class="filter-pill" data-filter="school" type="button">School</button><button class="filter-pill" data-filter="track" type="button">Track</button><button class="filter-pill" data-filter="ymca" type="button">YMCA</button><button class="filter-pill" data-filter="duke" type="button">Duke of Ed</button><button class="filter-pill" data-filter="web-dev" type="button">Web Dev</button>
+          <div class="tasks-google-shell">
+            <aside class="tasks-google-rail surface" aria-label="Task lists">
+              <button class="google-create-button" type="submit" form="quickTaskForm"><i data-lucide="plus"></i><span>Create</span></button>
+              <nav class="tasks-google-filters" id="taskFilters" aria-label="Task filters">
+                <button class="active" data-filter="today" type="button"><i data-lucide="check-circle-2"></i><span>Today</span></button>
+                <button data-filter="all" type="button"><i data-lucide="list-checks"></i><span>All tasks</span></button>
+                <button data-filter="school" type="button"><i data-lucide="book-open"></i><span>School</span></button>
+                <button data-filter="track" type="button"><i data-lucide="timer"></i><span>Track</span></button>
+                <button data-filter="ymca" type="button"><i data-lucide="heart-handshake"></i><span>YMCA</span></button>
+                <button data-filter="duke" type="button"><i data-lucide="badge-check"></i><span>Duke of Ed</span></button>
+                <button data-filter="web-dev" type="button"><i data-lucide="code-2"></i><span>Web Dev</span></button>
+              </nav>
+              <details class="google-tracker" open>
+                <summary>Duke of Ed Bronze</summary>
+                <div class="duke-bars" data-duke-bars="tasks"></div>
+              </details>
+              <section class="google-fitness" aria-label="Fitness quick log">
+                <div><span id="pushupsTodayText">Pushups logged today: 0</span><button class="mini-add" id="pushupsTodayButton" type="button">+10</button></div>
+                <div><span>Track session today?</span><div class="segmented" id="trackTodayToggle"><button type="button" data-track-value="true">Yes</button><button type="button" data-track-value="false">No</button></div></div>
+              </section>
+            </aside>
+            <section class="tasks-google-board surface">
+              <header class="tasks-board-heading">
+                <h1 id="tasksTitle">My Tasks</h1>
+                <button class="icon-button" data-open-compose="daily_task" type="button" title="More task options" aria-label="More task options"><i data-lucide="more-vertical"></i></button>
+              </header>
+              <form class="quick-task google-add-task" id="quickTaskForm">
+                <button class="add-task-icon" type="submit" aria-label="Add task"><i data-lucide="circle-plus"></i></button>
+                <input id="quickTaskInput" type="text" maxlength="120" required placeholder="Add a task" />
+                <select id="quickTaskCategory" aria-label="Task category">
+                  <option>School</option><option>Track &amp; Field</option><option>YMCA</option><option>Duke of Ed</option><option>Web Dev</option><option>Personal</option>
+                </select>
+              </form>
+              <div class="task-list google-task-list" id="taskList"></div>
+            </section>
           </div>
-          <div class="task-list" id="taskList"></div>
         </section>
 
         <section class="view" id="calendarView" aria-labelledby="calendarTitle">

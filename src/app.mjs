@@ -439,7 +439,7 @@ function renderTasks() {
     row.querySelector("[data-edit-task]").addEventListener("click", () => openCompose(task.kind, task));
     row.querySelector("[data-delete-task]").addEventListener("click", () => deleteItem(task.id));
     row.querySelector("[data-expand-task]").addEventListener("click", () => row.classList.toggle("expanded"));
-    row.querySelector("[data-subtask-form]").addEventListener("submit", (event) => {
+    row.querySelector("[data-subtask-form]")?.addEventListener("submit", (event) => {
       event.preventDefault();
       addSubtask(task.id, event.target.elements.title.value);
     });
@@ -451,18 +451,18 @@ function renderTasks() {
 function taskMarkup(task) {
   const overdue = !task.completed && task.due_date && task.due_date < todayKey();
   const subtasks = task.subtasks || [];
-  return `<article class="task-item ${task.completed ? "completed" : ""}" data-task-id="${task.id}" style="--accent:${colorFor(task.category)}">
-    <button class="task-check" data-toggle-task type="button" aria-label="Complete ${escapeHtml(task.title)}"></button>
+  const completedCount = subtasks.filter((entry) => entry.completed).length;
+  return `<article class="task-item google-task-row ${task.completed ? "completed" : ""}" data-task-id="${task.id}" style="--accent:${colorFor(task.category)}">
+    <button class="task-check google-task-check" data-toggle-task type="button" aria-label="Complete ${escapeHtml(task.title)}"></button>
     <div class="task-main">
-      <div class="task-labels"><span class="category-tag">${escapeHtml(task.category || "Personal")}</span>${overdue ? '<span class="overdue">OVERDUE</span>' : ""}</div>
       <p class="task-title">${escapeHtml(task.title)}</p>
-      <div class="task-meta">${task.priority || "medium"} priority${task.due_date ? ` &middot; Due ${prettyDate(task.due_date)}` : ""}</div>
+      <div class="task-meta"><span class="category-dot" aria-hidden="true"></span>${escapeHtml(task.category || "Personal")}${task.due_date ? ` &middot; ${prettyDate(task.due_date)}` : ""}${overdue ? ' &middot; <b class="overdue-inline">OVERDUE</b>' : ""}${subtasks.length ? ` &middot; ${completedCount}/${subtasks.length} subtasks` : ""}</div>
       <div class="subtask-panel">
         ${subtasks.map((entry, index) => `<label><input type="checkbox" data-subtask-index="${index}" ${entry.completed ? "checked" : ""}/> ${escapeHtml(entry.title)}</label>`).join("")}
-        ${subtasks.length < 5 ? '<form data-subtask-form><input name="title" maxlength="80" required placeholder="Add subtask" /><button type="submit">+</button></form>' : ""}
+        ${subtasks.length < 5 ? '<form data-subtask-form><input name="title" maxlength="80" required placeholder="Add step" /><button type="submit">+</button></form>' : ""}
       </div>
     </div>
-    <div class="task-actions"><button class="icon-button" data-expand-task type="button" title="Subtasks"><i data-lucide="list-tree"></i></button><button class="icon-button" data-edit-task type="button" title="Edit task"><i data-lucide="pencil"></i></button><button class="icon-button" data-delete-task type="button" title="Delete task"><i data-lucide="trash-2"></i></button></div>
+    <div class="task-actions"><button class="icon-button" data-expand-task type="button" title="Details"><i data-lucide="chevron-down"></i></button><button class="icon-button" data-edit-task type="button" title="Edit task"><i data-lucide="pencil"></i></button><button class="icon-button" data-delete-task type="button" title="Delete task"><i data-lucide="trash-2"></i></button></div>
   </article>`;
 }
 

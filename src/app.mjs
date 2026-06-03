@@ -33,6 +33,11 @@ const categoryColors = {
   Calendar: "#22c6d6",
 };
 const dukeLabels = { physical: "Physical (Track & Field)", volunteering: "Volunteering (YMCA)", skill: "Skill (Web Dev)" };
+const dukeMeta = {
+  physical: { icon: "footprints", accent: "#f97316" },
+  volunteering: { icon: "heart-handshake", accent: "#34d399" },
+  skill: { icon: "code-2", accent: "#fbbf24" },
+};
 const quotePool = [
   "Champions are made in the moments they want to quit.",
   "Speed is earned in quiet training sessions.",
@@ -185,11 +190,12 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function bindElements() {
   [
-    "greeting", "homeTitle", "currentDateText", "freshLine", "quoteText", "nextQuoteButton", "coachText", "coachButton",
+    "greeting", "homeTitle", "currentDateText", "freshLine", "quoteText", "nextQuoteButton", "coachText", "coachButton", "heroCoins",
     "doneTodayStat", "openTasksStat", "streakStat", "coinsStat", "trackWeekStat", "pushupsWeekStat", "addTrackSessionButton",
     "addPushupsButton", "upcomingTodayList", "taskFilters", "taskList", "quickTaskForm", "quickTaskInput", "quickTaskCategory",
     "pushupsTodayText", "pushupsTodayButton", "trackTodayToggle", "monthLabel", "todayButton", "calendarGrid", "monthCalendar",
-    "weekGrid", "calendarViewToggle", "agendaTitle", "agendaList", "addSleepButton", "sleepGoalInput", "lastNightSummary",
+    "weekGrid", "calendarViewToggle", "agendaTitle", "agendaList", "addSleepButton", "sleepGoalInput",
+    "lastNightDate", "lastBedtime", "lastWake", "lastDuration", "lastMood",
     "averageSleepStat", "sleepScoreStat", "sleepHint", "sleepChart", "sleepList", "focusTaskSelect", "focusLabelInput",
     "sessionsTodayText", "focusMinutesText", "sessionDots", "sessionHistoryList", "timerText", "customMinutesInput", "soundStatus",
     "arcadeCoins", "arcadeCoinBreakdown", "arcadeBoost", "arcadeBoostButton", "reactionStartButton", "reactionPad", "reactionBest",
@@ -261,6 +267,12 @@ function wireEvents() {
     state.calendarView = button.dataset.calendarView;
     persist();
     renderCalendar();
+  });
+  const sleepRangeToggle = document.getElementById("sleepRangeToggle");
+  sleepRangeToggle?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-sleep-range]");
+    if (!button) return;
+    sleepRangeToggle.querySelectorAll("button").forEach((item) => item.classList.toggle("active", item === button));
   });
   els.addSleepButton.addEventListener("click", openSleepDialog);
   els.sleepGoalInput.addEventListener("change", () => {
@@ -364,6 +376,7 @@ function renderStats() {
   els.openTasksStat.textContent = String(stats.openTasks);
   els.streakStat.textContent = stats.streakDays ? `${stats.streakDays}d` : "\u2014";
   els.coinsStat.textContent = String(stats.coins);
+  if (els.heroCoins) els.heroCoins.textContent = String(stats.coins);
   els.trackWeekStat.textContent = `${fitness.trackSessions} / ${settings.trackGoal}`;
   els.pushupsWeekStat.textContent = `${fitness.pushups} / ${settings.pushupGoal}`;
 }
@@ -377,11 +390,17 @@ function renderUpcomingToday() {
 
 function renderDukeProgress() {
   document.querySelectorAll("[data-duke-bars]").forEach((container) => {
-    container.innerHTML = Object.entries(dukeLabels).map(([key, label]) => `
-      <button class="duke-bar" type="button" data-duke-key="${key}" aria-label="Advance ${label}">
-        <span><b>${label}</b><strong>${state.dukeProgress[key]}%</strong></span>
-        <i><em style="width:${state.dukeProgress[key]}%"></em></i>
-      </button>`).join("");
+    container.innerHTML = Object.entries(dukeLabels).map(([key, label]) => {
+      const meta = dukeMeta[key] || { icon: "target", accent: "#22d3ee" };
+      const pct = state.dukeProgress[key];
+      return `
+      <button class="duke-bar" type="button" data-duke-key="${key}" style="--accent:${meta.accent}" aria-label="Advance ${label}">
+        <span class="duke-icon"><i data-lucide="${meta.icon}"></i></span>
+        <span class="duke-body"><b>${label}</b><i class="duke-track"><em style="width:${pct}%"></em></i></span>
+        <strong>${pct}%</strong>
+        <span class="duke-edit" aria-hidden="true"><i data-lucide="pencil"></i></span>
+      </button>`;
+    }).join("");
   });
 }
 
@@ -509,9 +528,11 @@ function renderSleep() {
   const score = latest ? calculateSleepScore(Number(latest.minutes)) : null;
   els.sleepScoreStat.textContent = score?.grade || "\u2014";
   els.sleepScoreStat.className = score ? `grade-${score.tone}` : "";
-  els.lastNightSummary.textContent = latest
-    ? `${prettyDate(latest.sleep_date)} | ${formatTime(latest.slept_at)} - ${formatTime(latest.woke_at)} | ${formatSleepDuration(latest.minutes)} | Score ${score.grade}`
-    : "Log your first night using the + button.";
+  els.lastNightDate.textContent = latest ? prettyDate(latest.sleep_date) : "No entries yet";
+  els.lastBedtime.textContent = latest ? formatTime(latest.slept_at) : "\u2014";
+  els.lastWake.textContent = latest ? formatTime(latest.woke_at) : "\u2014";
+  els.lastDuration.textContent = latest ? formatSleepDuration(latest.minutes) : "\u2014";
+  els.lastMood.textContent = latest ? `${latest.mood_emoji || ""} ${latest.mood_tag || ""}`.trim() || "\u2014" : "\u2014";
   els.sleepHint.textContent = `Goal: ${settings.sleepGoalHours} hours`;
   if (!summary.points.length) {
     els.sleepChart.innerHTML = '<article class="empty-state compact"><strong>No sleep yet</strong><p>Add the date, bedtime, and wake time.</p></article>';

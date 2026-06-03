@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#071a25" />
+    <meta name="theme-color" content="#0c1c2c" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-title" content="Life Flow" />
     <title>Life Flow | Aran</title>
@@ -38,11 +38,18 @@
 
         <section class="view active" id="homeView" aria-labelledby="homeTitle">
           <header class="hero-grid">
-            <div>
-              <p class="greeting" id="greeting">Good evening</p>
-              <h1 id="homeTitle">Aran</h1>
-              <p class="current-date" id="currentDateText"></p>
-              <p class="fresh-line" id="freshLine"></p>
+            <div class="hero-profile">
+              <span class="hero-avatar" aria-hidden="true">A</span>
+              <div>
+                <p class="greeting" id="greeting">Good evening</p>
+                <h1 id="homeTitle">Aran</h1>
+                <p class="current-date"><i data-lucide="calendar-days"></i><span id="currentDateText"></span></p>
+                <p class="fresh-line" id="freshLine"></p>
+              </div>
+            </div>
+            <div class="coin-chip" title="Total coins">
+              <i data-lucide="medal"></i>
+              <span><strong id="heroCoins">0</strong><small>coins</small></span>
             </div>
           </header>
           <section class="quote-card">
@@ -50,23 +57,27 @@
             <button class="icon-button" id="nextQuoteButton" type="button" aria-label="New quote" title="New quote"><i data-lucide="refresh-cw"></i></button>
           </section>
           <section class="stats-grid athlete-stats" aria-label="Progress stats">
-            <article class="stat-card"><span><i data-lucide="check-circle-2"></i></span><strong id="doneTodayStat">0</strong><small>Done Today</small></article>
-            <article class="stat-card"><span><i data-lucide="list-todo"></i></span><strong id="openTasksStat">0</strong><small>To Do</small></article>
-            <article class="stat-card"><span><i data-lucide="flame"></i></span><strong id="streakStat">&mdash;</strong><small>Streak</small></article>
-            <article class="stat-card"><span><i data-lucide="trophy"></i></span><strong id="coinsStat">0</strong><small>Coins <button class="info-button" title="Earn coins from completed tasks, focus, sleep goals and training events." aria-label="Coins info"><i data-lucide="info"></i></button></small></article>
-            <article class="stat-card stat-action"><span><i data-lucide="timer"></i></span><strong id="trackWeekStat">0 / 3</strong><small>Track Sessions This Week</small><button class="mini-add" id="addTrackSessionButton" type="button" title="Log track session">+ Log</button></article>
-            <article class="stat-card stat-action"><span><i data-lucide="dumbbell"></i></span><strong id="pushupsWeekStat">0 / 60</strong><small>Pushups This Week</small><button class="mini-add" id="addPushupsButton" type="button" title="Log 10 pushups">+10</button></article>
+            <article class="stat-card accent-blue"><span><i data-lucide="check-circle-2"></i></span><strong id="doneTodayStat">0</strong><small>Done Today</small></article>
+            <article class="stat-card accent-teal"><span><i data-lucide="list-todo"></i></span><strong id="openTasksStat">0</strong><small>To Do</small></article>
+            <article class="stat-card accent-orange"><span><i data-lucide="flame"></i></span><strong id="streakStat">&mdash;</strong><small>Streak</small></article>
+            <article class="stat-card stat-action accent-orange stat-highlight"><span><i data-lucide="timer"></i></span><strong id="trackWeekStat">0 / 3</strong><small>Track Sessions This Week</small><button class="mini-add" id="addTrackSessionButton" type="button" title="Log track session">+ Log</button></article>
+            <article class="stat-card stat-action accent-green stat-highlight"><span><i data-lucide="dumbbell"></i></span><strong id="pushupsWeekStat">0 / 60</strong><small>Pushups This Week</small><button class="mini-add" id="addPushupsButton" type="button" title="Log 10 pushups">+10</button></article>
+            <article class="stat-card accent-gold stat-highlight"><span><i data-lucide="trophy"></i></span><strong id="coinsStat">0</strong><small>Coins <button class="info-button" title="Earn coins from completed tasks, focus, sleep goals and training events." aria-label="Coins info"><i data-lucide="info"></i></button></small></article>
           </section>
           <section class="upcoming-card surface" aria-labelledby="upcomingTitle">
-            <div class="card-heading"><h2 id="upcomingTitle">Upcoming Today</h2><span>Next on your schedule</span></div>
+            <div class="card-heading"><h2 id="upcomingTitle">Upcoming Today</h2><button class="see-all" data-view="calendar" type="button">See all <i data-lucide="chevron-right"></i></button></div>
             <div class="upcoming-pills" id="upcomingTodayList"></div>
           </section>
           <section class="coach-card surface" aria-labelledby="coachTitle">
-            <div><h2 id="coachTitle">AI Coach</h2><p id="coachText"></p></div>
-            <button class="ghost-button compact" id="coachButton" type="button" title="New coaching tip"><i data-lucide="sparkles"></i><span>New tip</span></button>
+            <span class="coach-icon" aria-hidden="true"><i data-lucide="brain"></i></span>
+            <div class="coach-body">
+              <div class="coach-title-row"><h2 id="coachTitle">AI Coach</h2><span class="coach-badge">New tip</span></div>
+              <p id="coachText"></p>
+            </div>
+            <button class="icon-button coach-refresh" id="coachButton" type="button" title="New coaching tip" aria-label="New coaching tip"><i data-lucide="refresh-cw"></i></button>
           </section>
           <section class="duke-card surface" aria-labelledby="homeDukeTitle">
-            <div class="card-heading"><h2 id="homeDukeTitle">Duke of Ed Bronze</h2><span>Tap a bar to advance 10%</span></div>
+            <div class="card-heading"><h2 id="homeDukeTitle">Duke of Edinburgh &ndash; Bronze Progress</h2><span>Tap a bar to advance 10%</span></div>
             <div class="duke-bars" data-duke-bars="home"></div>
           </section>
           <section class="reminder-gallery surface" aria-labelledby="remindersTitle">
@@ -119,12 +130,29 @@
         <section class="view" id="sleepView" aria-labelledby="sleepTitle">
           <div class="section-heading section-heading-sleep"><div><h1 id="sleepTitle">Sleep</h1><p class="section-subtitle">Track bedtime, wake time, and recovery.</p></div><button class="add-button labeled" id="addSleepButton" type="button" title="Add Sleep"><i data-lucide="plus"></i><span>Add Sleep</span></button></div>
           <label class="sleep-goal">Sleep goal <input id="sleepGoalInput" type="number" min="6" max="10" step="0.5" value="8.5" /><span>hours</span></label>
-          <section class="last-night surface"><h2>Last night</h2><p id="lastNightSummary">Log your first night using the + button.</p></section>
-          <section class="sleep-summary-grid">
-            <article class="stat-card sleep-stat"><span><i data-lucide="moon"></i></span><strong id="averageSleepStat">&mdash;</strong><small>Avg Sleep This Week</small></article>
-            <article class="stat-card sleep-stat"><span><i data-lucide="trending-up"></i></span><strong id="sleepScoreStat">&mdash;</strong><small>Sleep Score</small></article>
+          <section class="sleep-card surface">
+            <div class="card-heading"><h2>Sleep quality</h2><span id="sleepHint"></span></div>
+            <div class="sleep-chart" id="sleepChart"></div>
+            <div class="segmented sleep-range" id="sleepRangeToggle" role="group" aria-label="Range">
+              <button class="active" type="button" data-sleep-range="days">Days</button>
+              <button type="button" data-sleep-range="weeks">Weeks</button>
+              <button type="button" data-sleep-range="months">Months</button>
+              <button type="button" data-sleep-range="all">All</button>
+            </div>
           </section>
-          <section class="sleep-card surface"><div class="card-heading"><h2>Last 7 entries</h2><span id="sleepHint"></span></div><div class="sleep-chart" id="sleepChart"></div></section>
+          <section class="last-night surface">
+            <div class="card-heading"><h2>Last night</h2><span id="lastNightDate"></span></div>
+            <div class="sleep-facts">
+              <div class="sleep-fact"><span class="accent-purple"><i data-lucide="moon"></i></span><div><strong id="lastBedtime">&mdash;</strong><small>Went to bed</small></div></div>
+              <div class="sleep-fact"><span class="accent-gold"><i data-lucide="alarm-clock"></i></span><div><strong id="lastWake">&mdash;</strong><small>Woke up</small></div></div>
+              <div class="sleep-fact"><span class="accent-teal"><i data-lucide="bed"></i></span><div><strong id="lastDuration">&mdash;</strong><small>Time asleep</small></div></div>
+              <div class="sleep-fact"><span class="accent-green"><i data-lucide="smile"></i></span><div><strong id="lastMood">&mdash;</strong><small>Wake mood</small></div></div>
+            </div>
+          </section>
+          <section class="sleep-summary-grid">
+            <article class="stat-card sleep-stat accent-teal"><span><i data-lucide="moon"></i></span><strong id="averageSleepStat">&mdash;</strong><small>Avg Sleep This Week</small></article>
+            <article class="stat-card sleep-stat accent-gold"><span><i data-lucide="trending-up"></i></span><strong id="sleepScoreStat">&mdash;</strong><small>Sleep Score</small></article>
+          </section>
           <div class="sleep-list" id="sleepList"></div>
         </section>
 

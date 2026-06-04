@@ -174,9 +174,32 @@ const recurringTemplates = [
   ["seed-ymca", "YMCA - Basketball & Volleyball Coaching", "YMCA", "2026-01-01", "10:00", "12:00", [6]],
   ["seed-duke", "Duke of Ed Log Entry", "Duke of Ed", "2026-01-01", "", "", [0]],
 ];
+// One-time import of Aran's handwritten sleep log [date, fell asleep, woke up] (24h, wake is next morning).
+const sleepLogImport = [
+  ["2026-05-05", "22:30", "07:00"],
+  ["2026-05-06", "23:03", "07:10"],
+  ["2026-05-10", "23:45", "08:45"],
+  ["2026-05-11", "22:02", "06:40"],
+  ["2026-05-13", "22:35", "06:35"],
+  ["2026-05-14", "23:05", "08:10"],
+  ["2026-05-15", "22:00", "07:00"],
+  ["2026-05-16", "22:15", "07:30"],
+  ["2026-05-17", "23:00", "07:20"],
+  ["2026-05-18", "23:30", "07:20"],
+  ["2026-05-19", "22:30", "06:55"],
+  ["2026-05-20", "22:06", "06:40"],
+  ["2026-05-21", "23:00", "08:00"],
+  ["2026-05-22", "22:30", "07:30"],
+  ["2026-05-23", "23:35", "09:30"],
+  ["2026-05-27", "22:20", "07:00"],
+  ["2026-05-28", "22:35", "07:08"],
+  ["2026-06-02", "22:38", "07:12"],
+  ["2026-06-03", "22:15", "06:40"],
+  ["2026-06-04", "22:56", "07:00"],
+];
 
 let settings = normalizeSettings(loadJson(SETTINGS_KEY, defaultSettings));
-let state = normalizeState(loadJson(STORE_KEY, defaultState));
+let state = importSleepLog(normalizeState(loadJson(STORE_KEY, defaultState)));
 let timer = { secondsLeft: 25 * 60, durationMinutes: 25, intervalId: null, isBreak: false };
 let activeSound = "";
 let audioContext;
@@ -1418,6 +1441,26 @@ function normalizeState(saved) {
     reactionAttempts: Array.isArray(saved.reactionAttempts) ? saved.reactionAttempts : [],
   };
   return merged;
+}
+
+function importSleepLog(target) {
+  if (target.sleepLogImported) return target;
+  const existing = new Set((target.sleepEntries || []).map((entry) => entry.sleep_date));
+  const additions = sleepLogImport
+    .filter(([date]) => !existing.has(date))
+    .map(([date, slept, woke]) => {
+      const sleptAt = `${date}T${slept}`;
+      const wokeAt = `${woke <= slept ? addDays(date, 1) : date}T${woke}`;
+      return {
+        id: crypto.randomUUID(), owner_key: settings.ownerKey, sleep_date: date,
+        slept_at: sleptAt, woke_at: wokeAt, minutes: calculateSleepMinutes(sleptAt, wokeAt),
+        mood_tag: "", mood_emoji: "", created_at: new Date().toISOString(), source: "import",
+      };
+    });
+  target.sleepEntries = [...additions, ...(target.sleepEntries || [])];
+  target.sleepLogImported = true;
+  if (additions.length) saveJson(STORE_KEY, target);
+  return target;
 }
 
 function normalizeSettings(saved) {

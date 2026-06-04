@@ -241,9 +241,6 @@ a { color: var(--teal); text-decoration: none; }
 .last-night,
 .sleep-card,
 .day-agenda,
-.history-panel,
-.focus-task-panel,
-.ambient-panel,
 .arcade-card,
 .reminder-gallery {
   background: var(--card);
@@ -273,10 +270,7 @@ section + section,
 .fitness-card,
 .last-night,
 .sleep-card,
-.day-agenda,
-.history-panel,
-.focus-task-panel,
-.ambient-panel {
+.day-agenda {
   padding: 16px;
 }
 
@@ -709,7 +703,6 @@ section + section,
 .section-heading-tasks { border-color: var(--c-school); }
 .section-heading-calendar { border-color: var(--teal); }
 .section-heading-sleep { border-color: var(--purple); }
-.section-heading-focus { border-color: var(--gold); }
 .section-heading-arcade { border-color: var(--orange); }
 
 .add-button,
@@ -766,7 +759,7 @@ section + section,
   background: linear-gradient(140deg, var(--teal-bright), var(--teal));
 }
 
-.filter-row, .duration-row {
+.filter-row {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
@@ -1197,103 +1190,6 @@ label {
 .sleep-row span { color: var(--faint); font-size: 0.78rem; }
 .sleep-row div span { display: block; margin-top: 3px; }
 .sleep-row b { font-family: var(--font-display); font-size: 1.05rem; color: var(--ink); }
-
-/* ============================================================
-   FOCUS / TIMER
-   ============================================================ */
-.focus-heading { margin-bottom: 16px; }
-.focus-heading h1 { text-transform: uppercase; }
-.focus-heading p { margin-top: 4px; }
-.focus-stage { display: grid; gap: 14px; }
-
-.focus-task-panel { display: grid; gap: 10px; }
-.focus-task-panel h2 { font-size: 1rem; }
-.focus-metrics { display: grid; gap: 7px; margin-top: 6px; color: var(--muted); font-size: 0.86rem; }
-.focus-metrics strong { color: var(--ink); }
-.session-dots { display: flex; gap: 7px; margin-top: 4px; }
-.session-dots i { width: 11px; height: 11px; border-radius: 50%; background: rgba(255, 255, 255, 0.1); }
-.session-dots i.filled { background: var(--teal); box-shadow: 0 0 8px var(--teal-glow); }
-
-.timer-card {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 20px;
-  padding: 26px 18px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-soft);
-}
-.timer-ring { position: relative; width: 230px; height: 230px; max-width: 70vw; max-height: 70vw; display: grid; place-items: center; }
-.timer-svg { position: absolute; inset: 0; width: 100%; height: 100%; transform: rotate(-90deg); }
-.timer-bg { fill: transparent; stroke: rgba(255, 255, 255, 0.07); stroke-width: 10; }
-.timer-progress,
-#timerProgressCircle {
-  fill: transparent;
-  stroke: var(--teal);
-  stroke-width: 10;
-  stroke-linecap: round;
-  filter: drop-shadow(0 0 8px rgba(0, 229, 195, 0.5));
-  transition: stroke-dashoffset 0.4s linear;
-}
-.timer-content { position: absolute; display: flex; flex-direction: column; align-items: center; text-align: center; }
-.timer-ring strong {
-  font-family: var(--font-display);
-  font-size: 3.4rem;
-  font-weight: 700;
-  color: var(--ink);
-  letter-spacing: 0.02em;
-  font-variant-numeric: tabular-nums;
-}
-.timer-ring span { color: var(--faint); font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.12em; }
-
-.timer-controls { display: flex; align-items: center; gap: 18px; }
-.play-button {
-  display: grid;
-  place-items: center;
-  width: 66px;
-  height: 66px;
-  border-radius: 50%;
-  box-shadow: 0 8px 24px rgba(0, 229, 195, 0.4);
-}
-.play-button i { width: 26px; height: 26px; }
-.play-button:active { transform: scale(0.94); }
-.timer-controls .icon-button { width: 50px; height: 50px; border-radius: 50%; }
-
-.custom-minutes { flex-direction: row; align-items: center; gap: 8px; }
-.custom-minutes input { width: 70px; }
-
-.sound-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 11px 14px;
-  border-radius: 12px;
-  background: var(--card-2);
-  border: 1px solid var(--line);
-  color: var(--muted);
-  font-weight: 600;
-}
-.sound-chip.active-sound {
-  color: var(--teal);
-  border-color: rgba(0, 229, 195, 0.4);
-  background: var(--teal-dim);
-}
-.sound-status { color: var(--faint); margin-top: 8px; font-size: 0.82rem; font-style: italic; }
-
-.history-panel { max-height: 320px; }
-#sessionHistoryList { display: grid; gap: 6px; max-height: 220px; overflow-y: auto; }
-#sessionHistoryList article {
-  display: flex;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 9px 0;
-  border-bottom: 1px solid var(--line);
-  font-size: 0.84rem;
-}
-#sessionHistoryList strong { color: var(--ink); }
-#sessionHistoryList span { color: var(--faint); }
 
 /* ============================================================
    ARCADE
@@ -1905,5 +1801,203 @@ dialog form {
 
   .google-task-actions {
     grid-column: 2;
+  }
+}
+
+/* Section artwork and cleaned-up tasks, preserving the current navy/teal theme */
+.home-hero,
+.tasks-header,
+.calendar-header,
+.sleep-header,
+.arcade-header {
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+}
+
+.home-hero {
+  padding: 24px 18px;
+  border-radius: var(--radius-lg);
+  background-image:
+    linear-gradient(90deg, rgba(10, 15, 30, 0.92), rgba(10, 15, 30, 0.58)),
+    url("/assets/home-hero.png");
+}
+
+.tasks-header,
+.calendar-header,
+.sleep-header,
+.arcade-header {
+  min-height: 122px;
+  align-items: end;
+  padding: 18px;
+  border-left: 0;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.tasks-header {
+  margin-bottom: 12px;
+  background-image:
+    linear-gradient(90deg, rgba(10, 15, 30, 0.92), rgba(10, 15, 30, 0.52)),
+    url("/assets/tasks-banner.png");
+}
+
+.calendar-header {
+  background-image:
+    linear-gradient(90deg, rgba(10, 15, 30, 0.9), rgba(10, 15, 30, 0.46)),
+    url("/assets/calendar-banner.png");
+}
+
+.sleep-header {
+  background-image:
+    linear-gradient(90deg, rgba(10, 15, 30, 0.9), rgba(10, 15, 30, 0.48)),
+    url("/assets/sleep-banner.png");
+}
+
+.arcade-header {
+  background-image:
+    linear-gradient(90deg, rgba(10, 15, 30, 0.9), rgba(10, 15, 30, 0.45)),
+    url("/assets/arcade-banner.png");
+}
+
+.empty-state::before {
+  content: "";
+  display: block;
+  width: min(190px, 72%);
+  aspect-ratio: 4 / 3;
+  margin: 0 auto 12px;
+  background: url("/assets/empty-state.png") center / contain no-repeat;
+  opacity: 0.9;
+}
+
+.tasks-google-shell {
+  grid-template-columns: minmax(0, 1fr);
+  max-width: 980px;
+  margin-inline: auto;
+  gap: 12px;
+}
+
+.tasks-google-rail {
+  position: static;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  padding: 10px;
+  border-radius: var(--radius-lg);
+  background: var(--card);
+  box-shadow: var(--shadow-soft);
+}
+
+.google-create-button {
+  width: auto;
+  min-height: 46px;
+  padding: 0 16px;
+  border-radius: 999px;
+}
+
+.tasks-google-filters {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 2px;
+}
+
+.tasks-google-filters button {
+  width: auto;
+  white-space: nowrap;
+  padding: 9px 12px;
+  color: var(--muted);
+}
+
+.tasks-google-filters button:hover,
+.tasks-google-filters button.active {
+  background: var(--teal-dim);
+  color: var(--teal-bright);
+}
+
+.google-tracker,
+.google-fitness {
+  grid-column: 1 / -1;
+  margin-top: 0;
+  background: var(--card-2);
+  border-color: var(--line);
+}
+
+.google-tracker { padding: 11px 13px; }
+.google-tracker summary { cursor: pointer; }
+
+.google-fitness {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  padding: 11px 13px;
+}
+
+.tasks-google-board {
+  min-height: 460px;
+  padding: 14px;
+  background: var(--card);
+}
+
+.tasks-board-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.tasks-board-heading h1 {
+  margin: 0;
+  color: var(--ink);
+}
+
+.google-add-task {
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 8px;
+  margin-top: 6px;
+  padding: 4px 4px 12px;
+}
+
+.google-add-task select { display: none; }
+
+.google-add-task input {
+  min-height: 48px;
+  color: var(--ink);
+}
+
+.google-add-task input::placeholder {
+  color: var(--teal-bright);
+}
+
+.google-add-task button[type="submit"] {
+  min-height: 42px;
+}
+
+.google-task-row {
+  padding: 12px 6px;
+}
+
+.google-task-actions { opacity: 0.45; }
+
+@media (max-width: 820px) {
+  .tasks-google-rail {
+    grid-template-columns: 1fr;
+  }
+
+  .google-create-button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .google-fitness {
+    grid-template-columns: 1fr;
+  }
+
+  .tasks-header,
+  .calendar-header,
+  .sleep-header,
+  .arcade-header {
+    min-height: 112px;
   }
 }

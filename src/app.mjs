@@ -15,7 +15,6 @@ import {
   getHomeSubtitle,
   getSleepSummary,
   parseIcsEvents,
-  sanitizeFocusMinutes,
   summarizeFitnessWeek,
   todayKey,
 } from "./planner-utils.mjs";
@@ -194,23 +193,6 @@ const coachTips = [
   "Stack tiny wins until they start to look like talent.",
   "End the day proud of one thing you finished, not just started.",
 ];
-const completionMessages = [
-  "One session closer to your goal, Aran.",
-  "That is real progress. Let it count.",
-  "Your discipline just got stronger.",
-  "One block finished; your day is already better.",
-  "Strong focus carries into strong races.",
-  "Good work. Recover briefly and choose the next move.",
-  "That is how deadlines become manageable.",
-  "You showed up. That matters.",
-  "Momentum looks good on you.",
-  "A small win, properly earned.",
-  "You are building consistency one session at a time.",
-  "Keep the standard high and the next step simple.",
-  "Nice work. Water, breathe, reset.",
-  "You just made future-you's day easier.",
-  "Finish steady. Train steady. Grow steady.",
-];
 const boostPool = [
   "Log your Duke of Ed entry for the week.",
   "Complete 20 pushups before lunch.",
@@ -240,7 +222,6 @@ const defaultState = {
   monthCursor: `${todayKey().slice(0, 7)}-01`,
   calendarView: "month",
   activeFilter: "today",
-  focusedTaskId: "",
 };
 const defaultSettings = {
   supabaseUrl: "https://hcvjiveloioftozvnbhe.supabase.co",
@@ -286,10 +267,6 @@ const sleepLogImport = [
 
 let settings = normalizeSettings(loadJson(SETTINGS_KEY, defaultSettings));
 let state = importSleepLog(normalizeState(loadJson(STORE_KEY, defaultState)));
-let timer = { secondsLeft: 25 * 60, durationMinutes: 25, intervalId: null, isBreak: false };
-let activeSound = "";
-let audioContext;
-let ambientNodes;
 let reaction = { mode: "idle", goAt: 0, timeoutId: null };
 let memoryGame = null;
 let pendingSleepId = "";
@@ -310,7 +287,7 @@ document.addEventListener("DOMContentLoaded", () => {
   persist();
   render();
   const view = new URLSearchParams(location.search).get("view");
-  if (["home", "tasks", "calendar", "sleep", "focus", "arcade"].includes(view)) setView(view);
+  if (["home", "tasks", "calendar", "sleep", "arcade"].includes(view)) setView(view);
   void initializeCloud();
 });
 
@@ -325,14 +302,13 @@ function bindElements() {
     "monthLabel", "todayButton", "calendarGrid", "monthCalendar",
     "weekGrid", "calendarViewToggle", "agendaTitle", "agendaList", "addSleepButton", "sleepGoalInput",
     "lastNightDate", "lastBedtime", "lastWake", "lastDuration", "lastMood",
-    "averageSleepStat", "sleepScoreStat", "sleepHint", "sleepChart", "sleepList", "focusTaskSelect", "focusLabelInput",
-    "sessionsTodayText", "focusMinutesText", "sessionDots", "sessionHistoryList", "timerText", "customMinutesInput", "soundStatus",
+    "averageSleepStat", "sleepScoreStat", "sleepHint", "sleepChart", "sleepList",
     "arcadeCoins", "arcadeCoinBreakdown", "arcadeBoost", "arcadeBoostButton", "reactionStartButton", "reactionPad", "reactionBest",
     "reactionHistory", "memoryStartButton", "memoryStatus", "memoryGrid", "goalReminderInput", "composeDialog", "composeForm",
     "composeTitle", "editingItemIdInput", "toggleAdvancedButton", "advancedFields", "itemTitleInput", "itemKindInput",
     "itemDateInput", "itemCategoryInput", "itemPriorityInput", "itemNotesInput", "itemStartTimeInput", "itemEndTimeInput",
     "itemRepeatInput", "repeatDays", "sleepDialog", "sleepForm", "sleepDateInput", "sleptAtInput", "wokeAtInput",
-    "sleepError", "sleepMoodDialog", "completionDialog", "completionMessage", "settingsDialog", "settingsForm", "settingsButton",
+    "sleepError", "sleepMoodDialog", "settingsDialog", "settingsForm", "settingsButton",
     "brandHomeButton", "sidebarSubtitle", "syncButton", "syncStatus", "syncBanner", "syncBannerText", "displayNameInput",
     "plannerSubtitleInput", "focusGoalInput", "pushupGoalInput", "trackGoalInput", "supabaseUrlInput", "supabaseAnonInput",
     "ownerKeyInput", "calendarUrlInput", "darkModeInput", "resetDataButton",
@@ -432,24 +408,6 @@ function wireEvents() {
     renderStats();
     void upsertAppState();
   });
-  els.focusTaskSelect.addEventListener("change", () => {
-    state.focusedTaskId = els.focusTaskSelect.value;
-    persist();
-  });
-  document.querySelectorAll("[data-minutes]").forEach((button) => button.addEventListener("click", () => setDuration(button)));
-  els.customMinutesInput.addEventListener("change", () => setCustomDuration());
-  document.getElementById("playTimerButton").addEventListener("click", toggleTimer);
-  document.getElementById("resetTimerButton").addEventListener("click", resetTimer);
-  document.getElementById("finishTimerButton").addEventListener("click", finishFocusSession);
-  document.querySelectorAll("[data-sound]").forEach((button) => button.addEventListener("click", () => toggleAmbient(button.dataset.sound, button)));
-  document.getElementById("startBreakButton").addEventListener("click", () => {
-    els.completionDialog.close();
-    selectPreset(15);
-  });
-  document.getElementById("startAgainButton").addEventListener("click", () => {
-    els.completionDialog.close();
-    selectPreset(25);
-  });
   els.arcadeBoostButton.addEventListener("click", completeDailyBoost);
   els.reactionStartButton.addEventListener("click", startReaction);
   els.reactionPad.addEventListener("click", tapReaction);
@@ -493,9 +451,7 @@ function render() {
   renderTasks();
   renderCalendar();
   renderSleep();
-  renderFocus();
   renderArcade();
-  renderTimer();
   refreshIcons();
 }
 
@@ -638,7 +594,7 @@ function renderTasks() {
     row.querySelector("[data-edit-task]").addEventListener("click", () => openCompose(task.kind, task));
     row.querySelector("[data-delete-task]").addEventListener("click", () => deleteItem(task.id));
     row.querySelector("[data-expand-task]").addEventListener("click", () => row.classList.toggle("expanded"));
-    row.querySelector("[data-subtask-form]").addEventListener("submit", (event) => {
+    row.querySelector("[data-subtask-form]")?.addEventListener("submit", (event) => {
       event.preventDefault();
       addSubtask(task.id, event.target.elements.title.value);
     });
@@ -650,18 +606,18 @@ function renderTasks() {
 function taskMarkup(task) {
   const overdue = !task.completed && task.due_date && task.due_date < todayKey();
   const subtasks = task.subtasks || [];
-  return `<article class="task-item ${task.completed ? "completed" : ""}" data-task-id="${task.id}" style="--accent:${colorFor(task.category)}">
-    <button class="task-check" data-toggle-task type="button" aria-label="Complete ${escapeHtml(task.title)}"></button>
+  const completedCount = subtasks.filter((entry) => entry.completed).length;
+  return `<article class="task-item google-task-row ${task.completed ? "completed" : ""}" data-task-id="${task.id}" style="--accent:${colorFor(task.category)}">
+    <button class="task-check google-task-check" data-toggle-task type="button" aria-label="Complete ${escapeHtml(task.title)}"></button>
     <div class="task-main">
-      <div class="task-labels"><span class="category-tag">${escapeHtml(task.category || "Personal")}</span>${overdue ? '<span class="overdue">OVERDUE</span>' : ""}</div>
       <p class="task-title">${escapeHtml(task.title)}</p>
-      <div class="task-meta">${task.priority || "medium"} priority${task.due_date ? ` &middot; Due ${prettyDate(task.due_date)}` : ""}</div>
+      <div class="task-meta"><span class="category-dot" aria-hidden="true"></span>${escapeHtml(task.category || "Personal")}${task.due_date ? ` &middot; ${prettyDate(task.due_date)}` : ""}${overdue ? ' &middot; <b class="overdue-inline">OVERDUE</b>' : ""}${subtasks.length ? ` &middot; ${completedCount}/${subtasks.length} subtasks` : ""}</div>
       <div class="subtask-panel">
         ${subtasks.map((entry, index) => `<label><input type="checkbox" data-subtask-index="${index}" ${entry.completed ? "checked" : ""}/> ${escapeHtml(entry.title)}</label>`).join("")}
-        ${subtasks.length < 5 ? '<form data-subtask-form><input name="title" maxlength="80" required placeholder="Add subtask" /><button type="submit">+</button></form>' : ""}
+        ${subtasks.length < 5 ? '<form data-subtask-form><input name="title" maxlength="80" required placeholder="Add step" /><button type="submit">+</button></form>' : ""}
       </div>
     </div>
-    <div class="task-actions"><button class="icon-button" data-expand-task type="button" title="Subtasks"><i data-lucide="list-tree"></i></button><button class="icon-button" data-edit-task type="button" title="Edit task"><i data-lucide="pencil"></i></button><button class="icon-button" data-delete-task type="button" title="Delete task"><i data-lucide="trash-2"></i></button></div>
+    <div class="task-actions"><button class="icon-button" data-expand-task type="button" title="Details"><i data-lucide="chevron-down"></i></button><button class="icon-button" data-edit-task type="button" title="Edit task"><i data-lucide="pencil"></i></button><button class="icon-button" data-delete-task type="button" title="Delete task"><i data-lucide="trash-2"></i></button></div>
   </article>`;
 }
 
@@ -827,44 +783,6 @@ function renderSleepGraph(points, goalMinutes) {
   graph.addEventListener("pointermove", (event) => { if (event.buttons || event.pointerType === "mouse") showAt(event.clientX); });
   graph.addEventListener("pointerleave", hide);
 }
-
-function renderFocus() {
-  const todayTasks = filterItems(state.items, "today", todayKey());
-  els.focusTaskSelect.replaceChildren(new Option(todayTasks.length ? "Choose today's task" : "No open tasks yet", ""), ...todayTasks.map((item) => new Option(item.title, item.id)));
-  if (todayTasks.some((item) => item.id === state.focusedTaskId)) els.focusTaskSelect.value = state.focusedTaskId;
-  const sessions = state.focusSessions.filter((entry) => !entry.is_break && String(entry.completed_at).slice(0, 10) === todayKey());
-  const minutes = sessions.reduce((sum, entry) => sum + Number(entry.minutes), 0);
-  els.sessionsTodayText.textContent = `Sessions today: ${sessions.length} / ${settings.focusGoal}`;
-  els.focusMinutesText.textContent = `Total focus time today: ${minutes} min`;
-  els.sessionDots.innerHTML = Array.from({ length: settings.focusGoal }, (_, index) => `<i class="${index < sessions.length ? "filled" : ""}"></i>`).join("");
-  els.sessionHistoryList.innerHTML = state.focusSessions.length
-    ? state.focusSessions.slice(0, 10).map((entry) => `<article><strong>${escapeHtml(entry.label || "Focus session")}</strong><span>${entry.minutes} min &middot; ${new Date(entry.completed_at).toLocaleString("en", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}</span></article>`).join("")
-    : '<p class="empty-inline">No sessions yet - start your first one.</p>';
-}
-
-function renderTimer() {
-  const minutes = Math.floor(timer.secondsLeft / 60);
-  const seconds = timer.secondsLeft % 60;
-  els.timerText.textContent = `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
-  const button = document.getElementById("playTimerButton");
-  button.innerHTML = timer.intervalId ? '<i data-lucide="pause"></i>' : '<i data-lucide="play"></i>';
-  button.title = timer.intervalId ? "Pause" : "Start";
-  button.setAttribute("aria-label", button.title);
-
-  // Update Pomodoro SVG circular progress
-  const progressCircle = document.getElementById("timerProgressCircle");
-  if (progressCircle) {
-    const radius = 100; // matching r="100" in SVG
-    const circumference = radius * 2 * Math.PI;
-    progressCircle.style.strokeDasharray = `${circumference} ${circumference}`;
-    const totalSeconds = timer.durationMinutes * 60;
-    const fraction = totalSeconds > 0 ? (timer.secondsLeft / totalSeconds) : 0;
-    progressCircle.style.strokeDashoffset = circumference - (fraction * circumference);
-  }
-
-  refreshIcons();
-}
-
 function renderArcade() {
   const coins = calculateCoinBreakdown(state.items, state.focusSessions, state.sleepEntries, state.rewards, settings.sleepGoalHours * 60);
   els.arcadeCoins.textContent = String(coins.total);
@@ -1249,131 +1167,6 @@ function deleteSleepEntry(id) {
   if (canSync()) void supabaseFetch(`life_flow_sleep_entries?id=eq.${id}`, { method: "DELETE" });
 }
 
-function setDuration(button) {
-  timer.durationMinutes = sanitizeFocusMinutes(button.dataset.minutes);
-  timer.secondsLeft = timer.durationMinutes * 60;
-  timer.isBreak = timer.durationMinutes === 15;
-  els.customMinutesInput.value = String(timer.durationMinutes);
-  document.querySelectorAll("[data-minutes]").forEach((entry) => entry.classList.toggle("active", entry === button));
-  stopTimer();
-  renderTimer();
-}
-
-function selectPreset(minutes) {
-  const button = document.querySelector(`[data-minutes="${minutes}"]`);
-  if (button) setDuration(button);
-}
-
-function setCustomDuration() {
-  timer.durationMinutes = sanitizeFocusMinutes(els.customMinutesInput.value);
-  timer.secondsLeft = timer.durationMinutes * 60;
-  timer.isBreak = false;
-  stopTimer();
-  document.querySelectorAll("[data-minutes]").forEach((entry) => entry.classList.remove("active"));
-  renderTimer();
-}
-
-function toggleTimer() {
-  if (timer.intervalId) {
-    stopTimer();
-    renderTimer();
-    return;
-  }
-  timer.intervalId = window.setInterval(() => {
-    timer.secondsLeft -= 1;
-    if (timer.secondsLeft <= 0) finishFocusSession();
-    else renderTimer();
-  }, 1000);
-  renderTimer();
-}
-
-function resetTimer() {
-  stopTimer();
-  timer.secondsLeft = timer.durationMinutes * 60;
-  renderTimer();
-}
-
-function finishFocusSession() {
-  stopTimer();
-  void playAlarm();
-  const selected = state.items.find((item) => item.id === state.focusedTaskId);
-  const label = els.focusLabelInput.value.trim() || selected?.title || (timer.isBreak ? "Break" : "Focus session");
-  const session = {
-    id: crypto.randomUUID(), owner_key: settings.ownerKey, minutes: timer.durationMinutes, label,
-    task_id: state.focusedTaskId || null, is_break: timer.isBreak, earns_coins: !timer.isBreak,
-    completed_at: new Date().toISOString(), created_at: new Date().toISOString(),
-  };
-  state.focusSessions.unshift(session);
-  timer.secondsLeft = timer.durationMinutes * 60;
-  persist();
-  render();
-  void upsertSupabase("life_flow_focus_sessions", session);
-  if (!timer.isBreak) {
-    els.completionMessage.textContent = completionMessages[Math.floor(Math.random() * completionMessages.length)].replace("Aran", settings.displayName);
-    els.completionDialog.querySelector("h2").textContent = "Session complete! +10 coins earned.";
-    els.completionDialog.showModal();
-  }
-}
-
-async function toggleAmbient(sound, button) {
-  const context = await getAudioContext();
-  if (activeSound === sound) {
-    stopAmbient();
-    els.soundStatus.textContent = "Sound off";
-    return;
-  }
-  stopAmbient();
-  const gain = context.createGain();
-  gain.gain.value = 0.04;
-  gain.connect(context.destination);
-  const buffer = context.createBuffer(1, context.sampleRate * 2, context.sampleRate);
-  const data = buffer.getChannelData(0);
-  for (let index = 0; index < data.length; index += 1) data[index] = Math.random() * 2 - 1;
-  const source = context.createBufferSource();
-  const filter = context.createBiquadFilter();
-  filter.type = "lowpass";
-  filter.frequency.value = 900;
-  source.buffer = buffer;
-  source.loop = true;
-  source.connect(filter).connect(gain);
-  source.start();
-  ambientNodes = { sources: [source], master: gain };
-  activeSound = sound;
-  button.classList.add("active-sound");
-  els.soundStatus.textContent = "Rain ambience playing";
-}
-
-function stopAmbient() {
-  if (ambientNodes) {
-    ambientNodes.sources.forEach((source) => source.stop());
-    ambientNodes.master.disconnect();
-  }
-  ambientNodes = null;
-  activeSound = "";
-  document.querySelectorAll("[data-sound]").forEach((button) => button.classList.remove("active-sound"));
-}
-
-async function playAlarm() {
-  const context = await getAudioContext();
-  [0, 0.22, 0.44].forEach((delay) => {
-    const tone = context.createOscillator();
-    const gain = context.createGain();
-    tone.frequency.value = 880;
-    gain.gain.setValueAtTime(0.001, context.currentTime + delay);
-    gain.gain.exponentialRampToValueAtTime(0.18, context.currentTime + delay + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + delay + 0.18);
-    tone.connect(gain).connect(context.destination);
-    tone.start(context.currentTime + delay);
-    tone.stop(context.currentTime + delay + 0.2);
-  });
-}
-
-async function getAudioContext() {
-  audioContext ||= new AudioContext();
-  if (audioContext.state === "suspended") await audioContext.resume();
-  return audioContext;
-}
-
 function completeDailyBoost() {
   if (state.rewards.some((reward) => reward.type === "daily_boost" && reward.date === todayKey())) return;
   state.rewards.unshift({ id: crypto.randomUUID(), type: "daily_boost", amount: 20, date: todayKey() });
@@ -1614,9 +1407,7 @@ async function upsertItemSafely(item) {
     return await upsertSupabase("life_flow_items", item);
   } catch (error) {
     if (!String(error.message).includes("42501")) throw error;
-    const previousId = item.id;
     item.id = crypto.randomUUID();
-    if (state.focusedTaskId === previousId) state.focusedTaskId = item.id;
     persist();
     try {
       return await upsertSupabase("life_flow_items", item);

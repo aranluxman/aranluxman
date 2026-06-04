@@ -1462,6 +1462,96 @@ dialog form {
 @keyframes spin { to { transform: rotate(360deg); } }
 
 /* ============================================================
+   WORKOUT TRACKER (home)
+   ============================================================ */
+.workout-card { padding: 16px; }
+.workout-list { display: grid; gap: 16px; }
+.workout-row {
+  --accent: var(--teal);
+  display: grid;
+  grid-template-columns: auto 1fr auto;
+  align-items: center;
+  gap: 12px;
+}
+.workout-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.workout-icon i { width: 20px; height: 20px; }
+.workout-body { display: grid; gap: 6px; min-width: 0; }
+.workout-top { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; }
+.workout-top b { color: var(--ink); font-weight: 600; font-size: 0.92rem; }
+.workout-top strong { font-family: var(--font-display); color: var(--accent); font-size: 1.05rem; font-weight: 700; }
+.workout-spark {
+  display: flex;
+  align-items: flex-end;
+  gap: 1px;
+  height: 34px;
+  width: 100%;
+  padding: 3px;
+  border-radius: 7px;
+  background: rgba(0, 0, 0, 0.22);
+  overflow: hidden;
+}
+.workout-spark i {
+  flex: 1 1 0;
+  min-width: 0;
+  background: var(--accent);
+  border-radius: 1px;
+}
+.workout-body small { color: var(--faint); font-size: 0.72rem; }
+.workout-add {
+  align-self: center;
+  padding: 9px 13px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 38%, transparent);
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.workout-add:active { transform: scale(0.93); }
+
+/* ============================================================
+   EXTRA ARCADE GAME GRIDS
+   ============================================================ */
+.rush-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 6px 0; }
+.rush-cell {
+  aspect-ratio: 1;
+  border-radius: 12px;
+  background: var(--card-3);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 700;
+}
+.rush-cell:active { transform: scale(0.95); }
+.rush-cell.done { background: var(--teal-dim); border-color: rgba(0, 229, 195, 0.4); }
+
+.target-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; margin: 6px 0; }
+.target-cell {
+  aspect-ratio: 1;
+  border-radius: 10px;
+  background: var(--card-3);
+  border: 1px solid var(--line);
+  transition: background 0.08s ease, box-shadow 0.08s ease, transform 0.08s ease;
+}
+.target-cell.lit {
+  background: var(--green);
+  border-color: var(--green);
+  box-shadow: 0 0 16px rgba(39, 199, 138, 0.6);
+}
+.target-cell:active { transform: scale(0.95); }
+
+/* ============================================================
    LARGER SCREENS — center the phone canvas
    ============================================================ */
 @media (min-width: 560px) {

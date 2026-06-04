@@ -49,6 +49,11 @@ const dukeMeta = {
   volunteering: { icon: "heart-handshake", accent: "#34d399" },
   skill: { icon: "code-2", accent: "#fbbf24" },
 };
+const workoutMetrics = [
+  { key: "pullups", label: "Pull-ups", icon: "dumbbell", accent: "#3e9cff", step: 5, unit: "reps" },
+  { key: "pushups", label: "Push-ups", icon: "activity", accent: "#ff9738", step: 5, unit: "reps" },
+  { key: "plank", label: "Plank", icon: "timer", accent: "#27c78a", step: 1, unit: "min" },
+];
 const quotePool = [
   "Champions are made in the moments they want to quit.",
   "Speed is earned in quiet training sessions.",
@@ -87,30 +92,106 @@ const quotePool = [
   "Momentum begins the second you start.",
 ];
 const coachTips = [
-  "After track practice, drink water, eat something useful, and give your legs a real stretch before homework.",
-  "Your 100m speed depends on recovery too. An 8.5-hour sleep target is training, not a bonus.",
-  "A hard 400m day deserves an easy evening: finish one school task, then protect bedtime.",
-  "Before Monday, Wednesday, or Friday practice, pack spikes, water, and a snack before school gets busy.",
-  "Write one note after training: how your start, stride, or finish felt. It turns practice into progress.",
-  "Check School tasks first. Finishing the nearest deadline frees your head for training.",
-  "Break a culminating project into one action you can finish in a 25-minute homework session.",
-  "Submit or pack school work before the deadline day whenever possible. Race days need mental room.",
-  "Open the hardest assignment and write the first line before switching tabs.",
-  "Use today's calendar events as anchors: plan homework around training instead of hoping time appears.",
-  "For Saturday YMCA volunteering, confirm your timing and bring water before you leave.",
-  "Coaching well starts with preparation: think of one basketball or volleyball drill before the YMCA shift.",
-  "After volunteering, log your hours while they are fresh so your Duke of Ed evidence stays complete.",
-  "Your Duke of Ed log only takes a few minutes when you do it weekly. Sunday is your reset point.",
-  "Physical, Volunteering, and Skill all count. Advance a Duke bar when you complete real evidence.",
-  "Web development is your Skill section: record a feature you built or a problem you solved this week.",
-  "For a freelance client project, choose one visible deliverable and send an update after it is done.",
-  "A clean client checklist beats trying to remember revisions in your head.",
-  "Before coding, define the smallest feature the client can see working today.",
-  "Train hard, give back, build something: pick one action that serves one of those goals right now.",
-  "If energy is low, take a 10-minute Track Planning session and update your log instead of losing momentum.",
-  "Schedule recovery like an event. Athletes improve between demanding sessions too.",
-  "Do 10 pushups now if you need a quick win, then return to the school task that matters most.",
-  "One completed focus session earns your break. Keep the phone away until the timer finishes.",
+  "Win the morning: make your bed, fill your water bottle, and name your one must-do.",
+  "Discipline is choosing what you want most over what you want now.",
+  "Your warm-up decides your workout. Never skip it.",
+  "Small steps every day beat giant leaps once a week.",
+  "Recovery is where the training actually sticks. Sleep like it matters.",
+  "Before you scroll, finish one thing that future-you will thank you for.",
+  "Hydrate before you feel thirsty. Performance starts with water.",
+  "A messy desk slows a sharp mind. Clear the space, then start.",
+  "You don't have to feel ready. You just have to begin.",
+  "Stretch tonight so tomorrow's sprint feels lighter.",
+  "Protect your bedtime like it's a race you can't be late for.",
+  "Two minutes of planning saves an hour of confusion.",
+  "Effort you can repeat beats effort you can brag about once.",
+  "When it's hard, shorten the goal: just the next rep, the next line.",
+  "Fuel up with real food before training, not after the crash.",
+  "Consistency is a superpower disguised as boredom.",
+  "Finish the homework you're avoiding first. The rest gets easy.",
+  "Your form matters more than your speed. Build it clean.",
+  "Rest days are training days for your recovery.",
+  "Track your sleep tonight; patterns reveal what excuses hide.",
+  "Breathe out the nerves before the start line. Calm is fast.",
+  "One focused hour beats three distracted ones.",
+  "Show up even when motivation doesn't. Habits carry you.",
+  "Pack your bag the night before so mornings stay calm.",
+  "Celebrate the rep you didn't want to do. That's the one that counts.",
+  "Phone in another room. Watch your focus double.",
+  "Eat the frog: do the hardest task while your energy is highest.",
+  "A good cool-down today is a faster recovery tomorrow.",
+  "Your future self is built by today's small promises kept.",
+  "Set the timer for 25 minutes. You can do anything for 25 minutes.",
+  "Strong legs, strong mind. Move your body to clear your head.",
+  "Drink water, stand up, roll your shoulders. Reset and continue.",
+  "Don't count the days. Make the days count.",
+  "Sleep is the cheapest performance enhancer you'll ever find.",
+  "Plan tomorrow tonight so you wake up with a target, not a question.",
+  "Progress hides in the boring reps. Trust the process.",
+  "Be the athlete who does the little things nobody claps for.",
+  "When tired, lower the bar to 'just start' and let momentum do the rest.",
+  "Read the question twice. Half of mistakes are rushed reading.",
+  "Stack one good habit on another: water, stretch, study, sleep.",
+  "Your warm-up is a promise to your body. Keep it.",
+  "Write down one thing you learned today. Reflection compounds.",
+  "Tight on time? Do the 10-minute version, not the zero-minute version.",
+  "Sweat now so you can smile at the finish line later.",
+  "Comparison steals joy. Race your own clock.",
+  "Sleep, train, eat, repeat. Champions love the routine.",
+  "Energy follows attention. Point yours at what matters.",
+  "Tomorrow's confidence is built by tonight's preparation.",
+  "If it's on your mind, put it on your list and free your brain.",
+  "The first rep is the hardest. Start and the body follows.",
+  "Greatness is just good, repeated, with patience.",
+  "Recover loud: foam roll, hydrate, and sleep early after a hard session.",
+  "Block distractions, not ambition. Guard your focus time.",
+  "Do it scared. Courage grows after the start, not before.",
+  "Master your breathing and you master your pace.",
+  "A clear goal beats a long to-do list. Pick the one that moves things.",
+  "Train the mind too: five calm breaths before every big effort.",
+  "Late-night scrolling steals tomorrow's energy. Log off, lights out.",
+  "You become what you practice. Practice the good stuff.",
+  "Take the win: finish, then rest without guilt.",
+  "Plan your meals like you plan your workouts. Both build you.",
+  "When stuck, teach it to someone. Explaining reveals the gaps.",
+  "Sprint the warm-up of your day: knock out the quick wins early.",
+  "Your only competition tomorrow is who you were today.",
+  "Stretch the tight spots before they become injuries.",
+  "Set fewer goals, finish more of them.",
+  "Sleep is a skill: same time, dark room, no screens.",
+  "Move first, think second. Action clears a foggy head.",
+  "The grind isn't glamorous. That's why it works.",
+  "Hard now, easy later. Easy now, hard later. Choose.",
+  "Pre-pack water and a snack so good choices are the easy choices.",
+  "Focus is a muscle. Train it one timer at a time.",
+  "Don't break the chain: one small action keeps the streak alive.",
+  "Strong starts come from steady warm-ups, not adrenaline.",
+  "Give your best to the boring basics and the rest takes care of itself.",
+  "Write the first sentence badly. You can fix it once it exists.",
+  "Recovery food after training: protein, water, and real carbs.",
+  "Tired isn't a reason to quit; it's a reason to slow down and continue.",
+  "Your habits are voting for the person you're becoming.",
+  "Earn your rest, then actually rest.",
+  "A short walk beats a long stall. Move, then return.",
+  "Train your weaknesses; show off your strengths on race day.",
+  "Set the alarm across the room. Win the first decision of the day.",
+  "One page, one rep, one minute. Start absurdly small.",
+  "Cold water on the face beats another hour of scrolling.",
+  "Hydrate, fuel, sleep: the unglamorous engine of every personal best.",
+  "You can rest or you can quit. They're not the same thing.",
+  "Build the skill on quiet days so it shows up on loud ones.",
+  "Don't wait to feel motivated. Schedule it and show up.",
+  "Finish strong: the last rep teaches the most.",
+  "Give back today: help someone and your own problems shrink.",
+  "Big dreams, small calendars. Put the dream on the schedule.",
+  "Less hype, more reps. The work speaks for itself.",
+  "Protect your mornings; they set the tempo for everything.",
+  "When in doubt, do the next right thing, not the perfect thing.",
+  "Sleep before midnight is worth double. Get to bed.",
+  "Track it to change it. Numbers are honest even when feelings aren't.",
+  "Train like you race; race like you trained.",
+  "Stack tiny wins until they start to look like talent.",
+  "End the day proud of one thing you finished, not just started.",
 ];
 const boostPool = [
   "Log your Duke of Ed entry for the week.",
@@ -120,7 +201,11 @@ const boostPool = [
   "Review your next track session plan.",
   "Send one clear update on a Web Dev project.",
 ];
-const memoryIcons = ["bolt", "book-open", "trophy", "code-2", "heart-handshake", "timer", "star", "graduation-cap"];
+const memoryIconPool = [
+  "bolt", "book-open", "trophy", "code-2", "heart-handshake", "timer", "star", "graduation-cap",
+  "dumbbell", "flame", "rocket", "music", "heart", "crown", "gamepad-2", "medal",
+  "footprints", "target", "moon", "sun", "zap", "bike",
+];
 
 const defaultState = {
   items: [],
@@ -131,6 +216,7 @@ const defaultState = {
   dukeProgress: { physical: 0, volunteering: 0, skill: 0 },
   memoryNotes: { family: "Everything I do is for them.", moments: "", future: "" },
   reactionAttempts: [],
+  gameBests: { sprint: 0, stopClock: null, numberRush: null, target: 0 },
   goalReminder: "Train hard. Give back. Build something.",
   selectedDate: todayKey(),
   monthCursor: `${todayKey().slice(0, 7)}-01`,
@@ -184,6 +270,11 @@ let state = importSleepLog(normalizeState(loadJson(STORE_KEY, defaultState)));
 let reaction = { mode: "idle", goAt: 0, timeoutId: null };
 let memoryGame = null;
 let pendingSleepId = "";
+let coachCursor = null;
+let sprintGame = { active: false, count: 0, timeoutId: null };
+let stopClock = { running: false, startAt: 0, rafId: null };
+let numberRush = { order: [], next: 1, startAt: 0, active: false };
+let targetGame = { active: false, score: 0, lit: -1, intervalId: null, timeoutId: null };
 const els = {};
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -202,10 +293,13 @@ document.addEventListener("DOMContentLoaded", () => {
 
 function bindElements() {
   [
-    "greeting", "homeTitle", "currentDateText", "quoteText", "nextQuoteButton", "coachText", "coachButton", "coachDots", "heroCoins",
+    "greeting", "homeTitle", "currentDateText", "quoteText", "nextQuoteButton", "coachText", "coachButton", "coachDots", "coachBadge", "heroCoins",
     "doneTodayStat", "openTasksStat", "streakStat", "coinsStat", "trackWeekStat", "pushupsWeekStat", "addTrackSessionButton",
-    "addPushupsButton", "upcomingTodayList", "taskFilters", "taskList", "quickTaskForm", "quickTaskInput", "quickTaskCategory",
-    "pushupsTodayText", "pushupsTodayButton", "trackTodayToggle", "monthLabel", "todayButton", "calendarGrid", "monthCalendar",
+    "addPushupsButton", "upcomingTodayList", "taskList", "quickTaskForm", "quickTaskInput", "workoutList",
+    "sprintPad", "sprintStatus", "sprintBest", "stopClockPad", "stopClockStatus", "stopClockBest",
+    "numberRushStart", "numberRushGrid", "numberRushStatus", "numberRushBest",
+    "targetStart", "targetGrid", "targetStatus", "targetBest",
+    "monthLabel", "todayButton", "calendarGrid", "monthCalendar",
     "weekGrid", "calendarViewToggle", "agendaTitle", "agendaList", "addSleepButton", "sleepGoalInput",
     "lastNightDate", "lastBedtime", "lastWake", "lastDuration", "lastMood",
     "averageSleepStat", "sleepScoreStat", "sleepHint", "sleepChart", "sleepList",
@@ -253,10 +347,22 @@ function wireEvents() {
   els.coachButton.addEventListener("click", () => renderCoach(true));
   els.addTrackSessionButton.addEventListener("click", () => logFitness({ track_session: true }));
   els.addPushupsButton.addEventListener("click", () => logFitness({ pushups: 10 }));
-  els.pushupsTodayButton.addEventListener("click", () => logFitness({ pushups: 10 }));
-  els.trackTodayToggle.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-track-value]");
-    if (button) setTrackToday(button.dataset.trackValue === "true");
+  els.workoutList.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-workout-add]");
+    if (!button) return;
+    logFitness({ [button.dataset.workoutAdd]: Number(button.dataset.workoutStep) });
+  });
+  els.sprintPad.addEventListener("click", tapSprint);
+  els.stopClockPad.addEventListener("click", tapStopClock);
+  els.numberRushStart.addEventListener("click", startNumberRush);
+  els.numberRushGrid.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-rush]");
+    if (button) tapNumberRush(Number(button.dataset.rush));
+  });
+  els.targetStart.addEventListener("click", startTargetGame);
+  els.targetGrid.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-target]");
+    if (button) tapTarget(Number(button.dataset.target));
   });
   document.querySelectorAll(".memory-card").forEach((card) => card.addEventListener("click", (event) => {
     if (!event.target.matches("textarea")) card.classList.toggle("expanded");
@@ -278,13 +384,6 @@ function wireEvents() {
   els.quickTaskForm.addEventListener("submit", (event) => {
     event.preventDefault();
     createQuickTask();
-  });
-  els.taskFilters.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-filter]");
-    if (!button) return;
-    state.activeFilter = button.dataset.filter;
-    persist();
-    renderTasks();
   });
   els.todayButton.addEventListener("click", goToToday);
   els.calendarViewToggle.addEventListener("click", (event) => {
@@ -347,7 +446,7 @@ function render() {
   renderStats();
   renderUpcomingToday();
   renderCoach();
-  renderDukeProgress();
+  renderWorkout();
   renderMemoryNotes();
   renderTasks();
   renderCalendar();
@@ -382,9 +481,12 @@ function nextQuote() {
   els.quoteText.textContent = quotePool[(current + 1) % quotePool.length];
 }
 
-function renderCoach(randomize = false) {
-  const index = randomize ? Math.floor(Math.random() * coachTips.length) : (dailyIndex(coachTips.length) + state.focusSessions.length) % coachTips.length;
+function renderCoach(advance = false) {
+  if (coachCursor === null) coachCursor = dailyIndex(coachTips.length);
+  if (advance) coachCursor = (coachCursor + 1) % coachTips.length;
+  const index = coachCursor % coachTips.length;
   els.coachText.textContent = coachTips[index];
+  if (els.coachBadge) els.coachBadge.textContent = `${index + 1} / ${coachTips.length}`;
   if (els.coachDots) {
     const count = Math.min(7, coachTips.length);
     els.coachDots.innerHTML = Array.from({ length: count }, (_, i) => `<span class="${i === index % count ? "active" : ""}"></span>`).join("");
@@ -434,6 +536,35 @@ function renderDukeProgress() {
   });
 }
 
+function renderWorkout() {
+  if (!els.workoutList) return;
+  const today = todayKey();
+  const days = Array.from({ length: 100 }, (_, i) => addDays(today, i - 99));
+  const byDate = new Map(state.fitnessLog.map((entry) => [entry.entry_date, entry]));
+  els.workoutList.innerHTML = workoutMetrics.map((metric) => {
+    const values = days.map((day) => Number(byDate.get(day)?.[metric.key] || 0));
+    const todayValue = values[values.length - 1];
+    const total = values.reduce((sum, value) => sum + value, 0);
+    const activeDays = values.filter((value) => value > 0).length;
+    const max = Math.max(1, ...values);
+    const bars = values.map((value) => {
+      const height = value > 0 ? Math.max(10, Math.round((value / max) * 100)) : 4;
+      return `<i style="height:${height}%;opacity:${value > 0 ? 1 : 0.25}"></i>`;
+    }).join("");
+    const unit = metric.unit === "min" ? "min" : metric.unit;
+    return `<div class="workout-row" style="--accent:${metric.accent}">
+      <span class="workout-icon"><i data-lucide="${metric.icon}"></i></span>
+      <div class="workout-body">
+        <div class="workout-top"><b>${metric.label}</b><strong>${todayValue} ${unit} today</strong></div>
+        <div class="workout-spark">${bars}</div>
+        <small>${total} ${unit} over 100 days &middot; ${activeDays} active ${activeDays === 1 ? "day" : "days"}</small>
+      </div>
+      <button class="workout-add" type="button" data-workout-add="${metric.key}" data-workout-step="${metric.step}">+${metric.step}${metric.unit === "min" ? "m" : ""}</button>
+    </div>`;
+  }).join("");
+  refreshIcons();
+}
+
 function renderMemoryNotes() {
   document.querySelectorAll("[data-memory-note]").forEach((input) => {
     input.value = state.memoryNotes[input.dataset.memoryNote] || "";
@@ -443,7 +574,7 @@ function renderMemoryNotes() {
 function createQuickTask() {
   const title = els.quickTaskInput.value.trim();
   if (!title) return;
-  state.items.unshift(makeTask({ title, category: els.quickTaskCategory.value, due_date: todayKey() }));
+  state.items.unshift(makeTask({ title, category: "Personal", due_date: todayKey() }));
   els.quickTaskInput.value = "";
   persist();
   render();
@@ -451,13 +582,7 @@ function createQuickTask() {
 }
 
 function renderTasks() {
-  els.taskFilters.querySelectorAll("[data-filter]").forEach((button) => button.classList.toggle("active", button.dataset.filter === state.activeFilter));
-  const tasks = filterItems(state.items, state.activeFilter, todayKey()).sort(sortTasks);
-  const todayFitness = fitnessEntry(todayKey());
-  els.pushupsTodayText.textContent = `Pushups logged today: ${todayFitness.pushups || 0}`;
-  els.trackTodayToggle.querySelectorAll("button").forEach((button) => {
-    button.classList.toggle("active", String(Boolean(todayFitness.track_session)) === button.dataset.trackValue);
-  });
+  const tasks = filterItems(state.items, "all", todayKey()).sort(sortTasks);
   if (!tasks.length) {
     els.taskList.innerHTML = '<article class="empty-state"><strong>No tasks yet</strong><p>Write one above and keep your day clear.</p></article>';
     return;
@@ -498,7 +623,14 @@ function taskMarkup(task) {
 
 function renderCalendar() {
   const cursor = new Date(`${state.monthCursor}T00:00:00`);
-  els.monthLabel.textContent = cursor.toLocaleDateString("en", { month: "long", year: "numeric" });
+  if (state.calendarView === "week") {
+    const start = startOfWeek(state.selectedDate);
+    const end = addDays(start, 6);
+    const fmt = (key) => new Date(`${key}T00:00:00`).toLocaleDateString("en", { month: "short", day: "numeric" });
+    els.monthLabel.textContent = `${fmt(start)} - ${fmt(end)}`;
+  } else {
+    els.monthLabel.textContent = cursor.toLocaleDateString("en", { month: "long", year: "numeric" });
+  }
   els.calendarViewToggle.querySelectorAll("button").forEach((button) => button.classList.toggle("active", button.dataset.calendarView === state.calendarView));
   els.monthCalendar.hidden = state.calendarView !== "month";
   els.weekGrid.hidden = state.calendarView !== "week";
@@ -663,6 +795,135 @@ function renderArcade() {
   els.goalReminderInput.value = state.goalReminder;
   renderReaction();
   renderMemory();
+  renderGames();
+}
+
+function renderGames() {
+  const best = state.gameBests || {};
+  els.sprintBest.textContent = best.sprint ? String(best.sprint) : "—";
+  els.stopClockBest.textContent = best.stopClock != null ? `${Number(best.stopClock).toFixed(2)}s` : "—";
+  els.numberRushBest.textContent = best.numberRush != null ? `${Number(best.numberRush).toFixed(2)}s` : "—";
+  els.targetBest.textContent = best.target ? String(best.target) : "—";
+  if (!sprintGame.active) { els.sprintPad.className = "reaction-pad"; els.sprintPad.textContent = "Tap to start"; }
+  if (!stopClock.running) { els.stopClockPad.className = "reaction-pad"; els.stopClockPad.textContent = "Start clock"; }
+  if (!numberRush.active) els.numberRushGrid.innerHTML = "";
+  if (!targetGame.active) els.targetGrid.innerHTML = "";
+}
+
+/* ---- Sprint Tap (track speed) ---- */
+function tapSprint() {
+  if (!sprintGame.active) {
+    sprintGame = { active: true, count: 0, timeoutId: window.setTimeout(endSprint, 5000) };
+    els.sprintPad.className = "reaction-pad go";
+    els.sprintPad.textContent = "TAP! 0";
+    els.sprintStatus.textContent = "GO! Tap as fast as you can!";
+    return;
+  }
+  sprintGame.count += 1;
+  els.sprintPad.textContent = `TAP! ${sprintGame.count}`;
+}
+function endSprint() {
+  const count = sprintGame.count;
+  sprintGame.active = false;
+  els.sprintPad.className = "reaction-pad result";
+  els.sprintPad.textContent = `${count} taps`;
+  state.gameBests.sprint = Math.max(Number(state.gameBests.sprint || 0), count);
+  els.sprintBest.textContent = String(state.gameBests.sprint);
+  els.sprintStatus.textContent = `${count} taps in 5s. Tap to go again.`;
+  persist();
+  void upsertAppState();
+}
+
+/* ---- Stop the Clock (precision / start timing) ---- */
+function tapStopClock() {
+  if (!stopClock.running) {
+    stopClock = { running: true, startAt: performance.now(), rafId: null };
+    els.stopClockPad.className = "reaction-pad waiting";
+    els.stopClockStatus.textContent = "Tap again to stop at 5.00s!";
+    const tick = () => {
+      if (!stopClock.running) return;
+      els.stopClockPad.textContent = `${((performance.now() - stopClock.startAt) / 1000).toFixed(2)}s`;
+      stopClock.rafId = requestAnimationFrame(tick);
+    };
+    tick();
+    return;
+  }
+  stopClock.running = false;
+  if (stopClock.rafId) cancelAnimationFrame(stopClock.rafId);
+  const seconds = (performance.now() - stopClock.startAt) / 1000;
+  const gap = Math.abs(seconds - 5);
+  els.stopClockPad.className = "reaction-pad result";
+  els.stopClockPad.textContent = `${seconds.toFixed(2)}s`;
+  els.stopClockStatus.textContent = `Off by ${gap.toFixed(2)}s. Tap to try again.`;
+  const prev = state.gameBests.stopClock;
+  if (prev == null || gap < prev) state.gameBests.stopClock = gap;
+  els.stopClockBest.textContent = `${Number(state.gameBests.stopClock).toFixed(2)}s`;
+  persist();
+  void upsertAppState();
+}
+
+/* ---- Number Rush ---- */
+function startNumberRush() {
+  numberRush = { order: shuffle(Array.from({ length: 9 }, (_, i) => i + 1)), next: 1, startAt: performance.now(), active: true };
+  els.numberRushStatus.textContent = "Tap 1 to start the clock!";
+  renderNumberRush();
+}
+function renderNumberRush() {
+  els.numberRushGrid.innerHTML = numberRush.order.map((n) => `<button type="button" data-rush="${n}" class="rush-cell ${n < numberRush.next ? "done" : ""}" ${n < numberRush.next ? "disabled" : ""}>${n < numberRush.next ? "" : n}</button>`).join("");
+}
+function tapNumberRush(n) {
+  if (!numberRush.active) return;
+  if (n !== numberRush.next) { els.numberRushStatus.textContent = `Tap ${numberRush.next} next!`; return; }
+  numberRush.next += 1;
+  if (numberRush.next > 9) {
+    numberRush.active = false;
+    const time = (performance.now() - numberRush.startAt) / 1000;
+    const prev = state.gameBests.numberRush;
+    if (prev == null || time < prev) state.gameBests.numberRush = time;
+    els.numberRushStatus.textContent = `Cleared in ${time.toFixed(2)}s!`;
+    els.numberRushBest.textContent = `${Number(state.gameBests.numberRush).toFixed(2)}s`;
+    persist();
+    void upsertAppState();
+  } else {
+    els.numberRushStatus.textContent = `Tap ${numberRush.next} next!`;
+  }
+  renderNumberRush();
+}
+
+/* ---- Target Tap ---- */
+function startTargetGame() {
+  if (targetGame.intervalId) clearInterval(targetGame.intervalId);
+  if (targetGame.timeoutId) clearTimeout(targetGame.timeoutId);
+  targetGame = { active: true, score: 0, lit: Math.floor(Math.random() * 16), intervalId: null, timeoutId: null };
+  let left = 15;
+  els.targetStatus.textContent = `Hits: 0 · ${left}s left`;
+  targetGame.intervalId = window.setInterval(() => {
+    left -= 1;
+    if (left > 0) els.targetStatus.textContent = `Hits: ${targetGame.score} · ${left}s left`;
+  }, 1000);
+  targetGame.timeoutId = window.setTimeout(endTargetGame, 15000);
+  renderTargetGame();
+}
+function renderTargetGame() {
+  els.targetGrid.innerHTML = Array.from({ length: 16 }, (_, i) => `<button type="button" data-target="${i}" class="target-cell ${i === targetGame.lit ? "lit" : ""}"></button>`).join("");
+}
+function tapTarget(i) {
+  if (!targetGame.active || i !== targetGame.lit) return;
+  targetGame.score += 1;
+  let next = targetGame.lit;
+  while (next === targetGame.lit) next = Math.floor(Math.random() * 16);
+  targetGame.lit = next;
+  renderTargetGame();
+}
+function endTargetGame() {
+  targetGame.active = false;
+  if (targetGame.intervalId) clearInterval(targetGame.intervalId);
+  state.gameBests.target = Math.max(Number(state.gameBests.target || 0), targetGame.score);
+  els.targetStatus.textContent = `Time! You hit ${targetGame.score} targets.`;
+  els.targetBest.textContent = String(state.gameBests.target);
+  els.targetGrid.innerHTML = Array.from({ length: 16 }, (_, i) => `<button type="button" data-target="${i}" class="target-cell"></button>`).join("");
+  persist();
+  void upsertAppState();
 }
 
 function renderReaction() {
@@ -685,6 +946,8 @@ function renderMemory() {
 function logFitness(change) {
   const entry = fitnessEntry(todayKey());
   if (change.pushups) entry.pushups = Number(entry.pushups || 0) + change.pushups;
+  if (change.pullups) entry.pullups = Number(entry.pullups || 0) + change.pullups;
+  if (change.plank) entry.plank = Number(entry.plank || 0) + change.plank;
   if (change.track_session) entry.track_session = true;
   saveFitnessEntry(entry);
 }
@@ -704,7 +967,7 @@ function saveFitnessEntry(entry) {
 }
 
 function fitnessEntry(date) {
-  return { entry_date: date, pushups: 0, track_session: false, ...(state.fitnessLog.find((entry) => entry.entry_date === date) || {}) };
+  return { entry_date: date, pushups: 0, pullups: 0, plank: 0, track_session: false, ...(state.fitnessLog.find((entry) => entry.entry_date === date) || {}) };
 }
 
 function openCompose(kind, item = null) {
@@ -953,7 +1216,8 @@ function startMemoryGame() {
     return;
   }
   state.rewards.unshift({ id: crypto.randomUUID(), type: "memory_entry", amount: -5, date: todayKey() });
-  const cards = shuffle([...memoryIcons, ...memoryIcons]).map((icon) => ({ icon, revealed: false, matched: false }));
+  const chosen = shuffle([...memoryIconPool]).slice(0, 8);
+  const cards = shuffle([...chosen, ...chosen]).map((icon) => ({ icon, revealed: false, matched: false }));
   memoryGame = { cards, selected: [], moves: 0, startedAt: Date.now(), locked: false };
   els.memoryStatus.textContent = "Moves: 0";
   persist();
@@ -1230,6 +1494,7 @@ function normalizeState(saved) {
     fitnessLog: Array.isArray(saved.fitnessLog) ? saved.fitnessLog : [],
     rewards: Array.isArray(saved.rewards) ? saved.rewards : [],
     reactionAttempts: Array.isArray(saved.reactionAttempts) ? saved.reactionAttempts : [],
+    gameBests: { ...defaultState.gameBests, ...(saved.gameBests || {}) },
   };
   return merged;
 }

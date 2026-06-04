@@ -72,20 +72,28 @@
             <button class="coach-main" id="coachButton" type="button" title="New coaching tip" aria-label="New coaching tip">
               <span class="coach-icon" aria-hidden="true"><i data-lucide="brain"></i></span>
               <div class="coach-body">
-                <div class="coach-title-row"><h2 id="coachTitle">AI Coach</h2><span class="coach-badge">New tip</span></div>
+                <div class="coach-title-row"><h2 id="coachTitle">AI Coach</h2><span class="coach-badge" id="coachBadge">New tip</span></div>
                 <p id="coachText"></p>
               </div>
               <i data-lucide="chevron-right" class="coach-chevron" aria-hidden="true"></i>
             </button>
             <div class="coach-dots" id="coachDots" aria-hidden="true"></div>
           </section>
-          <section class="duke-card surface" aria-labelledby="homeDukeTitle">
-            <div class="card-heading"><h2 id="homeDukeTitle">Duke of Edinburgh &ndash; Bronze Progress <i data-lucide="info" class="heading-info"></i></h2><span>Tap a bar to advance 10%</span></div>
-            <div class="duke-bars" data-duke-bars="home"></div>
+          <section class="workout-card surface" aria-labelledby="workoutTitle">
+            <div class="card-heading"><h2 id="workoutTitle">Workout</h2><span>Last 100 days</span></div>
+            <div class="workout-list" id="workoutList"></div>
           </section>
         </section>
 
         <section class="view" id="tasksView" aria-labelledby="tasksTitle">
+claude/gracious-bardeen-Au8Bk
+          <div class="section-heading section-heading-tasks"><h1 id="tasksTitle">All Tasks</h1><button class="add-button labeled" data-open-compose="daily_task" type="button" title="New Task"><i data-lucide="plus"></i><span>New Task</span></button></div>
+          <form class="quick-task surface" id="quickTaskForm">
+            <input id="quickTaskInput" type="text" maxlength="120" required placeholder="What needs to get done?" />
+            <button class="primary-button" type="submit">Add</button>
+          </form>
+          <div class="task-list" id="taskList"></div>
+=======
           <div class="tasks-google-shell">
             <aside class="tasks-google-rail surface" aria-label="Task lists">
               <button class="google-create-button" type="submit" form="quickTaskForm"><i data-lucide="plus"></i><span>Create</span></button>
@@ -122,6 +130,7 @@
               <div class="task-list google-task-list" id="taskList"></div>
             </section>
           </div>
+ main
         </section>
 
         <section class="view" id="calendarView" aria-labelledby="calendarTitle">
@@ -174,7 +183,11 @@
             <article class="arcade-card daily-boost"><h2>Daily Boost</h2><p id="arcadeBoost"></p><button class="primary-button" id="arcadeBoostButton" type="button">Complete boost +20</button></article>
             <article class="arcade-card rules-card"><h2>Earn Coins</h2><ul><li>Complete a task: +5</li><li>Complete a focus session: +10</li><li>Hit daily sleep goal: +5</li><li>Complete YMCA event: +15</li><li>Complete track training: +10</li></ul></article>
             <article class="arcade-card game-card"><h2>Reaction Tap</h2><p>Sprint Start Trainer &middot; Free</p><button class="reaction-pad" id="reactionPad" type="button" disabled>Start when ready</button><button class="ghost-button compact" id="reactionStartButton" type="button">Start attempt</button><p><strong id="reactionBest">&mdash;</strong> best</p><ol class="attempts" id="reactionHistory"></ol></article>
-            <article class="arcade-card game-card memory-card-game"><h2>Memory Match</h2><p>Entry: 5 coins &middot; Win: +5 coins</p><button class="ghost-button compact" id="memoryStartButton" type="button">Play Memory Match</button><p id="memoryStatus">Match all 8 pairs.</p><div class="memory-grid" id="memoryGrid"></div></article>
+            <article class="arcade-card game-card memory-card-game"><h2>Memory Match</h2><p>Entry: 5 coins &middot; Win: +5 coins &middot; New board every game</p><button class="ghost-button compact" id="memoryStartButton" type="button">Play Memory Match</button><p id="memoryStatus">Match all 8 pairs.</p><div class="memory-grid" id="memoryGrid"></div></article>
+            <article class="arcade-card game-card"><h2>Sprint Tap</h2><p>Track speed &middot; Tap as fast as you can for 5 seconds</p><button class="reaction-pad" id="sprintPad" type="button">Tap to start</button><p id="sprintStatus">Best burst counts your fastest hands.</p><p><strong id="sprintBest">&mdash;</strong> best taps</p></article>
+            <article class="arcade-card game-card"><h2>Stop the Clock</h2><p>Start precision &middot; Stop it as close to 5.00s as you can</p><button class="reaction-pad" id="stopClockPad" type="button">Start clock</button><p id="stopClockStatus">Tap once to start, again to stop.</p><p><strong id="stopClockBest">&mdash;</strong> best gap</p></article>
+            <article class="arcade-card game-card"><h2>Number Rush</h2><p>Tap 1 to 9 in order as fast as possible</p><button class="ghost-button compact" id="numberRushStart" type="button">New round</button><p id="numberRushStatus">Press New round to begin.</p><div class="rush-grid" id="numberRushGrid"></div><p><strong id="numberRushBest">&mdash;</strong> best time</p></article>
+            <article class="arcade-card game-card"><h2>Target Tap</h2><p>Hit the lit square &middot; 15 seconds</p><button class="ghost-button compact" id="targetStart" type="button">Start round</button><p id="targetStatus">Press Start round to begin.</p><div class="target-grid" id="targetGrid"></div><p><strong id="targetBest">&mdash;</strong> best hits</p></article>
             <article class="arcade-card arcade-photo-card"><img src="/assets/reminders/family-birthday.jpg" alt="Family reminder" /><div><label>My goal<input id="goalReminderInput" value="Train hard. Give back. Build something." /></label><p>Finish the work so you can be fully present for moments like this.</p></div></article>
           </section>
         </section>

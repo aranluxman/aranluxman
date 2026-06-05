@@ -236,11 +236,8 @@ const defaultSettings = {
   trackGoal: 3,
   darkMode: true,
 };
-const recurringTemplates = [
-  ["seed-track", "Track Training", "Track & Field", "2026-01-01", "15:30", "17:30", [1, 3, 5]],
-  ["seed-ymca", "YMCA - Basketball & Volleyball Coaching", "YMCA", "2026-01-01", "10:00", "12:00", [6]],
-  ["seed-duke", "Duke of Ed Log Entry", "Duke of Ed", "2026-01-01", "", "", [0]],
-];
+// Real schedule is imported from calendarImport below, so no placeholder recurring events.
+const recurringTemplates = [];
 // One-time import of Aran's handwritten sleep log [date, fell asleep, woke up] (24h, wake is next morning).
 const sleepLogImport = [
   ["2026-05-05", "22:30", "07:00"],
@@ -264,9 +261,141 @@ const sleepLogImport = [
   ["2026-06-03", "22:15", "06:40"],
   ["2026-06-04", "22:56", "07:00"],
 ];
+// One-time import of Aran's summer schedule [date, title, start (24h), end (24h), category].
+const calendarImport = [
+  ["2026-06-05","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-06-06","Amamma's Birthday","","","Personal"],
+  ["2026-06-06","Spring Gliding session","06:30","17:00","Personal"],
+  ["2026-06-06","Work Out Training Track","08:00","09:30","Track & Field"],
+  ["2026-06-06","YMCA Basketball Volunteering","11:00","13:00","YMCA"],
+  ["2026-06-06","YMCA League Basketball","13:00","15:00","YMCA"],
+  ["2026-06-07","Annual - Cadets","08:30","09:30","Personal"],
+  ["2026-06-07","YMCA Volleyball","14:15","15:15","YMCA"],
+  ["2026-06-08","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-06-10","Air Cadets","18:30","22:00","Personal"],
+  ["2026-06-11","Volunteer at Glad Park Fun Fair","16:00","20:30","YMCA"],
+  ["2026-06-11","Open Gym Basketball","18:00","19:00","YMCA"],
+  ["2026-06-11","Workout","19:00","20:00","Track & Field"],
+  ["2026-06-12","Meeting with Kaya","00:00","01:00","Personal"],
+  ["2026-06-12","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-06-13","Work Out Training Track","08:00","09:30","Track & Field"],
+  ["2026-06-13","YMCA Basketball Volunteering","11:00","13:00","YMCA"],
+  ["2026-06-13","YMCA League Basketball","13:00","15:00","YMCA"],
+  ["2026-06-14","YMCA Volleyball","14:15","15:15","YMCA"],
+  ["2026-06-15","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-06-17","Air Cadets","18:30","22:00","Personal"],
+  ["2026-06-18","Open Gym Basketball","18:00","19:00","YMCA"],
+  ["2026-06-18","Workout","19:00","20:00","Track & Field"],
+  ["2026-06-19","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-06-20","Work Out Training Track","08:00","09:30","Track & Field"],
+  ["2026-06-20","YMCA Basketball Volunteering","11:00","13:00","YMCA"],
+  ["2026-06-20","YMCA League Basketball","13:00","15:00","YMCA"],
+  ["2026-06-21","YMCA Volleyball","14:15","15:15","YMCA"],
+  ["2026-06-22","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-06-24","Air Cadets","18:30","22:00","Personal"],
+  ["2026-06-25","P.A. Day - No School","","","Personal"],
+  ["2026-06-25","Vacation to Mayan Rivera","","","Personal"],
+  ["2026-06-25","Open Gym Basketball","18:00","19:00","YMCA"],
+  ["2026-06-25","Workout","19:00","20:00","Track & Field"],
+  ["2026-06-26","P.A. Day - No School","","","Personal"],
+  ["2026-06-26","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-06-27","Work Out Training Track","08:00","09:30","Track & Field"],
+  ["2026-06-27","YMCA Basketball Volunteering","11:00","13:00","YMCA"],
+  ["2026-06-27","YMCA League Basketball","13:00","15:00","YMCA"],
+  ["2026-06-28","YMCA Volleyball","14:15","15:15","YMCA"],
+  ["2026-06-29","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-07-01","Air Cadets","18:30","22:00","Personal"],
+  ["2026-07-02","Open Gym Basketball","18:00","19:00","YMCA"],
+  ["2026-07-02","Workout","19:00","20:00","Track & Field"],
+  ["2026-07-03","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-07-04","Work Out Training Track","08:00","09:30","Track & Field"],
+  ["2026-07-04","YMCA Basketball Volunteering","11:00","13:00","YMCA"],
+  ["2026-07-04","YMCA League Basketball","13:00","15:00","YMCA"],
+  ["2026-07-05","YMCA Volleyball","14:15","15:15","YMCA"],
+  ["2026-07-06","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-07-08","Air Cadets","18:30","22:00","Personal"],
+  ["2026-07-09","Open Gym Basketball","18:00","19:00","YMCA"],
+  ["2026-07-09","Workout","19:00","20:00","Track & Field"],
+  ["2026-07-10","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-07-11","Work Out Training Track","08:00","09:30","Track & Field"],
+  ["2026-07-11","YMCA Basketball Volunteering","11:00","13:00","YMCA"],
+  ["2026-07-11","YMCA League Basketball","13:00","15:00","YMCA"],
+  ["2026-07-12","YMCA Volleyball","14:15","15:15","YMCA"],
+  ["2026-07-13","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-07-15","Air Cadets","18:30","22:00","Personal"],
+  ["2026-07-16","Open Gym Basketball","18:00","19:00","YMCA"],
+  ["2026-07-16","Workout","19:00","20:00","Track & Field"],
+  ["2026-07-17","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-07-18","Work Out Training Track","08:00","09:30","Track & Field"],
+  ["2026-07-18","YMCA Basketball Volunteering","11:00","13:00","YMCA"],
+  ["2026-07-18","YMCA League Basketball","13:00","15:00","YMCA"],
+  ["2026-07-19","YMCA Volleyball","14:15","15:15","YMCA"],
+  ["2026-07-20","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-07-22","Air Cadets","18:30","22:00","Personal"],
+  ["2026-07-23","Open Gym Basketball","18:00","19:00","YMCA"],
+  ["2026-07-23","Workout","19:00","20:00","Track & Field"],
+  ["2026-07-24","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-07-25","Work Out Training Track","08:00","09:30","Track & Field"],
+  ["2026-07-25","YMCA Basketball Volunteering","11:00","13:00","YMCA"],
+  ["2026-07-25","YMCA League Basketball","13:00","15:00","YMCA"],
+  ["2026-07-26","YMCA Volleyball","14:15","15:15","YMCA"],
+  ["2026-07-27","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-07-29","Air Cadets","18:30","22:00","Personal"],
+  ["2026-07-30","Open Gym Basketball","18:00","19:00","YMCA"],
+  ["2026-07-30","Workout","19:00","20:00","Track & Field"],
+  ["2026-07-31","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-08-01","Work Out Training Track","08:00","09:30","Track & Field"],
+  ["2026-08-01","YMCA Basketball Volunteering","11:00","13:00","YMCA"],
+  ["2026-08-01","YMCA League Basketball","13:00","15:00","YMCA"],
+  ["2026-08-02","YMCA Volleyball","14:15","15:15","YMCA"],
+  ["2026-08-03","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-08-05","Air Cadets","18:30","22:00","Personal"],
+  ["2026-08-06","Open Gym Basketball","18:00","19:00","YMCA"],
+  ["2026-08-06","Workout","19:00","20:00","Track & Field"],
+  ["2026-08-07","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-08-08","Work Out Training Track","08:00","09:30","Track & Field"],
+  ["2026-08-08","YMCA Basketball Volunteering","11:00","13:00","YMCA"],
+  ["2026-08-08","YMCA League Basketball","13:00","15:00","YMCA"],
+  ["2026-08-09","YMCA Volleyball","14:15","15:15","YMCA"],
+  ["2026-08-10","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-08-12","Air Cadets","18:30","22:00","Personal"],
+  ["2026-08-13","Open Gym Basketball","18:00","19:00","YMCA"],
+  ["2026-08-13","Workout","19:00","20:00","Track & Field"],
+  ["2026-08-14","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-08-15","Work Out Training Track","08:00","09:30","Track & Field"],
+  ["2026-08-15","YMCA Basketball Volunteering","11:00","13:00","YMCA"],
+  ["2026-08-15","YMCA League Basketball","13:00","15:00","YMCA"],
+  ["2026-08-16","YMCA Volleyball","14:15","15:15","YMCA"],
+  ["2026-08-17","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-08-17","Basketball for Cadets","20:00","22:00","Personal"],
+  ["2026-08-19","Air Cadets","18:30","22:00","Personal"],
+  ["2026-08-20","Open Gym Basketball","18:00","19:00","YMCA"],
+  ["2026-08-20","Workout","19:00","20:00","Track & Field"],
+  ["2026-08-21","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-08-22","Work Out Training Track","08:00","09:30","Track & Field"],
+  ["2026-08-22","YMCA Basketball Volunteering","11:00","13:00","YMCA"],
+  ["2026-08-22","YMCA League Basketball","13:00","15:00","YMCA"],
+  ["2026-08-23","YMCA Volleyball","14:15","15:15","YMCA"],
+  ["2026-08-24","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-08-26","Camerons Birthday","","","Personal"],
+  ["2026-08-26","Air Cadets","18:30","22:00","Personal"],
+  ["2026-08-27","Open Gym Basketball","18:00","19:00","YMCA"],
+  ["2026-08-27","Workout","19:00","20:00","Track & Field"],
+  ["2026-08-28","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-08-29","Work Out Training Track","08:00","09:30","Track & Field"],
+  ["2026-08-30","YMCA Volleyball","14:15","15:15","YMCA"],
+  ["2026-08-31","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-09-02","Air Cadets","18:30","22:00","Personal"],
+  ["2026-09-03","Open Gym Basketball","18:00","19:00","YMCA"],
+  ["2026-09-03","Workout","19:00","20:00","Track & Field"],
+  ["2026-09-04","Track and Field","18:00","19:30","Track & Field"],
+  ["2026-09-05","Work Out Training Track","08:00","09:30","Track & Field"],
+  ["2026-09-05","YMCA Basketball Volunteering","11:00","13:00","YMCA"],
+  ["2026-09-05","YMCA League Basketball","13:00","15:00","YMCA"],
+];
 
 let settings = normalizeSettings(loadJson(SETTINGS_KEY, defaultSettings));
-let state = importSleepLog(normalizeState(loadJson(STORE_KEY, defaultState)));
+let state = importCalendarEvents(importSleepLog(normalizeState(loadJson(STORE_KEY, defaultState))));
 let reaction = { mode: "idle", goAt: 0, timeoutId: null };
 let memoryGame = null;
 let pendingSleepId = "";
@@ -962,6 +1091,7 @@ function saveFitnessEntry(entry) {
   state.fitnessLog = [entry, ...state.fitnessLog.filter((candidate) => candidate.entry_date !== entry.entry_date)];
   persist();
   renderStats();
+  renderWorkout();
   renderTasks();
   void upsertAppState();
 }
@@ -1515,6 +1645,28 @@ function importSleepLog(target) {
     });
   target.sleepEntries = [...additions, ...(target.sleepEntries || [])];
   target.sleepLogImported = true;
+  if (additions.length) saveJson(STORE_KEY, target);
+  return target;
+}
+
+function importCalendarEvents(target) {
+  if (target.calendarImported) return target;
+  const existing = new Set((target.items || [])
+    .filter((item) => item.kind === "calendar_event")
+    .map((item) => `${item.due_date}|${item.title}|${item.start_time || ""}`));
+  const additions = calendarImport
+    .filter(([date, title, start]) => !existing.has(`${date}|${title}|${start}`))
+    .map(([date, title, start, end, category]) => ({
+      id: crypto.randomUUID(), owner_key: settings.ownerKey, kind: "calendar_event",
+      title, category, priority: "medium", due_date: date,
+      start_time: start, end_time: end, repeat_pattern: "none", repeat_days: [],
+      notes: "", completed: false, completed_dates: [], subtasks: [],
+      scheduled_at: start ? `${date}T${start}:00` : null,
+      duration_minutes: durationBetween(start, end) || 30,
+      color: colorFor(category), source: "import", created_at: new Date().toISOString(),
+    }));
+  target.items = [...additions, ...(target.items || [])];
+  target.calendarImported = true;
   if (additions.length) saveJson(STORE_KEY, target);
   return target;
 }

@@ -747,12 +747,6 @@ function taskMarkup(task) {
       <div class="task-labels"><span class="category-tag">${escapeHtml(task.category || "Personal")}</span><span class="priority-tag" data-priority="${priority}">${priority}</span>${overdue ? '<span class="overdue">Overdue</span>' : ""}</div>
       <p class="task-title">${escapeHtml(task.title)}</p>
       ${metaChips ? `<div class="task-meta">${metaChips}</div>` : ""}
-  const completedCount = subtasks.filter((entry) => entry.completed).length;
-  return `<article class="task-item google-task-row ${task.completed ? "completed" : ""}" data-task-id="${task.id}" style="--accent:${colorFor(task.category)}">
-    <button class="task-check google-task-check" data-toggle-task type="button" aria-label="Complete ${escapeHtml(task.title)}"></button>
-    <div class="task-main">
-      <p class="task-title">${escapeHtml(task.title)}</p>
-      <div class="task-meta"><span class="category-dot" aria-hidden="true"></span>${escapeHtml(task.category || "Personal")}${task.due_date ? ` &middot; ${prettyDate(task.due_date)}` : ""}${overdue ? ' &middot; <b class="overdue-inline">OVERDUE</b>' : ""}${subtasks.length ? ` &middot; ${completedCount}/${subtasks.length} subtasks` : ""}</div>
       <div class="subtask-panel">
         ${subtasks.map((entry, index) => `<label><input type="checkbox" data-subtask-index="${index}" ${entry.completed ? "checked" : ""}/> ${escapeHtml(entry.title)}</label>`).join("")}
         ${subtasks.length < 5 ? '<form data-subtask-form><input name="title" maxlength="80" required placeholder="Add step" /><button type="submit">+</button></form>' : ""}
@@ -1609,10 +1603,8 @@ function canSync() {
 
 function setSyncStatus(text) {
   els.syncStatus.textContent = text;
-  const visible = /syncing|paused|skipped/i.test(text);
-  els.syncBanner.hidden = !visible;
-  els.syncBanner.classList.toggle("error", /paused|skipped/i.test(text));
-  els.syncBannerText.textContent = text;
+  // Keep cloud sync silent in the UI — never surface the top banner.
+  els.syncBanner.hidden = true;
 }
 
 function setView(view) {

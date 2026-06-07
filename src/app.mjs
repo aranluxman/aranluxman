@@ -432,12 +432,18 @@ function renderTasks() {
 function taskMarkup(task) {
   const overdue = !task.completed && task.due_date && task.due_date < todayKey();
   const subtasks = task.subtasks || [];
+  const doneSubs = subtasks.filter((entry) => entry.completed).length;
+  const priority = task.priority || "medium";
+  const metaChips = [
+    task.due_date ? `<span class="meta-chip"><i data-lucide="calendar"></i>${prettyDate(task.due_date)}</span>` : "",
+    subtasks.length ? `<span class="meta-chip"><i data-lucide="list-tree"></i>${doneSubs}/${subtasks.length}</span>` : "",
+  ].join("");
   return `<article class="task-item ${task.completed ? "completed" : ""}" data-task-id="${task.id}" style="--accent:${colorFor(task.category)}">
     <button class="task-check" data-toggle-task type="button" aria-label="Complete ${escapeHtml(task.title)}"></button>
     <div class="task-main">
-      <div class="task-labels"><span class="category-tag">${escapeHtml(task.category || "Personal")}</span>${overdue ? '<span class="overdue">OVERDUE</span>' : ""}</div>
+      <div class="task-labels"><span class="category-tag">${escapeHtml(task.category || "Personal")}</span><span class="priority-tag" data-priority="${priority}">${priority}</span>${overdue ? '<span class="overdue">Overdue</span>' : ""}</div>
       <p class="task-title">${escapeHtml(task.title)}</p>
-      <div class="task-meta">${task.priority || "medium"} priority${task.due_date ? ` &middot; Due ${prettyDate(task.due_date)}` : ""}</div>
+      ${metaChips ? `<div class="task-meta">${metaChips}</div>` : ""}
       <div class="subtask-panel">
         ${subtasks.map((entry, index) => `<label><input type="checkbox" data-subtask-index="${index}" ${entry.completed ? "checked" : ""}/> ${escapeHtml(entry.title)}</label>`).join("")}
         ${subtasks.length < 5 ? '<form data-subtask-form><input name="title" maxlength="80" required placeholder="Add subtask" /><button type="submit">+</button></form>' : ""}

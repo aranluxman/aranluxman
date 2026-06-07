@@ -989,6 +989,8 @@ label {
   gap: 0.4rem;
   background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--line);
+  color: var(--accent);
+}
 .task-item.completed .task-check,
 .task-item.completed .google-task-check {
   border-color: var(--green);
@@ -1088,6 +1090,7 @@ label {
   .task-item:focus-within .task-actions {
     opacity: 1;
   }
+}
 .category-dot {
   width: 9px;
   height: 9px;

@@ -735,6 +735,18 @@ function renderTasks() {
 function taskMarkup(task) {
   const overdue = !task.completed && task.due_date && task.due_date < todayKey();
   const subtasks = task.subtasks || [];
+  const doneSubs = subtasks.filter((entry) => entry.completed).length;
+  const priority = task.priority || "medium";
+  const metaChips = [
+    task.due_date ? `<span class="meta-chip"><i data-lucide="calendar"></i>${prettyDate(task.due_date)}</span>` : "",
+    subtasks.length ? `<span class="meta-chip"><i data-lucide="list-tree"></i>${doneSubs}/${subtasks.length}</span>` : "",
+  ].join("");
+  return `<article class="task-item ${task.completed ? "completed" : ""}" data-task-id="${task.id}" style="--accent:${colorFor(task.category)}">
+    <button class="task-check" data-toggle-task type="button" aria-label="Complete ${escapeHtml(task.title)}"></button>
+    <div class="task-main">
+      <div class="task-labels"><span class="category-tag">${escapeHtml(task.category || "Personal")}</span><span class="priority-tag" data-priority="${priority}">${priority}</span>${overdue ? '<span class="overdue">Overdue</span>' : ""}</div>
+      <p class="task-title">${escapeHtml(task.title)}</p>
+      ${metaChips ? `<div class="task-meta">${metaChips}</div>` : ""}
   const completedCount = subtasks.filter((entry) => entry.completed).length;
   return `<article class="task-item google-task-row ${task.completed ? "completed" : ""}" data-task-id="${task.id}" style="--accent:${colorFor(task.category)}">
     <button class="task-check google-task-check" data-toggle-task type="button" aria-label="Complete ${escapeHtml(task.title)}"></button>

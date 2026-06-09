@@ -817,9 +817,10 @@ input:focus, select:focus, textarea:focus {
 select { appearance: none; }
 label {
   display: grid;
-  grid-template-columns: minmax(13rem, 1fr) 11rem auto;
-  gap: 0.75rem;
-  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  font-weight: 600;
 }
 
 /* Filters and Duration Rows */
@@ -1552,7 +1553,21 @@ dialog form {
   padding-bottom: 12px;
 }
 .dialog-heading h2 { font-size: 1.25rem; }
-.form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.form-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
+/* Larger, easy-to-tap inputs inside dialogs (mobile) */
+.compose-dialog input,
+.compose-dialog select,
+dialog form input,
+dialog form select {
+  font-size: 1.05rem;
+  padding: 14px 14px;
+  min-height: 52px;
+}
+.compose-dialog input[type="time"],
+.compose-dialog input[type="date"] {
+  width: 100%;
+  text-align: left;
+}
 .more-options-button { justify-self: start; }
 
 .repeat-days { display: flex; flex-wrap: wrap; align-items: center; gap: 5px; }

@@ -49,6 +49,37 @@ const dukeMeta = {
   volunteering: { icon: "heart-handshake", accent: "#34d399" },
   skill: { icon: "code-2", accent: "#fbbf24" },
 };
+const goalGroups = [
+  { key: "ai", title: "AI & Career", icon: "cpu", accent: "#3e9cff", goals: [
+    "Get one paying AI client",
+    "Build and publish an app",
+    "Create an AI school club",
+    "Build a personal website / portfolio",
+    "Choose a clear career path (AI generalist)",
+    "Launch a small AI service with 5+ regular users by Dec 31, 2026",
+  ] },
+  { key: "edu", title: "Education", icon: "graduation-cap", accent: "#9171ef", goals: [
+    "Achieve a 90% school average",
+    "Join 2+ academic competitions or clubs by end of 2026",
+  ] },
+  { key: "fit", title: "Fitness & Health", icon: "dumbbell", accent: "#27c78a", goals: [
+    "Do 50 push-ups in a row",
+    "Hold an 8-minute plank",
+    "Maintain a 30-day daily routine",
+    "Sleep 7-9 hours most school nights for a full month by June 2026",
+    "Build a habit of ~9 hours of sleep daily",
+  ] },
+  { key: "money", title: "Finance & Work", icon: "wallet", accent: "#ebbd45", goals: [
+    "Save $5,000",
+    "Get a part-time job",
+    "Earn $200+ from a side hustle by Dec 31, 2026",
+  ] },
+  { key: "growth", title: "Personal Growth & Service", icon: "heart-handshake", accent: "#ff9738", goals: [
+    "Read 10 personal-growth books",
+    "Complete 100 volunteer hours",
+    "Practice a creative skill 15 min/day for 30 days by end of 2026",
+  ] },
+];
 const workoutMetrics = [
   { key: "pullups", label: "Pull-ups", icon: "dumbbell", accent: "#3e9cff", step: 5, unit: "reps" },
   { key: "pushups", label: "Push-ups", icon: "activity", accent: "#ff9738", step: 5, unit: "reps" },
@@ -217,6 +248,8 @@ const defaultState = {
   memoryNotes: { family: "Everything I do is for them.", moments: "", future: "" },
   reactionAttempts: [],
   gameBests: { sprint: 0, stopClock: null, numberRush: null, target: 0 },
+  goalDone: {},
+  aboutMe: {},
   goalReminder: "Train hard. Give back. Build something.",
   selectedDate: todayKey(),
   monthCursor: `${todayKey().slice(0, 7)}-01`,
@@ -415,8 +448,9 @@ document.addEventListener("DOMContentLoaded", () => {
   applySettings();
   persist();
   render();
+  renderAbout();
   const view = new URLSearchParams(location.search).get("view");
-  if (["home", "tasks", "calendar", "sleep", "arcade"].includes(view)) setView(view);
+  if (["home", "tasks", "calendar", "sleep", "me", "arcade"].includes(view)) setView(view);
   void initializeCloud();
 });
 
@@ -424,7 +458,7 @@ function bindElements() {
   [
     "greeting", "homeTitle", "currentDateText", "quoteText", "nextQuoteButton", "coachText", "coachButton", "coachDots", "coachBadge", "heroCoins",
     "doneTodayStat", "openTasksStat", "streakStat", "coinsStat", "trackWeekStat", "pushupsWeekStat", "addTrackSessionButton",
-    "addPushupsButton", "upcomingTodayList", "taskList", "quickTaskForm", "quickTaskInput", "workoutList",
+    "addPushupsButton", "upcomingTodayList", "taskList", "quickTaskForm", "quickTaskInput", "workoutList", "goalsList", "goalsProgress",
     "sprintPad", "sprintStatus", "sprintBest", "stopClockPad", "stopClockStatus", "stopClockBest",
     "numberRushStart", "numberRushGrid", "numberRushStatus", "numberRushBest",
     "targetStart", "targetGrid", "targetStatus", "targetBest",
@@ -474,13 +508,28 @@ function wireEvents() {
   });
   els.nextQuoteButton.addEventListener("click", nextQuote);
   els.coachButton.addEventListener("click", () => renderCoach(true));
-  els.addTrackSessionButton.addEventListener("click", () => logFitness({ track_session: true }));
-  els.addPushupsButton.addEventListener("click", () => logFitness({ pushups: 10 }));
+  els.addTrackSessionButton?.addEventListener("click", () => logFitness({ track_session: true }));
+  els.addPushupsButton?.addEventListener("click", () => logFitness({ pushups: 10 }));
   els.workoutList.addEventListener("click", (event) => {
     const button = event.target.closest("[data-workout-add]");
     if (!button) return;
     logFitness({ [button.dataset.workoutAdd]: Number(button.dataset.workoutStep) });
   });
+  els.goalsList.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-goal]");
+    if (!button) return;
+    const id = button.dataset.goal;
+    if (state.goalDone[id]) delete state.goalDone[id];
+    else state.goalDone[id] = true;
+    persist();
+    renderGoals();
+    void upsertAppState();
+  });
+  document.querySelectorAll("[data-about]").forEach((field) => field.addEventListener("input", () => {
+    state.aboutMe[field.dataset.about] = field.value;
+    persist();
+    void upsertAppState();
+  }));
   els.sprintPad.addEventListener("click", tapSprint);
   els.stopClockPad.addEventListener("click", tapStopClock);
   els.numberRushStart.addEventListener("click", startNumberRush);
@@ -576,6 +625,7 @@ function render() {
   renderUpcomingToday();
   renderCoach();
   renderWorkout();
+  renderGoals();
   renderMemoryNotes();
   renderTasks();
   renderCalendar();
@@ -625,13 +675,13 @@ function renderCoach(advance = false) {
 function renderStats() {
   const stats = calculateStats(state.items, state.focusSessions, todayKey(), state.sleepEntries, state.rewards, settings.sleepGoalHours * 60);
   const fitness = summarizeFitnessWeek(state.fitnessLog, todayKey());
-  els.doneTodayStat.textContent = String(stats.doneToday);
-  els.openTasksStat.textContent = String(stats.openTasks);
-  els.streakStat.textContent = stats.streakDays ? `${stats.streakDays}d` : "\u2014";
-  els.coinsStat.textContent = String(stats.coins);
+  if (els.doneTodayStat) els.doneTodayStat.textContent = String(stats.doneToday);
+  if (els.openTasksStat) els.openTasksStat.textContent = String(stats.openTasks);
+  if (els.streakStat) els.streakStat.textContent = stats.streakDays ? `${stats.streakDays}d` : "\u2014";
+  if (els.coinsStat) els.coinsStat.textContent = String(stats.coins);
   if (els.heroCoins) els.heroCoins.textContent = String(stats.coins);
-  els.trackWeekStat.textContent = `${fitness.trackSessions} / ${settings.trackGoal}`;
-  els.pushupsWeekStat.textContent = `${fitness.pushups} / ${settings.pushupGoal}`;
+  if (els.trackWeekStat) els.trackWeekStat.textContent = `${fitness.trackSessions} / ${settings.trackGoal}`;
+  if (els.pushupsWeekStat) els.pushupsWeekStat.textContent = `${fitness.pushups} / ${settings.pushupGoal}`;
 }
 
 function renderUpcomingToday() {
@@ -694,6 +744,34 @@ function renderWorkout() {
   refreshIcons();
 }
 
+function renderGoals() {
+  if (!els.goalsList) return;
+  let total = 0;
+  let done = 0;
+  els.goalsList.innerHTML = goalGroups.map((group) => {
+    const groupDone = group.goals.filter((_, i) => state.goalDone[`${group.key}-${i}`]).length;
+    total += group.goals.length;
+    done += groupDone;
+    const items = group.goals.map((text, i) => {
+      const id = `${group.key}-${i}`;
+      const checked = Boolean(state.goalDone[id]);
+      return `<button class="goal-item ${checked ? "done" : ""}" type="button" data-goal="${id}"><span class="goal-check"></span><span class="goal-text">${escapeHtml(text)}</span></button>`;
+    }).join("");
+    return `<div class="goal-group" style="--accent:${group.accent}">
+      <div class="goal-group-head"><span class="goal-group-icon"><i data-lucide="${group.icon}"></i></span><b>${group.title}</b><small>${groupDone}/${group.goals.length}</small></div>
+      <div class="goal-items">${items}</div></div>`;
+  }).join("");
+  if (els.goalsProgress) els.goalsProgress.textContent = `${done} / ${total} done`;
+  refreshIcons();
+}
+
+function renderAbout() {
+  document.querySelectorAll("[data-about]").forEach((field) => {
+    const value = state.aboutMe[field.dataset.about] || "";
+    if (field.value !== value) field.value = value;
+  });
+}
+
 function renderMemoryNotes() {
   document.querySelectorAll("[data-memory-note]").forEach((input) => {
     input.value = state.memoryNotes[input.dataset.memoryNote] || "";
@@ -710,15 +788,34 @@ function createQuickTask() {
   void upsertSupabase("life_flow_items", state.items[0]);
 }
 
+let showCompletedTasks = false;
+
 function renderTasks() {
-  const tasks = filterItems(state.items, "all", todayKey()).sort(sortTasks);
-  if (!tasks.length) {
+  const all = filterItems(state.items, "all", todayKey()).sort(sortTasks);
+  const active = all.filter((task) => !task.completed);
+  const completed = all.filter((task) => task.completed);
+  if (!all.length) {
     els.taskList.innerHTML = '<article class="empty-state"><strong>No tasks yet</strong><p>Write one above and keep your day clear.</p></article>';
     return;
   }
-  els.taskList.innerHTML = tasks.map((task) => taskMarkup(task)).join("");
-  tasks.forEach((task) => {
-    const row = document.querySelector(`[data-task-id="${task.id}"]`);
+  let html = active.length
+    ? active.map((task) => taskMarkup(task)).join("")
+    : '<p class="empty-inline">All caught up — nothing left to do.</p>';
+  if (completed.length) {
+    html += `<button class="completed-toggle ${showCompletedTasks ? "open" : ""}" data-completed-toggle type="button">
+        <span class="completed-label"><i data-lucide="check-circle-2"></i> Completed <span class="completed-count">${completed.length}</span></span>
+        <i data-lucide="chevron-down" class="completed-chevron"></i>
+      </button>
+      <div class="completed-list" ${showCompletedTasks ? "" : "hidden"}>${completed.map((task) => taskMarkup(task)).join("")}</div>`;
+  }
+  els.taskList.innerHTML = html;
+  els.taskList.querySelector("[data-completed-toggle]")?.addEventListener("click", () => {
+    showCompletedTasks = !showCompletedTasks;
+    renderTasks();
+  });
+  els.taskList.querySelectorAll("[data-task-id]").forEach((row) => {
+    const task = state.items.find((item) => item.id === row.dataset.taskId);
+    if (!task) return;
     row.querySelector("[data-toggle-task]").addEventListener("click", () => toggleTask(task.id));
     row.querySelector("[data-edit-task]").addEventListener("click", () => openCompose(task.kind, task));
     row.querySelector("[data-delete-task]").addEventListener("click", () => deleteItem(task.id));
@@ -1233,11 +1330,16 @@ function deleteItem(id) {
 }
 
 function moveCalendar(direction) {
-  const base = new Date(`${state.monthCursor}T00:00:00`);
-  if (state.calendarView === "week") base.setDate(base.getDate() + direction * 7);
-  else base.setMonth(base.getMonth() + direction);
-  state.monthCursor = `${formatDateKey(base).slice(0, 7)}-01`;
-  state.selectedDate = formatDateKey(base);
+  if (state.calendarView === "week") {
+    // Move week-by-week relative to the currently shown week.
+    state.selectedDate = addDays(startOfWeek(state.selectedDate), direction * 7);
+    state.monthCursor = `${state.selectedDate.slice(0, 7)}-01`;
+  } else {
+    const base = new Date(`${state.monthCursor}T00:00:00`);
+    base.setMonth(base.getMonth() + direction);
+    state.monthCursor = `${formatDateKey(base).slice(0, 7)}-01`;
+    state.selectedDate = formatDateKey(base);
+  }
   persist();
   renderCalendar();
 }
@@ -1629,6 +1731,8 @@ function normalizeState(saved) {
     rewards: Array.isArray(saved.rewards) ? saved.rewards : [],
     reactionAttempts: Array.isArray(saved.reactionAttempts) ? saved.reactionAttempts : [],
     gameBests: { ...defaultState.gameBests, ...(saved.gameBests || {}) },
+    goalDone: { ...(saved.goalDone || {}) },
+    aboutMe: { ...(saved.aboutMe || {}) },
   };
   return merged;
 }

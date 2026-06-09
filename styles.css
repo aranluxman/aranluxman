@@ -1553,6 +1553,41 @@ dialog form {
   padding-bottom: 12px;
 }
 .dialog-heading h2 { font-size: 1.25rem; }
+/* Completed tasks — collapsed at the bottom */
+.completed-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  margin-top: 14px;
+  padding: 13px 16px;
+  border-radius: var(--radius);
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-weight: 600;
+  font-size: 0.92rem;
+}
+.completed-toggle:active { transform: scale(0.99); }
+.completed-label { display: inline-flex; align-items: center; gap: 8px; }
+.completed-label i { width: 18px; height: 18px; color: var(--green); }
+.completed-count {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 99px;
+  background: var(--teal-dim);
+  color: var(--teal);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+.completed-chevron { width: 18px; height: 18px; color: var(--faint); transition: transform 0.2s ease; }
+.completed-toggle.open .completed-chevron { transform: rotate(180deg); }
+.completed-list { display: grid; gap: 10px; margin-top: 10px; }
+.completed-list[hidden] { display: none; }
+
 .form-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
 /* Larger, easy-to-tap inputs inside dialogs (mobile) */
 .compose-dialog input,
@@ -1746,6 +1781,88 @@ dialog form select {
   box-shadow: 0 0 16px rgba(39, 199, 138, 0.6);
 }
 .target-cell:active { transform: scale(0.95); }
+
+/* ============================================================
+   ME TAB — About Me + 2026 Goals
+   ============================================================ */
+.section-heading-me { border-color: var(--purple); }
+.about-card, .goals-card { padding: 16px; margin-top: 14px; }
+.saved-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 9px;
+  border-radius: 99px;
+  background: var(--teal-dim);
+  color: var(--teal);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+.saved-pill i { width: 13px; height: 13px; }
+.about-grid { display: grid; gap: 14px; }
+.about-grid label { color: var(--muted); font-size: 0.8rem; font-weight: 600; }
+.about-grid input, .about-grid textarea { font-size: 1rem; }
+.about-grid textarea { resize: vertical; line-height: 1.5; }
+
+.goals-groups { display: grid; gap: 18px; }
+.goal-group { --accent: var(--teal); display: grid; gap: 10px; }
+.goal-group-head { display: flex; align-items: center; gap: 10px; }
+.goal-group-icon {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  color: var(--accent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
+}
+.goal-group-icon i { width: 18px; height: 18px; }
+.goal-group-head b { flex: 1; color: var(--ink); font-size: 0.98rem; font-weight: 700; }
+.goal-group-head small { color: var(--accent); font-weight: 700; font-size: 0.82rem; }
+.goal-items { display: grid; gap: 8px; }
+.goal-item {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+.goal-item:active { transform: scale(0.99); }
+.goal-check {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--faint);
+  position: relative;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.goal-check::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  left: 7px;
+  width: 5px;
+  height: 9px;
+  border: solid #04130f;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.goal-item.done .goal-check {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+.goal-item.done .goal-check::after { transform: rotate(45deg) scale(1); }
+.goal-item.done .goal-text { text-decoration: line-through; color: var(--muted); }
 
 /* ============================================================
    LARGER SCREENS — center the phone canvas

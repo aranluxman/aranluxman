@@ -27,6 +27,7 @@
           <button class="nav-item" data-view="tasks" type="button"><i data-lucide="list-checks"></i><span>Tasks</span></button>
           <button class="nav-item" data-view="calendar" type="button"><i data-lucide="calendar-days"></i><span>Calendar</span></button>
           <button class="nav-item" data-view="sleep" type="button"><i data-lucide="moon"></i><span>Sleep</span></button>
+          <button class="nav-item" data-view="me" type="button"><i data-lucide="target"></i><span>Me</span></button>
           <button class="nav-item" data-view="arcade" type="button"><i data-lucide="gamepad-2"></i><span>Arcade</span></button>
         </nav>
         <button class="ghost-button" id="settingsButton" type="button"><i data-lucide="settings"></i><span>Settings</span></button>
@@ -55,14 +56,6 @@
             <span class="quote-mark" aria-hidden="true"><i data-lucide="quote"></i></span>
             <p id="quoteText"></p>
             <button class="icon-button" id="nextQuoteButton" type="button" aria-label="New quote" title="New quote"><i data-lucide="refresh-cw"></i></button>
-          </section>
-          <section class="stats-grid athlete-stats" aria-label="Progress stats">
-            <article class="stat-card accent-blue"><span><i data-lucide="check-circle-2"></i></span><strong id="doneTodayStat">0</strong><small>Done Today</small></article>
-            <article class="stat-card accent-teal"><span><i data-lucide="list-todo"></i></span><strong id="openTasksStat">0</strong><small>To Do</small></article>
-            <article class="stat-card accent-orange"><span><i data-lucide="flame"></i></span><strong id="streakStat">&mdash;</strong><small>Day Streak</small></article>
-            <article class="stat-card stat-action accent-orange stat-highlight"><span><i data-lucide="footprints"></i></span><strong id="trackWeekStat">0 / 3</strong><small>Track Sessions This Week</small><button class="mini-add" id="addTrackSessionButton" type="button" title="Log track session">+ Log</button></article>
-            <article class="stat-card stat-action accent-green stat-highlight"><span><i data-lucide="dumbbell"></i></span><strong id="pushupsWeekStat">0 / 60</strong><small>Pushups This Week</small><button class="mini-add" id="addPushupsButton" type="button" title="Log 10 pushups">+10</button></article>
-            <article class="stat-card accent-gold stat-highlight"><span><i data-lucide="trophy"></i></span><strong id="coinsStat">0</strong><small>Total Coins</small></article>
           </section>
           <section class="upcoming-card surface" aria-labelledby="upcomingTitle">
             <div class="card-heading"><h2 id="upcomingTitle">Upcoming Today</h2><button class="see-all" data-view="calendar" type="button">See all <i data-lucide="chevron-right"></i></button></div>
@@ -135,6 +128,27 @@
             <article class="stat-card sleep-stat accent-gold"><span><i data-lucide="trending-up"></i></span><strong id="sleepScoreStat">&mdash;</strong><small>Sleep Score</small></article>
           </section>
           <div class="sleep-list" id="sleepList"></div>
+        </section>
+
+        <section class="view" id="meView" aria-labelledby="meTitle">
+          <div class="section-heading section-heading-me"><div><h1 id="meTitle">Me</h1><p class="section-subtitle">Your story and your goals &mdash; saved automatically.</p></div></div>
+          <section class="surface about-card" aria-labelledby="aboutTitle">
+            <div class="card-heading"><h2 id="aboutTitle">About Me</h2><span class="saved-pill"><i data-lucide="check"></i> Auto-saved</span></div>
+            <div class="about-grid">
+              <label>Favourite food<input data-about="food" maxlength="120" placeholder="e.g. Grilled chicken &amp; rice" /></label>
+              <label>Favourite colour<input data-about="colour" maxlength="60" placeholder="e.g. Teal" /></label>
+              <label>Favourite sport<input data-about="sport" maxlength="80" placeholder="e.g. Track &amp; basketball" /></label>
+              <label>What I like<textarea data-about="likes" rows="2" placeholder="Things you enjoy doing..."></textarea></label>
+              <label>My current plan<textarea data-about="plan" rows="3" placeholder="What you're focused on right now..."></textarea></label>
+              <label>What I'm grateful for<textarea data-about="grateful" rows="3" placeholder="People and things you appreciate..."></textarea></label>
+              <label>My strengths<textarea data-about="strengths" rows="2" placeholder="What you're good at..."></textarea></label>
+              <label>My purpose<textarea data-about="purpose" rows="4" placeholder="Who you are and why you do what you do..."></textarea></label>
+            </div>
+          </section>
+          <section class="surface goals-card" aria-labelledby="goalsTitle">
+            <div class="card-heading"><h2 id="goalsTitle">My 2026 Goals</h2><span id="goalsProgress"></span></div>
+            <div class="goals-groups" id="goalsList"></div>
+          </section>
         </section>
 
         <section class="view" id="arcadeView" aria-labelledby="arcadeTitle">

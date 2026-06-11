@@ -11,6 +11,8 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
     <link rel="manifest" href="/manifest.webmanifest" />
+    <link rel="icon" id="dynamicFavicon" href="/assets/icon-512.png" />
+    <link rel="apple-touch-icon" id="dynamicTouchIcon" href="/assets/icon-512.png" />
     <link rel="stylesheet" href="/styles.css" />
     <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js" defer></script>
     <script type="module" src="/src/app.mjs?v=20260604-no-focus"></script>
@@ -47,9 +49,12 @@
                 <p class="current-date"><i data-lucide="calendar-days"></i><span id="currentDateText"></span></p>
               </div>
             </div>
-            <div class="coin-chip" title="Total coins">
-              <i data-lucide="medal"></i>
-              <span><strong id="heroCoins">0</strong><small>coins</small></span>
+            <div class="hero-progress" title="Today's progress">
+              <svg viewBox="0 0 72 72" aria-hidden="true">
+                <circle class="hero-ring-bg" cx="36" cy="36" r="31"></circle>
+                <circle class="hero-ring-fill" id="heroRingFill" cx="36" cy="36" r="31"></circle>
+              </svg>
+              <span class="hero-progress-text"><strong id="heroProgressPercent">0%</strong><small>today</small></span>
             </div>
           </header>
           <section class="quote-card">
@@ -72,17 +77,24 @@
             </button>
             <div class="coach-dots" id="coachDots" aria-hidden="true"></div>
           </section>
-          <section class="workout-card surface" aria-labelledby="workoutTitle">
-            <div class="card-heading"><h2 id="workoutTitle">Workout</h2><span>Last 100 days</span></div>
-            <div class="workout-list" id="workoutList"></div>
-          </section>
         </section>
 
         <section class="view" id="tasksView" aria-labelledby="tasksTitle">
-          <div class="section-heading section-heading-tasks"><h1 id="tasksTitle">All Tasks</h1><button class="add-button labeled" data-open-compose="daily_task" type="button" title="New Task"><i data-lucide="plus"></i><span>New Task</span></button></div>
-          <form class="quick-task surface" id="quickTaskForm">
-            <input id="quickTaskInput" type="text" maxlength="120" required placeholder="What needs to get done?" />
-            <button class="primary-button" type="submit">Add</button>
+          <header class="tasks-hero">
+            <div>
+              <h1 id="tasksTitle">My Tasks</h1>
+              <p class="tasks-subline" id="tasksSubline">Plan it. Do it. Check it off.</p>
+            </div>
+            <button class="icon-button tasks-more" data-open-compose="daily_task" type="button" title="New task with details" aria-label="New task with details"><i data-lucide="sliders-horizontal"></i></button>
+          </header>
+          <div class="tasks-progress surface" id="tasksProgressCard">
+            <div class="tasks-progress-track"><i id="tasksProgressFill"></i></div>
+            <span id="tasksProgressLabel">0 of 0 done today</span>
+          </div>
+          <form class="task-composer" id="quickTaskForm">
+            <span class="composer-icon" aria-hidden="true"><i data-lucide="plus"></i></span>
+            <input id="quickTaskInput" type="text" maxlength="120" required placeholder="Add a task..." />
+            <button class="composer-submit" type="submit" aria-label="Add task"><i data-lucide="arrow-up"></i></button>
           </form>
           <div class="task-list" id="taskList"></div>
         </section>
@@ -163,6 +175,8 @@
             <article class="arcade-card game-card"><h2>Stop the Clock</h2><p>Start precision &middot; Stop it as close to 5.00s as you can</p><button class="reaction-pad" id="stopClockPad" type="button">Start clock</button><p id="stopClockStatus">Tap once to start, again to stop.</p><p><strong id="stopClockBest">&mdash;</strong> best gap</p></article>
             <article class="arcade-card game-card"><h2>Number Rush</h2><p>Tap 1 to 9 in order as fast as possible</p><button class="ghost-button compact" id="numberRushStart" type="button">New round</button><p id="numberRushStatus">Press New round to begin.</p><div class="rush-grid" id="numberRushGrid"></div><p><strong id="numberRushBest">&mdash;</strong> best time</p></article>
             <article class="arcade-card game-card"><h2>Target Tap</h2><p>Hit the lit square &middot; 15 seconds</p><button class="ghost-button compact" id="targetStart" type="button">Start round</button><p id="targetStatus">Press Start round to begin.</p><div class="target-grid" id="targetGrid"></div><p><strong id="targetBest">&mdash;</strong> best hits</p></article>
+            <article class="arcade-card game-card"><h2>Simon Says</h2><p>Watch the pattern, repeat it &middot; it grows every round</p><button class="ghost-button compact" id="simonStart" type="button">Start pattern</button><p id="simonStatus">Press Start pattern to begin.</p><div class="simon-grid" id="simonGrid"><button type="button" class="simon-pad simon-teal" data-simon="0" aria-label="Teal pad"></button><button type="button" class="simon-pad simon-orange" data-simon="1" aria-label="Orange pad"></button><button type="button" class="simon-pad simon-purple" data-simon="2" aria-label="Purple pad"></button><button type="button" class="simon-pad simon-gold" data-simon="3" aria-label="Gold pad"></button></div><p><strong id="simonBest">&mdash;</strong> best streak</p></article>
+            <article class="arcade-card game-card"><h2>Math Sprint</h2><p>30 seconds of quick math &middot; how many can you solve?</p><button class="ghost-button compact" id="mathStart" type="button">Start sprint</button><div class="math-stage"><p class="math-question" id="mathQuestion">Ready?</p><div class="math-answers" id="mathAnswers"></div></div><p id="mathStatus">Press Start sprint to begin.</p><p><strong id="mathBest">&mdash;</strong> best score</p></article>
             <article class="arcade-card arcade-photo-card"><img src="/assets/reminders/family-birthday.jpg" alt="Family reminder" /><div><label>My goal<input id="goalReminderInput" value="Train hard. Give back. Build something." /></label><p>Finish the work so you can be fully present for moments like this.</p></div></article>
           </section>
         </section>

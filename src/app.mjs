@@ -247,7 +247,7 @@ const defaultState = {
   dukeProgress: { physical: 0, volunteering: 0, skill: 0 },
   memoryNotes: { family: "Everything I do is for them.", moments: "", future: "" },
   reactionAttempts: [],
-  gameBests: { sprint: 0, stopClock: null, numberRush: null, target: 0 },
+  gameBests: { sprint: 0, stopClock: null, numberRush: null, target: 0, simon: 0, math: 0 },
   goalDone: {},
   aboutMe: {},
   goalReminder: "Train hard. Give back. Build something.",
@@ -437,6 +437,8 @@ let sprintGame = { active: false, count: 0, timeoutId: null };
 let stopClock = { running: false, startAt: 0, rafId: null };
 let numberRush = { order: [], next: 1, startAt: 0, active: false };
 let targetGame = { active: false, score: 0, lit: -1, intervalId: null, timeoutId: null };
+let simonGame = { sequence: [], inputIndex: 0, playing: false, awaitingInput: false };
+let mathGame = { active: false, score: 0, answer: 0, timeoutId: null, intervalId: null, secondsLeft: 0 };
 const els = {};
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -459,6 +461,8 @@ function bindElements() {
     "greeting", "homeTitle", "currentDateText", "quoteText", "nextQuoteButton", "coachText", "coachButton", "coachDots", "coachBadge", "heroCoins",
     "doneTodayStat", "openTasksStat", "streakStat", "coinsStat", "trackWeekStat", "pushupsWeekStat", "addTrackSessionButton",
     "addPushupsButton", "upcomingTodayList", "taskList", "quickTaskForm", "quickTaskInput", "workoutList", "goalsList", "goalsProgress",
+    "heroRingFill", "heroProgressPercent", "tasksProgressFill", "tasksProgressLabel", "tasksSubline",
+    "simonStart", "simonGrid", "simonStatus", "simonBest", "mathStart", "mathQuestion", "mathAnswers", "mathStatus", "mathBest",
     "sprintPad", "sprintStatus", "sprintBest", "stopClockPad", "stopClockStatus", "stopClockBest",
     "numberRushStart", "numberRushGrid", "numberRushStatus", "numberRushBest",
     "targetStart", "targetGrid", "targetStatus", "targetBest",
@@ -510,10 +514,20 @@ function wireEvents() {
   els.coachButton.addEventListener("click", () => renderCoach(true));
   els.addTrackSessionButton?.addEventListener("click", () => logFitness({ track_session: true }));
   els.addPushupsButton?.addEventListener("click", () => logFitness({ pushups: 10 }));
-  els.workoutList.addEventListener("click", (event) => {
+  els.workoutList?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-workout-add]");
     if (!button) return;
     logFitness({ [button.dataset.workoutAdd]: Number(button.dataset.workoutStep) });
+  });
+  els.simonStart?.addEventListener("click", startSimon);
+  els.simonGrid?.addEventListener("click", (event) => {
+    const pad = event.target.closest("[data-simon]");
+    if (pad) tapSimon(Number(pad.dataset.simon));
+  });
+  els.mathStart?.addEventListener("click", startMathSprint);
+  els.mathAnswers?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-math-answer]");
+    if (button) answerMath(Number(button.dataset.mathAnswer));
   });
   els.goalsList.addEventListener("click", (event) => {
     const button = event.target.closest("[data-goal]");
@@ -649,6 +663,11 @@ function applyAvatar() {
   if (settings.avatarUrl) {
     avatar.style.backgroundImage = `url("${settings.avatarUrl}")`;
     avatar.classList.add("has-photo");
+    // Use the same photo as the website icon.
+    const favicon = document.getElementById("dynamicFavicon");
+    const touchIcon = document.getElementById("dynamicTouchIcon");
+    if (favicon) favicon.href = settings.avatarUrl;
+    if (touchIcon) touchIcon.href = settings.avatarUrl;
   } else {
     avatar.style.backgroundImage = "";
     avatar.classList.remove("has-photo");
@@ -682,6 +701,23 @@ function renderStats() {
   if (els.heroCoins) els.heroCoins.textContent = String(stats.coins);
   if (els.trackWeekStat) els.trackWeekStat.textContent = `${fitness.trackSessions} / ${settings.trackGoal}`;
   if (els.pushupsWeekStat) els.pushupsWeekStat.textContent = `${fitness.pushups} / ${settings.pushupGoal}`;
+  renderDailyProgress();
+}
+
+function renderDailyProgress() {
+  const todays = state.items.filter((item) => item.kind === "daily_task" && item.due_date === todayKey());
+  const done = todays.filter((item) => item.completed).length;
+  const total = todays.length;
+  const percent = total ? Math.round((done / total) * 100) : 0;
+  if (els.heroProgressPercent) els.heroProgressPercent.textContent = `${percent}%`;
+  if (els.heroRingFill) {
+    const circumference = 2 * Math.PI * 31;
+    els.heroRingFill.style.strokeDasharray = String(circumference);
+    els.heroRingFill.style.strokeDashoffset = String(circumference * (1 - percent / 100));
+  }
+  if (els.tasksProgressFill) els.tasksProgressFill.style.width = `${percent}%`;
+  if (els.tasksProgressLabel) els.tasksProgressLabel.textContent = total ? `${done} of ${total} done today · ${percent}%` : "No tasks due today yet";
+  if (els.tasksSubline) els.tasksSubline.textContent = total && done === total ? "All done — great work! 🎉" : "Plan it. Do it. Check it off.";
 }
 
 function renderUpcomingToday() {
@@ -1036,10 +1072,116 @@ function renderGames() {
   els.stopClockBest.textContent = best.stopClock != null ? `${Number(best.stopClock).toFixed(2)}s` : "—";
   els.numberRushBest.textContent = best.numberRush != null ? `${Number(best.numberRush).toFixed(2)}s` : "—";
   els.targetBest.textContent = best.target ? String(best.target) : "—";
+  if (els.simonBest) els.simonBest.textContent = best.simon ? String(best.simon) : "—";
+  if (els.mathBest) els.mathBest.textContent = best.math ? String(best.math) : "—";
   if (!sprintGame.active) { els.sprintPad.className = "reaction-pad"; els.sprintPad.textContent = "Tap to start"; }
   if (!stopClock.running) { els.stopClockPad.className = "reaction-pad"; els.stopClockPad.textContent = "Start clock"; }
   if (!numberRush.active) els.numberRushGrid.innerHTML = "";
   if (!targetGame.active) els.targetGrid.innerHTML = "";
+}
+
+/* ---- Simon Says (pattern memory) ---- */
+function startSimon() {
+  simonGame = { sequence: [Math.floor(Math.random() * 4)], inputIndex: 0, playing: false, awaitingInput: false };
+  els.simonStatus.textContent = "Watch the pattern...";
+  playSimonSequence();
+}
+async function playSimonSequence() {
+  simonGame.playing = true;
+  simonGame.awaitingInput = false;
+  els.simonGrid.classList.add("locked");
+  await new Promise((resolve) => setTimeout(resolve, 450));
+  for (const pad of simonGame.sequence) {
+    flashSimonPad(pad);
+    await new Promise((resolve) => setTimeout(resolve, 560));
+  }
+  simonGame.playing = false;
+  simonGame.awaitingInput = true;
+  simonGame.inputIndex = 0;
+  els.simonGrid.classList.remove("locked");
+  els.simonStatus.textContent = `Your turn — repeat ${simonGame.sequence.length} ${simonGame.sequence.length === 1 ? "tap" : "taps"}.`;
+}
+function flashSimonPad(index) {
+  const pad = els.simonGrid.querySelector(`[data-simon="${index}"]`);
+  if (!pad) return;
+  pad.classList.add("lit");
+  window.setTimeout(() => pad.classList.remove("lit"), 340);
+}
+function tapSimon(index) {
+  if (!simonGame.awaitingInput || simonGame.playing) return;
+  flashSimonPad(index);
+  if (index !== simonGame.sequence[simonGame.inputIndex]) {
+    const streak = simonGame.sequence.length - 1;
+    simonGame.awaitingInput = false;
+    els.simonStatus.textContent = `Wrong pad! You reached a streak of ${streak}.`;
+    state.gameBests.simon = Math.max(Number(state.gameBests.simon || 0), streak);
+    els.simonBest.textContent = state.gameBests.simon ? String(state.gameBests.simon) : "—";
+    persist();
+    void upsertAppState();
+    return;
+  }
+  simonGame.inputIndex += 1;
+  if (simonGame.inputIndex < simonGame.sequence.length) return;
+  const streak = simonGame.sequence.length;
+  state.gameBests.simon = Math.max(Number(state.gameBests.simon || 0), streak);
+  els.simonBest.textContent = String(state.gameBests.simon);
+  els.simonStatus.textContent = `Streak ${streak}! Next round...`;
+  simonGame.sequence.push(Math.floor(Math.random() * 4));
+  persist();
+  void upsertAppState();
+  window.setTimeout(playSimonSequence, 750);
+}
+
+/* ---- Math Sprint (30s quick arithmetic) ---- */
+function startMathSprint() {
+  if (mathGame.timeoutId) clearTimeout(mathGame.timeoutId);
+  if (mathGame.intervalId) clearInterval(mathGame.intervalId);
+  mathGame = { active: true, score: 0, answer: 0, timeoutId: null, intervalId: null, secondsLeft: 30 };
+  els.mathStatus.textContent = "Score: 0 · 30s left";
+  mathGame.intervalId = window.setInterval(() => {
+    mathGame.secondsLeft -= 1;
+    if (mathGame.secondsLeft > 0) els.mathStatus.textContent = `Score: ${mathGame.score} · ${mathGame.secondsLeft}s left`;
+  }, 1000);
+  mathGame.timeoutId = window.setTimeout(endMathSprint, 30000);
+  nextMathQuestion();
+}
+function nextMathQuestion() {
+  const kind = Math.floor(Math.random() * 3);
+  let a;
+  let b;
+  let text;
+  if (kind === 0) { a = 7 + Math.floor(Math.random() * 43); b = 6 + Math.floor(Math.random() * 38); mathGame.answer = a + b; text = `${a} + ${b}`; }
+  else if (kind === 1) { a = 25 + Math.floor(Math.random() * 60); b = 4 + Math.floor(Math.random() * 21); mathGame.answer = a - b; text = `${a} − ${b}`; }
+  else { a = 3 + Math.floor(Math.random() * 10); b = 3 + Math.floor(Math.random() * 9); mathGame.answer = a * b; text = `${a} × ${b}`; }
+  els.mathQuestion.textContent = `${text} = ?`;
+  const options = new Set([mathGame.answer]);
+  while (options.size < 4) {
+    const offset = Math.ceil(Math.random() * 9) * (Math.random() < 0.5 ? -1 : 1);
+    if (mathGame.answer + offset > 0) options.add(mathGame.answer + offset);
+  }
+  els.mathAnswers.innerHTML = shuffle([...options]).map((value) => `<button type="button" class="math-answer" data-math-answer="${value}">${value}</button>`).join("");
+}
+function answerMath(value) {
+  if (!mathGame.active) return;
+  if (value === mathGame.answer) {
+    mathGame.score += 1;
+    els.mathStatus.textContent = `Score: ${mathGame.score} · ${mathGame.secondsLeft}s left`;
+    nextMathQuestion();
+  } else {
+    els.mathQuestion.classList.add("shake");
+    window.setTimeout(() => els.mathQuestion.classList.remove("shake"), 350);
+  }
+}
+function endMathSprint() {
+  mathGame.active = false;
+  if (mathGame.intervalId) clearInterval(mathGame.intervalId);
+  els.mathQuestion.textContent = `Time! Final score: ${mathGame.score}`;
+  els.mathAnswers.innerHTML = "";
+  state.gameBests.math = Math.max(Number(state.gameBests.math || 0), mathGame.score);
+  els.mathStatus.textContent = `You solved ${mathGame.score} in 30 seconds.`;
+  els.mathBest.textContent = state.gameBests.math ? String(state.gameBests.math) : "—";
+  persist();
+  void upsertAppState();
 }
 
 /* ---- Sprint Tap (track speed) ---- */
@@ -1382,7 +1524,6 @@ function saveSleepFromForm() {
   persist();
   els.sleepDialog.close();
   render();
-  els.sleepMoodDialog.showModal();
   void upsertSupabase("life_flow_sleep_entries", entry, "owner_key,sleep_date");
 }
 
@@ -1593,9 +1734,16 @@ async function syncFromSupabase() {
       state.memoryNotes = { ...state.memoryNotes, ...(saved.memory_notes || {}) };
       state.reactionAttempts = saved.reaction_attempts || state.reactionAttempts;
       state.goalReminder = saved.goal_reminder || state.goalReminder;
-      settings = normalizeSettings({ ...settings, ...(saved.preferences || {}) });
+      const { appData, ...prefs } = saved.preferences || {};
+      if (appData) {
+        state.goalDone = { ...(appData.goalDone || {}), ...state.goalDone };
+        state.aboutMe = { ...(appData.aboutMe || {}), ...state.aboutMe };
+        state.gameBests = { ...state.gameBests, ...(appData.gameBests || {}) };
+      }
+      settings = normalizeSettings({ ...settings, ...prefs });
       hydrateSettingsForm();
       applySettings();
+      renderAbout();
     }
     persist();
     render();
@@ -1673,6 +1821,11 @@ async function upsertAppState() {
       pushupGoal: settings.pushupGoal,
       trackGoal: settings.trackGoal,
       darkMode: settings.darkMode,
+      appData: {
+        goalDone: state.goalDone,
+        aboutMe: state.aboutMe,
+        gameBests: state.gameBests,
+      },
     },
     updated_at: new Date().toISOString(),
   }, "owner_key");

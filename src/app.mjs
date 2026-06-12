@@ -80,6 +80,21 @@ const goalGroups = [
     "Practice a creative skill 15 min/day for 30 days by end of 2026",
   ] },
 ];
+// Grades page data — edit your courses, marks, and evaluations here.
+const courses = [
+  { code: "PPL1O9-3", name: "Healthy Active Living Education", icon: "footprints", accent: "#ff9738", period: "P1", room: "136B", mark: 94.2, midterm: 93.0, evaluations: [
+    { name: "Activity Block 4: Flag Football, Soccer, Ultimate", mark: 95.0 },
+    { name: "Healthy Relationships Conversation", mark: 100.0 },
+    { name: "Activity Block 3", mark: 95.8 },
+    { name: "Healthy Eating and Nutrition", mark: 86.7 },
+  ] },
+  { code: "SNC1W1-3", name: "Science", icon: "atom", accent: "#27c78a", period: "P2", room: "300", mark: 92.5, midterm: null, evaluations: [] },
+  { code: "CGC1WF-3", name: "Geography of Canada", icon: "globe-2", accent: "#9171ef", period: "P4", room: "333", mark: 90.7, midterm: null, evaluations: [] },
+  { code: "FIF1DF-1", name: "French Immersion", icon: "languages", accent: "#3e9cff", period: "P5", room: "202", mark: 80.0, midterm: 90.0, evaluations: [
+    { name: "Rapport de police (C1, D1)", mark: 83.0 },
+    { name: "Mur d'investigation (D2)", mark: 100.0 },
+  ] },
+];
 const workoutMetrics = [
   { key: "pullups", label: "Pull-ups", icon: "dumbbell", accent: "#3e9cff", step: 5, unit: "reps" },
   { key: "pushups", label: "Push-ups", icon: "activity", accent: "#ff9738", step: 5, unit: "reps" },
@@ -250,6 +265,7 @@ const defaultState = {
   gameBests: { sprint: 0, stopClock: null, numberRush: null, target: 0, simon: 0, math: 0 },
   goalDone: {},
   aboutMe: {},
+  deletedIds: [],
   goalReminder: "Train hard. Give back. Build something.",
   selectedDate: todayKey(),
   monthCursor: `${todayKey().slice(0, 7)}-01`,
@@ -452,7 +468,7 @@ document.addEventListener("DOMContentLoaded", () => {
   render();
   renderAbout();
   const view = new URLSearchParams(location.search).get("view");
-  if (["home", "tasks", "calendar", "sleep", "me", "arcade"].includes(view)) setView(view);
+  if (["home", "tasks", "calendar", "sleep", "grades", "me", "arcade"].includes(view)) setView(view);
   void initializeCloud();
 });
 
@@ -461,6 +477,7 @@ function bindElements() {
     "greeting", "homeTitle", "currentDateText", "quoteText", "nextQuoteButton", "coachText", "coachButton", "coachDots", "coachBadge", "heroCoins",
     "doneTodayStat", "openTasksStat", "streakStat", "coinsStat", "trackWeekStat", "pushupsWeekStat", "addTrackSessionButton",
     "addPushupsButton", "upcomingTodayList", "taskList", "quickTaskForm", "quickTaskInput", "workoutList", "goalsList", "goalsProgress",
+    "gradesList", "gradesAverage", "gradesArcFill",
     "heroRingFill", "heroProgressPercent", "tasksProgressFill", "tasksProgressLabel", "tasksSubline",
     "simonStart", "simonGrid", "simonStatus", "simonBest", "mathStart", "mathQuestion", "mathAnswers", "mathStatus", "mathBest",
     "sprintPad", "sprintStatus", "sprintBest", "stopClockPad", "stopClockStatus", "stopClockBest",
@@ -640,6 +657,7 @@ function render() {
   renderCoach();
   renderWorkout();
   renderGoals();
+  renderGrades();
   renderMemoryNotes();
   renderTasks();
   renderCalendar();
@@ -798,6 +816,41 @@ function renderGoals() {
       <div class="goal-items">${items}</div></div>`;
   }).join("");
   if (els.goalsProgress) els.goalsProgress.textContent = `${done} / ${total} done`;
+  refreshIcons();
+}
+
+function renderGrades() {
+  if (!els.gradesList) return;
+  const average = courses.length ? courses.reduce((sum, course) => sum + course.mark, 0) / courses.length : 0;
+  if (els.gradesAverage) els.gradesAverage.textContent = `${average.toFixed(1)}%`;
+  if (els.gradesArcFill) {
+    const arcLength = Math.PI * 82; // half-circle path radius in the SVG
+    els.gradesArcFill.style.strokeDasharray = String(arcLength);
+    els.gradesArcFill.style.strokeDashoffset = String(arcLength * (1 - Math.min(100, average) / 100));
+  }
+  els.gradesList.innerHTML = courses.map((course, index) => `
+    <article class="grade-card" style="--accent:${course.accent}">
+      <button class="grade-row" type="button" data-grade-toggle="${index}" aria-expanded="false">
+        <span class="grade-icon"><i data-lucide="${course.icon}"></i></span>
+        <span class="grade-info"><b>${escapeHtml(course.code)}</b><small>${escapeHtml(course.name)}</small><small class="grade-meta">${escapeHtml(course.period)} &middot; Room ${escapeHtml(course.room)}</small></span>
+        <strong class="grade-mark">${course.mark.toFixed(1)}<i>%</i></strong>
+        <i data-lucide="chevron-right" class="grade-chevron"></i>
+      </button>
+      <div class="grade-detail" hidden>
+        ${course.midterm != null ? `<span class="grade-midterm">Midterm: ${course.midterm.toFixed(1)}%</span>` : ""}
+        ${course.evaluations.length
+          ? course.evaluations.map((entry) => `<div class="grade-eval"><span>${escapeHtml(entry.name)}</span><b>${entry.mark.toFixed(1)}%</b></div>`).join("")
+          : '<p class="empty-inline">No evaluations posted yet.</p>'}
+      </div>
+    </article>`).join("");
+  els.gradesList.querySelectorAll("[data-grade-toggle]").forEach((button) => button.addEventListener("click", () => {
+    const card = button.closest(".grade-card");
+    const detail = card.querySelector(".grade-detail");
+    const open = detail.hidden;
+    detail.hidden = !open;
+    card.classList.toggle("expanded", open);
+    button.setAttribute("aria-expanded", String(open));
+  }));
   refreshIcons();
 }
 
@@ -1466,9 +1519,12 @@ function toggleEventDone(id, date) {
 
 function deleteItem(id) {
   state.items = state.items.filter((item) => item.id !== id);
+  // Tombstone the id so other devices drop it too instead of re-uploading it.
+  state.deletedIds = [...new Set([...state.deletedIds, id])].slice(-300);
   persist();
   render();
   void deleteSupabaseItem(id);
+  void upsertAppState();
 }
 
 function moveCalendar(direction) {
@@ -1679,10 +1735,9 @@ function saveSettings() {
   applySettings();
   els.settingsDialog.close();
   render();
-  void (async () => {
-    await importCalendar();
-    await syncToSupabase();
-  })();
+  // Pull first so a newly entered shared owner key immediately shows that
+  // device group's tasks, then push local-only work up (mergeById dedupes).
+  void syncAll();
 }
 
 function applySettings() {
@@ -1723,9 +1778,6 @@ async function syncFromSupabase() {
       supabaseFetch("life_flow_sleep_entries?select=*&order=sleep_date.desc"),
       supabaseFetch("life_flow_app_state?select=*"),
     ]);
-    state.items = seedRecurring(mergeById(state.items, items || []));
-    state.focusSessions = mergeById(state.focusSessions, focus || []);
-    state.sleepEntries = mergeById(state.sleepEntries, sleep || []);
     if (cloudState?.[0]) {
       const saved = cloudState[0];
       state.fitnessLog = saved.fitness_log || state.fitnessLog;
@@ -1739,12 +1791,17 @@ async function syncFromSupabase() {
         state.goalDone = { ...(appData.goalDone || {}), ...state.goalDone };
         state.aboutMe = { ...(appData.aboutMe || {}), ...state.aboutMe };
         state.gameBests = { ...state.gameBests, ...(appData.gameBests || {}) };
+        state.deletedIds = [...new Set([...(appData.deletedIds || []), ...state.deletedIds])].slice(-300);
       }
       settings = normalizeSettings({ ...settings, ...prefs });
       hydrateSettingsForm();
       applySettings();
       renderAbout();
     }
+    const deleted = new Set(state.deletedIds);
+    state.items = seedRecurring(mergeById(state.items, items || []).filter((item) => !deleted.has(item.id)));
+    state.focusSessions = mergeById(state.focusSessions, focus || []);
+    state.sleepEntries = mergeById(state.sleepEntries, sleep || []);
     persist();
     render();
     setSyncStatus("Synced with Supabase");
@@ -1756,7 +1813,12 @@ async function syncFromSupabase() {
 async function syncToSupabase() {
   if (!canSync()) return;
   try {
-    for (const item of state.items) await upsertItemSafely(item);
+    const deleted = new Set(state.deletedIds);
+    if (state.deletedIds.length) {
+      // Clear tombstoned rows server-side so other devices stop seeing them.
+      await supabaseFetch(`life_flow_items?id=in.(${state.deletedIds.join(",")})`, { method: "DELETE" }).catch(() => {});
+    }
+    for (const item of state.items.filter((entry) => !deleted.has(entry.id))) await upsertItemSafely(item);
     for (const session of state.focusSessions) await upsertSupabase("life_flow_focus_sessions", session);
     for (const entry of state.sleepEntries) await upsertSupabase("life_flow_sleep_entries", entry, "owner_key,sleep_date");
     await upsertAppState();
@@ -1825,6 +1887,7 @@ async function upsertAppState() {
         goalDone: state.goalDone,
         aboutMe: state.aboutMe,
         gameBests: state.gameBests,
+        deletedIds: state.deletedIds,
       },
     },
     updated_at: new Date().toISOString(),
@@ -1886,6 +1949,7 @@ function normalizeState(saved) {
     gameBests: { ...defaultState.gameBests, ...(saved.gameBests || {}) },
     goalDone: { ...(saved.goalDone || {}) },
     aboutMe: { ...(saved.aboutMe || {}) },
+    deletedIds: Array.isArray(saved.deletedIds) ? saved.deletedIds : [],
   };
   return merged;
 }

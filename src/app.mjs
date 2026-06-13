@@ -479,6 +479,7 @@ function bindElements() {
     "addPushupsButton", "upcomingTodayList", "taskList", "quickTaskForm", "quickTaskInput", "workoutList", "goalsList", "goalsProgress",
     "gradesList", "gradesAverage", "gradesArcFill",
     "heroRingFill", "heroProgressPercent", "tasksProgressFill", "tasksProgressLabel", "tasksSubline",
+    "dpTasks", "dpFocus", "dpStreak", "dpProgressFill", "dpMessage",
     "simonStart", "simonGrid", "simonStatus", "simonBest", "mathStart", "mathQuestion", "mathAnswers", "mathStatus", "mathBest",
     "sprintPad", "sprintStatus", "sprintBest", "stopClockPad", "stopClockStatus", "stopClockBest",
     "numberRushStart", "numberRushGrid", "numberRushStatus", "numberRushBest",
@@ -736,6 +737,23 @@ function renderDailyProgress() {
   if (els.tasksProgressFill) els.tasksProgressFill.style.width = `${percent}%`;
   if (els.tasksProgressLabel) els.tasksProgressLabel.textContent = total ? `${done} of ${total} done today · ${percent}%` : "No tasks due today yet";
   if (els.tasksSubline) els.tasksSubline.textContent = total && done === total ? "All done — great work! 🎉" : "Plan it. Do it. Check it off.";
+
+  // Home "Daily Progress" card
+  const stats = calculateStats(state.items, state.focusSessions, todayKey(), state.sleepEntries, state.rewards, settings.sleepGoalHours * 60);
+  const focusMinutes = state.focusSessions
+    .filter((entry) => !entry.is_break && String(entry.completed_at || "").slice(0, 10) === todayKey())
+    .reduce((sum, entry) => sum + Number(entry.minutes || 0), 0);
+  if (els.dpTasks) els.dpTasks.textContent = `${done} / ${total}`;
+  if (els.dpFocus) els.dpFocus.textContent = `${(focusMinutes / 60).toFixed(focusMinutes % 60 === 0 ? 0 : 1)}h`;
+  if (els.dpStreak) els.dpStreak.textContent = String(stats.streakDays || 0);
+  if (els.dpProgressFill) els.dpProgressFill.style.width = `${percent}%`;
+  if (els.dpMessage) {
+    els.dpMessage.textContent = !total
+      ? "Add a task to start today's progress."
+      : done === total
+        ? "Every task done — finish the week strong! 🎉"
+        : "Keep going! You're on track for a great week.";
+  }
 }
 
 function renderUpcomingToday() {

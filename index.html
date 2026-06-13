@@ -78,6 +78,16 @@
             </button>
             <div class="coach-dots" id="coachDots" aria-hidden="true"></div>
           </section>
+          <section class="daily-progress-card surface" aria-labelledby="dailyProgressTitle">
+            <div class="card-heading"><h2 id="dailyProgressTitle">Daily Progress</h2><button class="see-all" data-view="tasks" type="button">View insights <i data-lucide="chevron-right"></i></button></div>
+            <div class="daily-progress-stats">
+              <div class="dp-stat"><span class="dp-icon dp-teal"><i data-lucide="target"></i></span><div><strong id="dpTasks">0 / 0</strong><small>Tasks Completed</small></div></div>
+              <div class="dp-stat"><span class="dp-icon dp-blue"><i data-lucide="clock"></i></span><div><strong id="dpFocus">0h</strong><small>Focus Time</small></div></div>
+              <div class="dp-stat"><span class="dp-icon dp-orange"><i data-lucide="flame"></i></span><div><strong id="dpStreak">0</strong><small>Day Streak</small></div></div>
+            </div>
+            <div class="dp-track"><i id="dpProgressFill"></i></div>
+            <p class="dp-message" id="dpMessage">Keep going! You're on track for a great week.</p>
+          </section>
         </section>
 
         <section class="view" id="tasksView" aria-labelledby="tasksTitle">

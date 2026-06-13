@@ -314,8 +314,11 @@ section + section,
   font-family: var(--font-display);
   font-size: 1.7rem;
   font-weight: 700;
-  border: 2px solid rgba(0, 229, 195, 0.5);
-  box-shadow: 0 6px 18px rgba(0, 229, 195, 0.25);
+  border: 2px solid rgba(0, 229, 195, 0.7);
+  box-shadow:
+    0 0 0 3px rgba(8, 18, 30, 0.9),
+    0 0 0 5px rgba(0, 229, 195, 0.55),
+    0 0 22px rgba(0, 229, 195, 0.5);
   cursor: pointer;
 }
 .hero-avatar:active { transform: scale(0.95); }
@@ -497,43 +500,47 @@ section + section,
 }
 .upcoming-item {
   --accent: var(--teal);
-  flex: 0 0 auto;
-  width: 158px;
+  flex: 0 0 calc(50% - 5px);
+  min-width: 0;
   scroll-snap-align: start;
   display: grid;
   grid-template-columns: auto 1fr;
   grid-template-areas: "icon time" "name name" "range range";
-  gap: 6px 10px;
-  padding: 12px;
-  border-radius: 14px;
-  background: var(--card-2);
-  border: 1px solid var(--line);
-  border-left: 3px solid var(--accent);
+  gap: 10px 12px;
+  padding: 16px;
+  border-radius: 18px;
+  background:
+    radial-gradient(circle at 0% 0%, color-mix(in srgb, var(--accent) 12%, transparent), transparent 70%),
+    var(--card-2);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--line));
+  box-shadow: 0 0 22px color-mix(in srgb, var(--accent) 22%, transparent), inset 0 0 18px color-mix(in srgb, var(--accent) 8%, transparent);
 }
 .upcoming-icon {
   grid-area: icon;
   display: grid;
   place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 11px;
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
   color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 18%, transparent);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
 }
-.upcoming-icon i { width: 18px; height: 18px; }
+.upcoming-icon i { width: 20px; height: 20px; }
 .upcoming-time {
   grid-area: time;
   align-self: center;
   color: var(--accent);
-  font-weight: 600;
-  font-size: 0.84rem;
+  font-weight: 700;
+  font-size: 0.98rem;
 }
 .upcoming-name {
   grid-area: name;
   color: var(--ink);
   font-weight: 700;
-  font-size: 0.96rem;
-  margin-top: 2px;
+  font-size: 1.18rem;
+  line-height: 1.2;
+  margin-top: 4px;
 }
 .upcoming-range {
   grid-area: range;
@@ -1832,6 +1839,85 @@ dialog form select {
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
+
+/* ============================================================
+   HOME — DAILY PROGRESS CARD
+   ============================================================ */
+.daily-progress-card { padding: 18px; }
+.daily-progress-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+.dp-stat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+  position: relative;
+}
+.dp-stat + .dp-stat::before {
+  content: "";
+  position: absolute;
+  left: -4px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 1px;
+  height: 34px;
+  background: var(--line);
+}
+.dp-icon {
+  --dp: var(--teal);
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  color: var(--dp);
+  background: color-mix(in srgb, var(--dp) 15%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dp) 35%, transparent);
+}
+.dp-icon i { width: 19px; height: 19px; }
+.dp-teal { --dp: var(--teal); }
+.dp-blue { --dp: var(--blue); }
+.dp-orange { --dp: var(--orange); }
+.dp-stat strong {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 1.45rem;
+  font-weight: 700;
+  color: var(--ink);
+  line-height: 1;
+}
+.dp-teal ~ div strong { color: var(--ink); }
+.dp-stat:nth-child(1) strong { color: var(--teal); }
+.dp-stat:nth-child(2) strong { color: var(--blue); }
+.dp-stat:nth-child(3) strong { color: var(--orange); }
+.dp-stat small {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 500;
+}
+.dp-track {
+  height: 9px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+.dp-track i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--teal), var(--blue));
+  box-shadow: 0 0 12px rgba(0, 229, 195, 0.5);
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.dp-message { color: var(--faint); font-size: 0.82rem; margin-top: 10px; }
 
 /* ============================================================
    TASKS — refreshed mobile UI

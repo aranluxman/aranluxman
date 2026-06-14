@@ -95,6 +95,156 @@ const courses = [
     { name: "Mur d'investigation (D2)", mark: 100.0 },
   ] },
 ];
+// Speak page — practice structures (name, steps, when to use)
+const speakFrameworks = [
+  { name: "PREP", steps: ["Point — state your opinion", "Reason — why you hold it", "Example — proof or a quick story", "Point — restate it"], when: "Quick opinions and debates." },
+  { name: "PAIR", steps: ["Point — your main idea", "Anecdote — a short real moment", "Insight — what it taught you", "Recommendation — what others should do"], when: "Make an idea memorable." },
+  { name: "What / So What / Now What", steps: ["What — what happened", "So What — why it matters", "Now What — your next step"], when: "Reflecting on an experience." },
+  { name: "Past / Present / Future", steps: ["Past — where you started", "Present — where you are now", "Future — where you're headed"], when: "Showing growth or a journey." },
+  { name: "5 W's", steps: ["Who is involved", "What happened", "When it happened", "Where it happened", "Why it matters"], when: "Explaining an event clearly." },
+  { name: "PIP", steps: ["Point — the big idea", "Importance — why it matters", "Preview — what you'll cover"], when: "Opening a talk strongly." },
+  { name: "STAR", steps: ["Situation — set the scene", "Task — your goal", "Action — what you did", "Result — how it turned out"], when: "Telling an achievement story." },
+  { name: "Problem / Cause / Solution", steps: ["Problem — name the issue", "Cause — why it happens", "Solution — how to fix it"], when: "Persuading toward a fix." },
+  { name: "PAS", steps: ["Problem — the pain point", "Agitate — make it feel real", "Solution — the relief"], when: "Convincing someone to act." },
+  { name: "BAB", steps: ["Before — the old situation", "After — the better outcome", "Bridge — how to get there"], when: "Pitching a change or idea." },
+  { name: "Agree / Add / Ask", steps: ["Agree — acknowledge their point", "Add — bring something new", "Ask — pose a question back"], when: "Keeping a conversation flowing." },
+];
+const storyCues = [
+  "Anchor the location — say where we are first",
+  "Use specific micro-action verbs (grabbed, bolted, froze)",
+  "Share an internal 'brain voice' thought",
+  "Show emotion through a body tell, not a label",
+  "Drop one punchy line of dialogue",
+  "Add a single vivid sensory detail",
+  "Include a status shift (up or down)",
+  "Connect beats with 'but' or 'therefore', not 'and then'",
+  "Raise the stakes early so we care",
+];
+const speakTopics = [
+  { kind: "debate", text: "Argue why guys are better than donuts.", framework: "PREP" },
+  { kind: "debate", text: "Cereal is a soup. Defend it with full confidence.", framework: "PAS" },
+  { kind: "debate", text: "A hot dog is a sandwich — convince the room.", framework: "PREP" },
+  { kind: "debate", text: "Mondays should be illegal. Make your case.", framework: "Problem / Cause / Solution" },
+  { kind: "debate", text: "Pineapple absolutely belongs on pizza.", framework: "PIP" },
+  { kind: "debate", text: "Texting is better than calling. Prove it.", framework: "BAB" },
+  { kind: "debate", text: "Cats secretly run the internet. Present the evidence.", framework: "5 W's" },
+  { kind: "debate", text: "Summer break should be twice as long.", framework: "PREP" },
+  { kind: "reflection", text: "Describe a problem you faced recently and how you overcame it.", framework: "What / So What / Now What" },
+  { kind: "reflection", text: "Talk about a time you changed your mind about something.", framework: "Past / Present / Future" },
+  { kind: "reflection", text: "What's a habit you're proud of building, and how did you do it?", framework: "PAIR" },
+  { kind: "reflection", text: "Describe a mistake that ended up teaching you something.", framework: "What / So What / Now What" },
+  { kind: "reflection", text: "Walk through a goal you're chasing and your very next step.", framework: "Past / Present / Future" },
+  { kind: "reflection", text: "What does a great day look like for you, and why?", framework: "PREP" },
+  { kind: "reflection", text: "React to: 'hard work beats talent.' Do you agree?", framework: "Agree / Add / Ask" },
+  { kind: "story", text: "Tell the story of a time you were the underdog.", framework: "STAR" },
+  { kind: "story", text: "Tell about a moment everything went wrong — then turned right.", framework: "BAB" },
+  { kind: "story", text: "Describe the first time you tried something really hard.", framework: "Past / Present / Future" },
+  { kind: "story", text: "Tell a story where one small choice changed everything.", framework: "STAR" },
+  { kind: "story", text: "Tell about a time you genuinely surprised yourself.", framework: "STAR" },
+  { kind: "story", text: "Share a story about someone who pushed you to be better.", framework: "Past / Present / Future" },
+];
+const speakKindLabels = { debate: "Debate it", reflection: "Reflect", story: "Tell a story" };
+// R-words articulation drills. Paste your own sentence list here to replace these.
+// Grouped by where the R sound falls: initial (start), medial (middle), final (end).
+const rWordSentences = {
+  initial: [
+    "Rachel raced the rabbit around the red ranch.",
+    "The rocket roared right past the rising moon.",
+    "Ryan rode his red bike down the rocky road.",
+    "Rain ran down the roof and around the rim.",
+    "The robot rolled across the room and waved.",
+    "Rebecca read a really riveting railway report.",
+    "The river rushed right by the rugged ridge.",
+    "Roy wrapped the ribbon around the round box.",
+    "Rita's rooster crows at the rising sun.",
+    "The referee raised his right hand to restart.",
+    "Rabbits relax in rows beneath the redwood.",
+    "Randy roasted radishes and rich red peppers.",
+    "The racer reached the ramp and rocketed up.",
+    "The ranger rescued a raccoon from the river.",
+    "Rusty's rope reached the top of the ridge.",
+    "Rain or shine, Riley runs every morning.",
+    "The radio replayed a really retro rock song.",
+    "Reggie ran a record race around the rink.",
+    "Ruby's ring rolled right under the rug.",
+    "Rapid rivers race over rough rocks.",
+    "Renee rearranged the red roses in a row.",
+    "The rookie raised his racket and returned it.",
+    "Rico repaired the radio in record time.",
+    "The raven rose above the rolling hills.",
+    "Robin's recipe required ripe raspberries.",
+    "Round and round the racetrack they ran.",
+    "The rescue team reached the ridge by noon.",
+    "Real runners respect their rest days.",
+    "The river road runs right past the ranch.",
+    "Rosa's room was ready right on time.",
+  ],
+  medial: [
+    "The parrot carried a carrot across the garden.",
+    "Sarah hurried through the crowded market.",
+    "A squirrel buried an acorn near the barrel.",
+    "The mirror in the hallway needed a quick repair.",
+    "Every morning Larry borrows the orange ladder.",
+    "The story of the brave pirate spread around town.",
+    "Harry's umbrella turned inside out in the storm.",
+    "Carol parked the car around the corner.",
+    "The farmer carried barrels toward the barn.",
+    "A cheerful chorus echoed through the forest.",
+    "Maria poured syrup over her warm oatmeal.",
+    "The arrow soared over the narrow stream.",
+    "Gerald measured the perimeter of the arena.",
+    "Cherry and berry flavors filled the bakery.",
+    "The tourist wandered around the ancient ruins.",
+    "Aaron operated the camera during the parade.",
+    "A spirited terrier scurried after the squirrel.",
+    "Theresa arranged the chairs around the table.",
+    "The doctor measured the patient's temperature.",
+    "Sparrows gathered near the garden sprinkler.",
+    "Lauren prepared a colorful fruit platter.",
+    "The orchestra performed a stirring overture.",
+    "A herd of horses thundered across the prairie.",
+    "Murray hurried to repair the broken stereo.",
+    "The currents carried the surfers toward shore.",
+    "Florence wore a coral scarf to the carnival.",
+    "The narrator described the mysterious mirror.",
+    "Caroline arranged forty oranges in the carton.",
+    "The merry carolers gathered around the porch.",
+    "Jeremy prepared a peppery carrot purée.",
+  ],
+  final: [
+    "The teacher wrote her answer on the chalkboard.",
+    "After dinner, Peter cleared the kitchen counter.",
+    "The doctor offered the runner some water.",
+    "A polar bear wandered near the harbor.",
+    "Mother and father waited by the door.",
+    "The farmer gathered corn before the winter.",
+    "Oliver wore a sweater near the heater.",
+    "The painter colored the tower silver.",
+    "Sooner or later the weather will get clearer.",
+    "The driver parked the trailer by the river.",
+    "Her sister is a singer and a dancer.",
+    "The waiter brought butter for the cracker.",
+    "A spider spun a web in the corner.",
+    "The hiker carried water up the steeper trail.",
+    "Trevor is taller than his older brother.",
+    "The lawyer offered an answer to the reporter.",
+    "Summer is warmer than the cooler autumn.",
+    "The actor remembered every line by dinner.",
+    "Pour the batter, then add a little sugar.",
+    "The carpenter measured the lumber for the floor.",
+    "Her father is a clever engineer and a teacher.",
+    "The dancer twirled faster near the center.",
+    "The baker offered a wafer with the coffee.",
+    "A feather drifted lower toward the water.",
+    "The manager thanked every customer by the door.",
+    "Closer and closer the thunder rolled over.",
+    "The author wrote a thriller about a sailor.",
+    "The jogger ran farther than ever before.",
+    "Our neighbor offered to repair the old mower.",
+    "The professor answered after a brief pause.",
+  ],
+};
+const R_SET_SIZE = 10;
 const workoutMetrics = [
   { key: "pullups", label: "Pull-ups", icon: "dumbbell", accent: "#3e9cff", step: 5, unit: "reps" },
   { key: "pushups", label: "Push-ups", icon: "activity", accent: "#ff9738", step: 5, unit: "reps" },
@@ -266,6 +416,7 @@ const defaultState = {
   goalDone: {},
   aboutMe: {},
   deletedIds: [],
+  rPractice: { date: "", done: [] },
   goalReminder: "Train hard. Give back. Build something.",
   selectedDate: todayKey(),
   monthCursor: `${todayKey().slice(0, 7)}-01`,
@@ -455,6 +606,10 @@ let numberRush = { order: [], next: 1, startAt: 0, active: false };
 let targetGame = { active: false, score: 0, lit: -1, intervalId: null, timeoutId: null };
 let simonGame = { sequence: [], inputIndex: 0, playing: false, awaitingInput: false };
 let mathGame = { active: false, score: 0, answer: 0, timeoutId: null, intervalId: null, secondsLeft: 0 };
+let speakCursor = null;
+let rGroup = "initial";
+const rStart = {};
+let speakRecorder = { recorder: null, stream: null, chunks: [], url: null, startedAt: 0, timerId: null };
 const els = {};
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -467,8 +622,9 @@ document.addEventListener("DOMContentLoaded", () => {
   persist();
   render();
   renderAbout();
+  initRecorder();
   const view = new URLSearchParams(location.search).get("view");
-  if (["home", "tasks", "calendar", "sleep", "grades", "me", "arcade"].includes(view)) setView(view);
+  if (["home", "tasks", "calendar", "sleep", "grades", "speak", "me", "arcade"].includes(view)) setView(view);
   void initializeCloud();
 });
 
@@ -478,6 +634,9 @@ function bindElements() {
     "doneTodayStat", "openTasksStat", "streakStat", "coinsStat", "trackWeekStat", "pushupsWeekStat", "addTrackSessionButton",
     "addPushupsButton", "upcomingTodayList", "taskList", "quickTaskForm", "quickTaskInput", "workoutList", "goalsList", "goalsProgress",
     "gradesList", "gradesAverage", "gradesArcFill",
+    "speakTopicKind", "speakTopicText", "speakFrameworkName", "speakFrameworkWhen", "speakFrameworkSteps",
+    "speakStoryCard", "speakCues", "newTopicButton", "speakRecorder", "recordButton", "recordLabel", "recordTimer", "recordPlayback",
+    "rTabs", "rList", "rPracticeCount", "rProgressFill", "rNextSet",
     "heroRingFill", "heroProgressPercent", "tasksProgressFill", "tasksProgressLabel", "tasksSubline",
     "dpTasks", "dpFocus", "dpStreak", "dpProgressFill", "dpMessage",
     "simonStart", "simonGrid", "simonStatus", "simonBest", "mathStart", "mathQuestion", "mathAnswers", "mathStatus", "mathBest",
@@ -557,6 +716,21 @@ function wireEvents() {
     renderGoals();
     void upsertAppState();
   });
+  els.newTopicButton?.addEventListener("click", nextSpeakTopic);
+  els.recordButton?.addEventListener("click", toggleRecord);
+  els.speakCues?.addEventListener("click", (event) => {
+    const cue = event.target.closest("[data-cue]");
+    if (cue) cue.classList.toggle("checked");
+  });
+  els.rTabs?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-r-group]");
+    if (button) setRGroup(button.dataset.rGroup);
+  });
+  els.rList?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-r-id]");
+    if (button) toggleRSentence(button.dataset.rId);
+  });
+  els.rNextSet?.addEventListener("click", nextRSet);
   document.querySelectorAll("[data-about]").forEach((field) => field.addEventListener("input", () => {
     state.aboutMe[field.dataset.about] = field.value;
     persist();
@@ -659,6 +833,7 @@ function render() {
   renderWorkout();
   renderGoals();
   renderGrades();
+  renderSpeak();
   renderMemoryNotes();
   renderTasks();
   renderCalendar();
@@ -870,6 +1045,127 @@ function renderGrades() {
     button.setAttribute("aria-expanded", String(open));
   }));
   refreshIcons();
+}
+
+function renderSpeak() {
+  if (!els.speakTopicText) return;
+  if (speakCursor === null) speakCursor = dailyIndex(speakTopics.length);
+  const topic = speakTopics[speakCursor % speakTopics.length];
+  els.speakTopicKind.textContent = speakKindLabels[topic.kind] || "Topic";
+  els.speakTopicKind.dataset.kind = topic.kind;
+  els.speakTopicText.textContent = topic.text;
+  const framework = speakFrameworks.find((entry) => entry.name === topic.framework) || speakFrameworks[0];
+  els.speakFrameworkName.textContent = framework.name;
+  els.speakFrameworkWhen.textContent = framework.when;
+  els.speakFrameworkSteps.innerHTML = framework.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("");
+  els.speakStoryCard.hidden = topic.kind !== "story";
+  if (topic.kind === "story" && !els.speakCues.childElementCount) {
+    els.speakCues.innerHTML = storyCues.map((cue, index) => `<button type="button" class="speak-cue" data-cue="${index}">${escapeHtml(cue)}</button>`).join("");
+  }
+  renderRWords();
+  refreshIcons();
+}
+
+function nextSpeakTopic() {
+  let next = speakCursor;
+  while (next === speakCursor && speakTopics.length > 1) next = Math.floor(Math.random() * speakTopics.length);
+  speakCursor = next;
+  renderSpeak();
+}
+
+function renderRWords() {
+  if (!els.rList) return;
+  if (state.rPractice.date !== todayKey()) {
+    state.rPractice = { date: todayKey(), done: [] };
+    persist();
+  }
+  const group = rWordSentences[rGroup] || [];
+  if (rStart[rGroup] == null) rStart[rGroup] = group.length ? dailyIndex(group.length) : 0;
+  const size = Math.min(R_SET_SIZE, group.length);
+  const batch = Array.from({ length: size }, (_, i) => {
+    const index = (rStart[rGroup] + i) % group.length;
+    return { id: `${rGroup}-${index}`, text: group[index] };
+  });
+  const done = new Set(state.rPractice.done);
+  els.rTabs.querySelectorAll("[data-r-group]").forEach((button) => button.classList.toggle("active", button.dataset.rGroup === rGroup));
+  els.rList.innerHTML = batch.map((sentence) => `<button type="button" class="r-sentence ${done.has(sentence.id) ? "done" : ""}" data-r-id="${sentence.id}"><span class="r-check" aria-hidden="true"></span><span class="r-text">${escapeHtml(sentence.text)}</span></button>`).join("");
+  const doneCount = batch.filter((sentence) => done.has(sentence.id)).length;
+  els.rPracticeCount.textContent = `${doneCount} of ${batch.length} practiced`;
+  if (els.rProgressFill) els.rProgressFill.style.width = `${batch.length ? Math.round((doneCount / batch.length) * 100) : 0}%`;
+}
+
+function toggleRSentence(id) {
+  const done = new Set(state.rPractice.done);
+  if (done.has(id)) done.delete(id);
+  else done.add(id);
+  state.rPractice = { date: todayKey(), done: [...done] };
+  persist();
+  renderRWords();
+  void upsertAppState();
+}
+
+function setRGroup(group) {
+  if (!rWordSentences[group]) return;
+  rGroup = group;
+  renderRWords();
+}
+
+function nextRSet() {
+  const group = rWordSentences[rGroup] || [];
+  if (group.length) rStart[rGroup] = Math.floor(Math.random() * group.length);
+  renderRWords();
+}
+
+/* ---- Speak: record & play back (MediaRecorder, in-memory only) ---- */
+function initRecorder() {
+  const supported = typeof MediaRecorder !== "undefined" && Boolean(navigator.mediaDevices?.getUserMedia);
+  if (!els.speakRecorder) return;
+  if (supported) els.speakRecorder.removeAttribute("hidden");
+  else els.speakRecorder.setAttribute("hidden", "");
+}
+
+async function toggleRecord() {
+  if (speakRecorder.recorder && speakRecorder.recorder.state === "recording") {
+    stopRecord();
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    speakRecorder.stream = stream;
+    speakRecorder.chunks = [];
+    const recorder = new MediaRecorder(stream);
+    speakRecorder.recorder = recorder;
+    recorder.ondataavailable = (event) => { if (event.data.size) speakRecorder.chunks.push(event.data); };
+    recorder.onstop = () => {
+      if (speakRecorder.url) URL.revokeObjectURL(speakRecorder.url);
+      const blob = new Blob(speakRecorder.chunks, { type: recorder.mimeType || "audio/webm" });
+      speakRecorder.url = URL.createObjectURL(blob);
+      els.recordPlayback.src = speakRecorder.url;
+      els.recordPlayback.hidden = false;
+      speakRecorder.stream.getTracks().forEach((track) => track.stop());
+    };
+    recorder.start();
+    speakRecorder.startedAt = Date.now();
+    els.recordButton.classList.add("recording");
+    els.recordLabel.textContent = "Stop";
+    speakRecorder.timerId = window.setInterval(updateRecordTimer, 200);
+    updateRecordTimer();
+  } catch {
+    els.recordTimer.textContent = "Mic blocked";
+  }
+}
+
+function stopRecord() {
+  if (speakRecorder.recorder?.state === "recording") speakRecorder.recorder.stop();
+  if (speakRecorder.timerId) clearInterval(speakRecorder.timerId);
+  speakRecorder.timerId = null;
+  els.recordButton.classList.remove("recording");
+  els.recordLabel.textContent = "Re-record";
+}
+
+function updateRecordTimer() {
+  const seconds = Math.floor((Date.now() - speakRecorder.startedAt) / 1000);
+  els.recordTimer.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
 function renderAbout() {
@@ -1810,6 +2106,10 @@ async function syncFromSupabase() {
         state.aboutMe = { ...(appData.aboutMe || {}), ...state.aboutMe };
         state.gameBests = { ...state.gameBests, ...(appData.gameBests || {}) };
         state.deletedIds = [...new Set([...(appData.deletedIds || []), ...state.deletedIds])].slice(-300);
+        if (appData.rPractice?.date === todayKey()) {
+          const merged = new Set([...(appData.rPractice.done || []), ...(state.rPractice.date === todayKey() ? state.rPractice.done : [])]);
+          state.rPractice = { date: todayKey(), done: [...merged] };
+        }
       }
       settings = normalizeSettings({ ...settings, ...prefs });
       hydrateSettingsForm();
@@ -1906,6 +2206,7 @@ async function upsertAppState() {
         aboutMe: state.aboutMe,
         gameBests: state.gameBests,
         deletedIds: state.deletedIds,
+        rPractice: state.rPractice,
       },
     },
     updated_at: new Date().toISOString(),
@@ -1968,6 +2269,7 @@ function normalizeState(saved) {
     goalDone: { ...(saved.goalDone || {}) },
     aboutMe: { ...(saved.aboutMe || {}) },
     deletedIds: Array.isArray(saved.deletedIds) ? saved.deletedIds : [],
+    rPractice: saved.rPractice && typeof saved.rPractice === "object" ? { date: saved.rPractice.date || "", done: Array.isArray(saved.rPractice.done) ? saved.rPractice.done : [] } : { date: "", done: [] },
   };
   return merged;
 }

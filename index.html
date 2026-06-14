@@ -30,6 +30,7 @@
           <button class="nav-item" data-view="calendar" type="button"><i data-lucide="calendar-days"></i><span>Calendar</span></button>
           <button class="nav-item" data-view="sleep" type="button"><i data-lucide="moon"></i><span>Sleep</span></button>
           <button class="nav-item" data-view="grades" type="button"><i data-lucide="graduation-cap"></i><span>Grades</span></button>
+          <button class="nav-item" data-view="speak" type="button"><i data-lucide="mic"></i><span>Speak</span></button>
           <button class="nav-item" data-view="me" type="button"><i data-lucide="target"></i><span>Me</span></button>
           <button class="nav-item" data-view="arcade" type="button"><i data-lucide="gamepad-2"></i><span>Arcade</span></button>
         </nav>
@@ -187,6 +188,40 @@
           </section>
           <p class="grades-hint">Tap a course to see its evaluations.</p>
           <div class="grades-list" id="gradesList"></div>
+        </section>
+
+        <section class="view" id="speakView" aria-labelledby="speakTitle">
+          <div class="section-heading section-heading-speak"><div><h1 id="speakTitle">Speak</h1><p class="section-subtitle">Practice communicating out loud.</p></div></div>
+          <section class="surface speak-topic-card">
+            <div class="card-heading"><span class="speak-kind" id="speakTopicKind" data-kind="debate">Topic</span><button class="ghost-button compact" id="newTopicButton" type="button"><i data-lucide="shuffle"></i><span>New topic</span></button></div>
+            <p class="speak-topic-text" id="speakTopicText"></p>
+          </section>
+          <section class="surface speak-framework-card">
+            <div class="card-heading"><h2>Use this framework</h2><span class="speak-framework-name" id="speakFrameworkName"></span></div>
+            <p class="speak-framework-when" id="speakFrameworkWhen"></p>
+            <ol class="speak-steps" id="speakFrameworkSteps"></ol>
+          </section>
+          <section class="surface speak-story-card" id="speakStoryCard" hidden>
+            <div class="card-heading"><h2>Storytelling cues</h2><span>Tap to check off</span></div>
+            <div class="speak-cues" id="speakCues"></div>
+          </section>
+          <section class="surface speak-recorder" id="speakRecorder" hidden>
+            <div class="card-heading"><h2>Say it out loud</h2><span class="record-timer" id="recordTimer">0:00</span></div>
+            <button class="record-button" id="recordButton" type="button"><span class="record-dot" aria-hidden="true"></span><span id="recordLabel">Record</span></button>
+            <audio class="speak-playback" id="recordPlayback" controls hidden></audio>
+            <p class="speak-recorder-note">Stays on this device for this session only &mdash; nothing is uploaded. Re-record any time.</p>
+          </section>
+          <section class="surface speak-articulation" aria-labelledby="rWordsTitle">
+            <div class="card-heading"><h2 id="rWordsTitle">R-Words Articulation</h2><span id="rPracticeCount">0 of 0 practiced</span></div>
+            <div class="segmented r-tabs" id="rTabs" role="group" aria-label="R sound position">
+              <button class="active" type="button" data-r-group="initial">Initial R</button>
+              <button type="button" data-r-group="medial">Medial R</button>
+              <button type="button" data-r-group="final">Final R</button>
+            </div>
+            <div class="r-progress-track"><i id="rProgressFill"></i></div>
+            <div class="r-list" id="rList"></div>
+            <button class="ghost-button compact r-next" id="rNextSet" type="button"><i data-lucide="shuffle"></i><span>Next set</span></button>
+          </section>
         </section>
 
         <section class="view" id="arcadeView" aria-labelledby="arcadeTitle">

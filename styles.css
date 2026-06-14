@@ -2281,6 +2281,208 @@ dialog form select {
 .goal-item.done .goal-text { text-decoration: line-through; color: var(--muted); }
 
 /* ============================================================
+   SPEAK — communication practice
+   ============================================================ */
+.section-heading-speak { border-color: var(--teal); }
+.speak-topic-card, .speak-framework-card, .speak-story-card, .speak-recorder, .speak-articulation {
+  padding: 16px;
+  margin-top: 14px;
+}
+.speak-kind {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 11px;
+  border-radius: 99px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--teal);
+  background: var(--teal-dim);
+  border: 1px solid rgba(0, 229, 195, 0.3);
+}
+.speak-kind[data-kind="reflection"] { color: var(--purple); background: rgba(145, 113, 239, 0.14); border-color: rgba(145, 113, 239, 0.32); }
+.speak-kind[data-kind="story"] { color: var(--orange); background: rgba(255, 151, 56, 0.14); border-color: rgba(255, 151, 56, 0.32); }
+.speak-topic-text {
+  margin-top: 12px;
+  font-family: var(--font-display);
+  font-size: 1.5rem;
+  font-weight: 600;
+  line-height: 1.25;
+  color: var(--ink);
+}
+.speak-framework-name {
+  padding: 3px 10px;
+  border-radius: 99px;
+  background: var(--teal-dim);
+  color: var(--teal);
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+.speak-framework-when { color: var(--muted); font-size: 0.86rem; margin-bottom: 10px; }
+.speak-steps { display: grid; gap: 8px; padding-left: 0; list-style: none; counter-reset: step; }
+.speak-steps li {
+  counter-increment: step;
+  position: relative;
+  padding: 10px 12px 10px 42px;
+  border-radius: 12px;
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 0.9rem;
+  line-height: 1.35;
+}
+.speak-steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--teal);
+  color: #04130f;
+  font-family: var(--font-display);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+.speak-cues { display: grid; gap: 8px; }
+.speak-cue {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  width: 100%;
+  text-align: left;
+  padding: 11px 13px;
+  border-radius: 12px;
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 0.88rem;
+  line-height: 1.35;
+}
+.speak-cue::before {
+  content: "";
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 2px solid var(--faint);
+  position: relative;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.speak-cue.checked::before {
+  background: var(--orange);
+  border-color: var(--orange);
+}
+.speak-cue.checked { color: var(--muted); }
+.speak-cue.checked .speak-cue, .speak-cue.checked { text-decoration: none; }
+
+/* Recorder */
+.record-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 22px;
+  border-radius: 99px;
+  background: var(--card-3);
+  border: 1px solid rgba(255, 93, 108, 0.4);
+  color: var(--ink);
+  font-weight: 700;
+  font-size: 0.95rem;
+}
+.record-button:active { transform: scale(0.97); }
+.record-dot {
+  width: 13px;
+  height: 13px;
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 8px rgba(255, 93, 108, 0.6);
+}
+.record-button.recording { border-color: var(--red); background: rgba(255, 93, 108, 0.14); }
+.record-button.recording .record-dot { animation: rec-pulse 1s infinite; }
+@keyframes rec-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
+.record-timer {
+  font-family: var(--font-display);
+  font-size: 1.05rem;
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.speak-playback { width: 100%; margin-top: 12px; }
+.speak-recorder-note { color: var(--faint); font-size: 0.76rem; margin-top: 10px; }
+
+/* R-words articulation */
+.r-tabs { display: flex; width: 100%; margin-bottom: 12px; }
+.r-tabs button { flex: 1; text-align: center; font-size: 0.78rem; }
+.r-tabs button.active { color: #04130f; background: linear-gradient(140deg, var(--teal-bright), var(--teal)); }
+.r-progress-track {
+  height: 8px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+  margin-bottom: 12px;
+}
+.r-progress-track i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--teal), var(--teal-bright));
+  box-shadow: 0 0 10px rgba(0, 229, 195, 0.5);
+  transition: width 0.4s ease;
+}
+.r-list { display: grid; gap: 8px; }
+.r-sentence {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  text-align: left;
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  font-size: 0.92rem;
+  line-height: 1.35;
+}
+.r-sentence:active { transform: scale(0.99); }
+.r-check {
+  flex-shrink: 0;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid var(--faint);
+  position: relative;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+.r-check::after {
+  content: "";
+  position: absolute;
+  top: 3px;
+  left: 7px;
+  width: 5px;
+  height: 9px;
+  border: solid #04130f;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) scale(0);
+  transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.r-sentence.done .r-check { background: var(--teal); border-color: var(--teal); }
+.r-sentence.done .r-check::after { transform: rotate(45deg) scale(1); }
+.r-sentence.done .r-text { color: var(--muted); }
+.r-next { width: 100%; justify-content: center; margin-top: 12px; }
+
+/* Eight-item nav fits */
+.nav-item { font-size: 0.52rem; }
+.nav-item i, .nav-item svg { width: 19px; height: 19px; }
+
+/* ============================================================
    LARGER SCREENS — center the phone canvas
    ============================================================ */
 @media (min-width: 560px) {

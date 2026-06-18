@@ -109,16 +109,21 @@ const speakFrameworks = [
   { name: "BAB", steps: ["Before — the old situation", "After — the better outcome", "Bridge — how to get there"], when: "Pitching a change or idea." },
   { name: "Agree / Add / Ask", steps: ["Agree — acknowledge their point", "Add — bring something new", "Ask — pose a question back"], when: "Keeping a conversation flowing." },
 ];
-const storyCues = [
-  "Anchor the location — say where we are first",
-  "Use specific micro-action verbs (grabbed, bolted, froze)",
-  "Share an internal 'brain voice' thought",
-  "Show emotion through a body tell, not a label",
-  "Drop one punchy line of dialogue",
-  "Add a single vivid sensory detail",
-  "Include a status shift (up or down)",
-  "Connect beats with 'but' or 'therefore', not 'and then'",
-  "Raise the stakes early so we care",
+const reflectionPrompts = [
+  "Describe the exact moment using one non-visual sense — what did you hear, smell, or feel physically?",
+  "What was the one thought running through your head that you'd be embarrassed to say out loud?",
+  "Set the scene in one sentence — what room were you in, and what small detail do you remember?",
+  "Add a single line of real dialogue. What exact words were said, and by whom?",
+  "Show how you felt without naming the emotion — what did your hands, breathing, or posture do?",
+  "Find the status shift: who or what went up, and who or what went down by the end?",
+  "Replace an 'and then' with a 'but' or a 'therefore' — where did the story actually turn?",
+  "Slow down the single most important second. Stretch it into three sentences.",
+  "What did you want in that moment, and what was standing in your way?",
+  "Drop us into the middle of the action first, then explain how you got there.",
+  "What small physical object was present, and why does it still stick with you?",
+  "Raise the stakes in the first sentence — what could you have lost?",
+  "End on the change: how were you different walking out than walking in?",
+  "What's the line you'd cut if you only had ten seconds to tell this?",
 ];
 const speakTopics = [
   { kind: "debate", text: "Argue why guys are better than donuts.", framework: "PREP" },
@@ -176,8 +181,30 @@ const rWordSentences = {
     "Round and round the racetrack they ran.",
     "The rescue team reached the ridge by noon.",
     "Real runners respect their rest days.",
-    "The river road runs right past the ranch.",
     "Rosa's room was ready right on time.",
+    "Rick rolled the rugged rover over the ridge.",
+    "Ramona wrote a riddle about a roaring river.",
+    "The rancher rounded up the restless reindeer.",
+    "Reach for the rope and ring the rusty bell.",
+    "Roger raked the red and russet leaves.",
+    "The runner's rhythm rarely ever broke.",
+    "Ravi rented a rowboat for the river race.",
+    "Rows of radishes ripened in the rich soil.",
+    "The reporter recorded a remarkable rescue.",
+    "The rooster, the rabbit, and the raven raced.",
+    "Renata recited a rhyme about a red rocket.",
+    "Rough roads rarely ruin a real road trip.",
+    "The relay runner ran the right route.",
+    "Ralph wrapped the railing in red ribbon.",
+    "Rita's recipe relies on roasted red peppers.",
+    "The river ran rapidly around the rugged rocks.",
+    "Ronnie repaired the radio and the remote.",
+    "Raise the roof and ring in the new record.",
+    "The ranger's radio reached the remote ridge.",
+    "Robin ran a rugged route through the rain.",
+    "Rare rubies rolled across the royal rug.",
+    "The restless river rose right to the road.",
+    "Reuben wrote a review of the racing rover.",
   ],
   medial: [
     "The parrot carried a carrot across the garden.",
@@ -209,7 +236,29 @@ const rWordSentences = {
     "The narrator described the mysterious mirror.",
     "Caroline arranged forty oranges in the carton.",
     "The merry carolers gathered around the porch.",
-    "Jeremy prepared a peppery carrot purée.",
+    "Jeremy prepared a peppery carrot for dinner.",
+    "The warrior carried armor through the corridor.",
+    "Veronica borrowed a guitar for the chorus.",
+    "The carpenter hammered narrow boards in a hurry.",
+    "Forty parrots squawked around the harbor.",
+    "Lawrence wandered the corridors of the library.",
+    "A foreign tourist explored the historic quarry.",
+    "The squirrel darted across the parking garage.",
+    "Barbara wore a maroon apron in the bakery.",
+    "The current carried the kayak toward the rapids.",
+    "Gloria arranged the marbles in a curious order.",
+    "The referee warned the players about the corner.",
+    "Terry prepared a hearty curry for everybody.",
+    "Margaret carried the parrot through the airport.",
+    "The interview covered the history of the marina.",
+    "Harold borrowed forty dollars for the parking.",
+    "A spirited mare galloped around the racing arena.",
+    "The director arranged a rehearsal in the morning.",
+    "Sherry stirred the marinara with a wooden spoon.",
+    "The narrow stairway spiraled toward the tower.",
+    "Brave warriors guarded the marble corridor.",
+    "The carpenter repaired the squeaky barn doors.",
+    "Lauren carried groceries around the corner store.",
   ],
   final: [
     "The teacher wrote her answer on the chalkboard.",
@@ -242,6 +291,28 @@ const rWordSentences = {
     "The jogger ran farther than ever before.",
     "Our neighbor offered to repair the old mower.",
     "The professor answered after a brief pause.",
+    "The farmer's tractor sputtered near the barn.",
+    "The sailor steered the cruiser past the pier.",
+    "My grandmother is a painter and a gardener.",
+    "The plumber fixed the burner and the boiler.",
+    "The reporter interviewed the mayor after lunch.",
+    "A ranger warned the hiker about the bear.",
+    "The voter answered the surveyor near the door.",
+    "The barber gave the teacher a quicker haircut.",
+    "The whisper grew louder near the empty theater.",
+    "The flier landed near the runway in clear weather.",
+    "The trainer offered the player some water.",
+    "The diner ordered chowder and a cheeseburger.",
+    "The conductor waved to the passenger by the door.",
+    "A clever inventor built a faster motor.",
+    "The juggler dropped a feather, never a hammer.",
+    "The teacher cheered louder than the cheerleader.",
+    "The cobbler repaired the leather slipper.",
+    "The driver waited for the weather to get clearer.",
+    "The painter offered the buyer a fair number.",
+    "The senator answered every voter with honor.",
+    "The fisher caught a flounder near the harbor.",
+    "The director thanked the dancer and the singer.",
   ],
 };
 const R_SET_SIZE = 10;
@@ -607,9 +678,10 @@ let targetGame = { active: false, score: 0, lit: -1, intervalId: null, timeoutId
 let simonGame = { sequence: [], inputIndex: 0, playing: false, awaitingInput: false };
 let mathGame = { active: false, score: 0, answer: 0, timeoutId: null, intervalId: null, secondsLeft: 0 };
 let speakCursor = null;
+let speakFwCursor = null;
+let speakReflectCursor = null;
 let rGroup = "initial";
 const rStart = {};
-let speakRecorder = { recorder: null, stream: null, chunks: [], url: null, startedAt: 0, timerId: null };
 const els = {};
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -622,7 +694,6 @@ document.addEventListener("DOMContentLoaded", () => {
   persist();
   render();
   renderAbout();
-  initRecorder();
   const view = new URLSearchParams(location.search).get("view");
   if (["home", "tasks", "calendar", "sleep", "grades", "speak", "me", "arcade"].includes(view)) setView(view);
   void initializeCloud();
@@ -635,7 +706,7 @@ function bindElements() {
     "addPushupsButton", "upcomingTodayList", "taskList", "quickTaskForm", "quickTaskInput", "workoutList", "goalsList", "goalsProgress",
     "gradesList", "gradesAverage", "gradesArcFill",
     "speakTopicKind", "speakTopicText", "speakFrameworkName", "speakFrameworkWhen", "speakFrameworkSteps",
-    "speakStoryCard", "speakCues", "newTopicButton", "speakRecorder", "recordButton", "recordLabel", "recordTimer", "recordPlayback",
+    "speakReflectionText", "newTopicButton",
     "rTabs", "rList", "rPracticeCount", "rProgressFill", "rNextSet",
     "heroRingFill", "heroProgressPercent", "tasksProgressFill", "tasksProgressLabel", "tasksSubline",
     "dpTasks", "dpFocus", "dpStreak", "dpProgressFill", "dpMessage",
@@ -716,12 +787,7 @@ function wireEvents() {
     renderGoals();
     void upsertAppState();
   });
-  els.newTopicButton?.addEventListener("click", nextSpeakTopic);
-  els.recordButton?.addEventListener("click", toggleRecord);
-  els.speakCues?.addEventListener("click", (event) => {
-    const cue = event.target.closest("[data-cue]");
-    if (cue) cue.classList.toggle("checked");
-  });
+  els.newTopicButton?.addEventListener("click", newPracticeRound);
   els.rTabs?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-r-group]");
     if (button) setRGroup(button.dataset.rGroup);
@@ -1049,27 +1115,37 @@ function renderGrades() {
 
 function renderSpeak() {
   if (!els.speakTopicText) return;
+  // Deterministic-by-date defaults so the round is stable all day across devices.
   if (speakCursor === null) speakCursor = dailyIndex(speakTopics.length);
+  if (speakFwCursor === null) speakFwCursor = dailyIndex(speakFrameworks.length);
+  if (speakReflectCursor === null) speakReflectCursor = dailyIndex(reflectionPrompts.length);
   const topic = speakTopics[speakCursor % speakTopics.length];
+  const framework = speakFrameworks[speakFwCursor % speakFrameworks.length];
+  const reflection = reflectionPrompts[speakReflectCursor % reflectionPrompts.length];
   els.speakTopicKind.textContent = speakKindLabels[topic.kind] || "Topic";
   els.speakTopicKind.dataset.kind = topic.kind;
   els.speakTopicText.textContent = topic.text;
-  const framework = speakFrameworks.find((entry) => entry.name === topic.framework) || speakFrameworks[0];
   els.speakFrameworkName.textContent = framework.name;
   els.speakFrameworkWhen.textContent = framework.when;
   els.speakFrameworkSteps.innerHTML = framework.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("");
-  els.speakStoryCard.hidden = topic.kind !== "story";
-  if (topic.kind === "story" && !els.speakCues.childElementCount) {
-    els.speakCues.innerHTML = storyCues.map((cue, index) => `<button type="button" class="speak-cue" data-cue="${index}">${escapeHtml(cue)}</button>`).join("");
-  }
+  if (els.speakReflectionText) els.speakReflectionText.textContent = reflection;
   renderRWords();
   refreshIcons();
 }
 
-function nextSpeakTopic() {
-  let next = speakCursor;
-  while (next === speakCursor && speakTopics.length > 1) next = Math.floor(Math.random() * speakTopics.length);
-  speakCursor = next;
+function pickDifferent(current, length) {
+  if (length <= 1) return current;
+  let next = current;
+  while (next === current) next = Math.floor(Math.random() * length);
+  return next;
+}
+
+function newPracticeRound() {
+  speakCursor = pickDifferent(speakCursor ?? 0, speakTopics.length);
+  speakFwCursor = pickDifferent(speakFwCursor ?? 0, speakFrameworks.length);
+  speakReflectCursor = pickDifferent(speakReflectCursor ?? 0, reflectionPrompts.length);
+  const cards = document.querySelectorAll("#speakView .speak-topic-card, #speakView .speak-framework-card, #speakView .speak-reflection-card");
+  cards.forEach((card) => { card.classList.remove("round-in"); void card.offsetWidth; card.classList.add("round-in"); });
   renderSpeak();
 }
 
@@ -1114,58 +1190,6 @@ function nextRSet() {
   const group = rWordSentences[rGroup] || [];
   if (group.length) rStart[rGroup] = Math.floor(Math.random() * group.length);
   renderRWords();
-}
-
-/* ---- Speak: record & play back (MediaRecorder, in-memory only) ---- */
-function initRecorder() {
-  const supported = typeof MediaRecorder !== "undefined" && Boolean(navigator.mediaDevices?.getUserMedia);
-  if (!els.speakRecorder) return;
-  if (supported) els.speakRecorder.removeAttribute("hidden");
-  else els.speakRecorder.setAttribute("hidden", "");
-}
-
-async function toggleRecord() {
-  if (speakRecorder.recorder && speakRecorder.recorder.state === "recording") {
-    stopRecord();
-    return;
-  }
-  try {
-    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-    speakRecorder.stream = stream;
-    speakRecorder.chunks = [];
-    const recorder = new MediaRecorder(stream);
-    speakRecorder.recorder = recorder;
-    recorder.ondataavailable = (event) => { if (event.data.size) speakRecorder.chunks.push(event.data); };
-    recorder.onstop = () => {
-      if (speakRecorder.url) URL.revokeObjectURL(speakRecorder.url);
-      const blob = new Blob(speakRecorder.chunks, { type: recorder.mimeType || "audio/webm" });
-      speakRecorder.url = URL.createObjectURL(blob);
-      els.recordPlayback.src = speakRecorder.url;
-      els.recordPlayback.hidden = false;
-      speakRecorder.stream.getTracks().forEach((track) => track.stop());
-    };
-    recorder.start();
-    speakRecorder.startedAt = Date.now();
-    els.recordButton.classList.add("recording");
-    els.recordLabel.textContent = "Stop";
-    speakRecorder.timerId = window.setInterval(updateRecordTimer, 200);
-    updateRecordTimer();
-  } catch {
-    els.recordTimer.textContent = "Mic blocked";
-  }
-}
-
-function stopRecord() {
-  if (speakRecorder.recorder?.state === "recording") speakRecorder.recorder.stop();
-  if (speakRecorder.timerId) clearInterval(speakRecorder.timerId);
-  speakRecorder.timerId = null;
-  els.recordButton.classList.remove("recording");
-  els.recordLabel.textContent = "Re-record";
-}
-
-function updateRecordTimer() {
-  const seconds = Math.floor((Date.now() - speakRecorder.startedAt) / 1000);
-  els.recordTimer.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
 }
 
 function renderAbout() {

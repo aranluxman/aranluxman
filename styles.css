@@ -2284,7 +2284,7 @@ dialog form select {
    SPEAK — communication practice
    ============================================================ */
 .section-heading-speak { border-color: var(--teal); }
-.speak-topic-card, .speak-framework-card, .speak-story-card, .speak-recorder, .speak-articulation {
+.speak-topic-card, .speak-framework-card, .speak-reflection-card, .speak-articulation {
   padding: 16px;
   margin-top: 14px;
 }
@@ -2349,71 +2349,39 @@ dialog form select {
   font-size: 0.82rem;
   font-weight: 700;
 }
-.speak-cues { display: grid; gap: 8px; }
-.speak-cue {
-  display: flex;
-  align-items: center;
-  gap: 11px;
-  width: 100%;
-  text-align: left;
-  padding: 11px 13px;
-  border-radius: 12px;
-  background: var(--card-2);
+/* Storytelling reflection prompt + new-round button */
+.speak-tag {
+  padding: 4px 11px;
+  border-radius: 99px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--line);
+}
+.speak-tag.reflect { color: var(--orange); background: rgba(255, 151, 56, 0.12); border-color: rgba(255, 151, 56, 0.3); }
+.speak-reflection-text {
+  margin-top: 4px;
+  font-size: 1.05rem;
+  line-height: 1.45;
   color: var(--ink);
-  font-size: 0.88rem;
-  line-height: 1.35;
 }
-.speak-cue::before {
-  content: "";
-  flex-shrink: 0;
-  width: 20px;
-  height: 20px;
-  border-radius: 6px;
-  border: 2px solid var(--faint);
-  position: relative;
-  transition: background 0.2s ease, border-color 0.2s ease;
-}
-.speak-cue.checked::before {
-  background: var(--orange);
-  border-color: var(--orange);
-}
-.speak-cue.checked { color: var(--muted); }
-.speak-cue.checked .speak-cue, .speak-cue.checked { text-decoration: none; }
-
-/* Recorder */
-.record-button {
+.speak-new-round {
+  width: 100%;
+  margin-top: 14px;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  padding: 12px 22px;
-  border-radius: 99px;
-  background: var(--card-3);
-  border: 1px solid rgba(255, 93, 108, 0.4);
-  color: var(--ink);
-  font-weight: 700;
-  font-size: 0.95rem;
+  justify-content: center;
+  gap: 8px;
+  font-size: 1rem;
 }
-.record-button:active { transform: scale(0.97); }
-.record-dot {
-  width: 13px;
-  height: 13px;
-  border-radius: 50%;
-  background: var(--red);
-  box-shadow: 0 0 8px rgba(255, 93, 108, 0.6);
+.round-in { animation: round-fade 0.4s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes round-fade {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: none; }
 }
-.record-button.recording { border-color: var(--red); background: rgba(255, 93, 108, 0.14); }
-.record-button.recording .record-dot { animation: rec-pulse 1s infinite; }
-@keyframes rec-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.3; } }
-.record-timer {
-  font-family: var(--font-display);
-  font-size: 1.05rem;
-  font-weight: 700;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
-.speak-playback { width: 100%; margin-top: 12px; }
-.speak-recorder-note { color: var(--faint); font-size: 0.76rem; margin-top: 10px; }
 
 /* R-words articulation */
 .r-tabs { display: flex; width: 100%; margin-bottom: 12px; }

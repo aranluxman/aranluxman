@@ -193,7 +193,7 @@
         <section class="view" id="speakView" aria-labelledby="speakTitle">
           <div class="section-heading section-heading-speak"><div><h1 id="speakTitle">Speak</h1><p class="section-subtitle">Practice communicating out loud.</p></div></div>
           <section class="surface speak-topic-card">
-            <div class="card-heading"><span class="speak-kind" id="speakTopicKind" data-kind="debate">Topic</span><button class="ghost-button compact" id="newTopicButton" type="button"><i data-lucide="shuffle"></i><span>New topic</span></button></div>
+            <div class="card-heading"><span class="speak-kind" id="speakTopicKind" data-kind="debate">Topic</span><span class="speak-tag">Your topic</span></div>
             <p class="speak-topic-text" id="speakTopicText"></p>
           </section>
           <section class="surface speak-framework-card">
@@ -201,16 +201,11 @@
             <p class="speak-framework-when" id="speakFrameworkWhen"></p>
             <ol class="speak-steps" id="speakFrameworkSteps"></ol>
           </section>
-          <section class="surface speak-story-card" id="speakStoryCard" hidden>
-            <div class="card-heading"><h2>Storytelling cues</h2><span>Tap to check off</span></div>
-            <div class="speak-cues" id="speakCues"></div>
+          <section class="surface speak-reflection-card">
+            <div class="card-heading"><h2>Storytelling reflection</h2><span class="speak-tag reflect">Go deeper</span></div>
+            <p class="speak-reflection-text" id="speakReflectionText"></p>
           </section>
-          <section class="surface speak-recorder" id="speakRecorder" hidden>
-            <div class="card-heading"><h2>Say it out loud</h2><span class="record-timer" id="recordTimer">0:00</span></div>
-            <button class="record-button" id="recordButton" type="button"><span class="record-dot" aria-hidden="true"></span><span id="recordLabel">Record</span></button>
-            <audio class="speak-playback" id="recordPlayback" controls hidden></audio>
-            <p class="speak-recorder-note">Stays on this device for this session only &mdash; nothing is uploaded. Re-record any time.</p>
-          </section>
+          <button class="primary-button speak-new-round" id="newTopicButton" type="button"><span aria-hidden="true">🎲</span> New Practice Round</button>
           <section class="surface speak-articulation" aria-labelledby="rWordsTitle">
             <div class="card-heading"><h2 id="rWordsTitle">R-Words Articulation</h2><span id="rPracticeCount">0 of 0 practiced</span></div>
             <div class="segmented r-tabs" id="rTabs" role="group" aria-label="R sound position">

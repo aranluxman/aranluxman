@@ -2165,7 +2165,10 @@ async function syncToSupabase() {
       await supabaseFetch(`life_flow_items?id=in.(${state.deletedIds.join(",")})`, { method: "DELETE" }).catch(() => {});
     }
     for (const item of state.items.filter((entry) => !deleted.has(entry.id))) await upsertItemSafely(item);
-    for (const session of state.focusSessions) await upsertSupabase("life_flow_focus_sessions", session);
+    for (const session of state.focusSessions) {
+      const sessionWithMeta = { ...session, source: session.source || "manual" };
+      await upsertSupabase("life_flow_focus_sessions", sessionWithMeta);
+    }
     for (const entry of state.sleepEntries) await upsertSupabase("life_flow_sleep_entries", entry, "owner_key,sleep_date");
     await upsertAppState();
     setSyncStatus("Synced with Supabase");

@@ -1657,7 +1657,13 @@ dialog form select {
   font-weight: 600;
 }
 .toggle-row { flex-direction: row; align-items: center; gap: 10px; }
-.toggle-row input { width: auto; }
+.toggle-row input { width: auto; accent-color: var(--teal); }
+.toggle-row input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  cursor: pointer;
+  accent-color: var(--teal);
+}
 .settings-note, .settings-dialog .sync-status { color: var(--faint); font-size: 0.8rem; }
 .sync-status { color: var(--faint); font-size: 0.8rem; }
 

@@ -703,12 +703,12 @@ function bindElements() {
   [
     "greeting", "homeTitle", "currentDateText", "quoteText", "nextQuoteButton", "coachText", "coachButton", "coachDots", "coachBadge", "heroCoins",
     "doneTodayStat", "openTasksStat", "streakStat", "coinsStat", "trackWeekStat", "pushupsWeekStat", "addTrackSessionButton",
-    "addPushupsButton", "upcomingTodayList", "taskList", "quickTaskForm", "quickTaskInput", "workoutList", "goalsList", "goalsProgress",
+    "addPushupsButton", "upcomingTodayList", "workoutList", "goalsList", "goalsProgress",
     "gradesList", "gradesAverage", "gradesArcFill",
     "speakTopicKind", "speakTopicText", "speakFrameworkName", "speakFrameworkWhen", "speakFrameworkSteps",
     "speakReflectionText", "newTopicButton",
     "rTabs", "rList", "rPracticeCount", "rProgressFill", "rNextSet",
-    "heroRingFill", "heroProgressPercent", "tasksProgressFill", "tasksProgressLabel", "tasksSubline",
+    "heroRingFill", "heroProgressPercent",
     "dpTasks", "dpFocus", "dpStreak", "dpProgressFill", "dpMessage",
     "simonStart", "simonGrid", "simonStatus", "simonBest", "mathStart", "mathQuestion", "mathAnswers", "mathStatus", "mathBest",
     "sprintPad", "sprintStatus", "sprintBest", "stopClockPad", "stopClockStatus", "stopClockBest",
@@ -831,10 +831,6 @@ function wireEvents() {
     renderDukeProgress();
     void upsertAppState();
   });
-  els.quickTaskForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    createQuickTask();
-  });
   els.todayButton.addEventListener("click", goToToday);
   els.calendarViewToggle.addEventListener("click", (event) => {
     const button = event.target.closest("[data-calendar-view]");
@@ -902,7 +898,6 @@ function render() {
   renderGrades();
   renderSpeak();
   renderMemoryNotes();
-  renderTasks();
   renderCalendar();
   renderSleep();
   renderArcade();
@@ -976,9 +971,6 @@ function renderDailyProgress() {
     els.heroRingFill.style.strokeDasharray = String(circumference);
     els.heroRingFill.style.strokeDashoffset = String(circumference * (1 - percent / 100));
   }
-  if (els.tasksProgressFill) els.tasksProgressFill.style.width = `${percent}%`;
-  if (els.tasksProgressLabel) els.tasksProgressLabel.textContent = total ? `${done} of ${total} done today · ${percent}%` : "No tasks due today yet";
-  if (els.tasksSubline) els.tasksSubline.textContent = total && done === total ? "All done — great work! 🎉" : "Plan it. Do it. Check it off.";
 
   // Home "Daily Progress" card
   const stats = calculateStats(state.items, state.focusSessions, todayKey(), state.sleepEntries, state.rewards, settings.sleepGoalHours * 60);
@@ -1204,81 +1196,6 @@ function renderMemoryNotes() {
   document.querySelectorAll("[data-memory-note]").forEach((input) => {
     input.value = state.memoryNotes[input.dataset.memoryNote] || "";
   });
-}
-
-function createQuickTask() {
-  const title = els.quickTaskInput.value.trim();
-  if (!title) return;
-  state.items.unshift(makeTask({ title, category: "Personal", due_date: todayKey() }));
-  els.quickTaskInput.value = "";
-  persist();
-  render();
-  void upsertSupabase("life_flow_items", state.items[0]);
-}
-
-let showCompletedTasks = false;
-
-function renderTasks() {
-  const all = filterItems(state.items, "all", todayKey()).sort(sortTasks);
-  const active = all.filter((task) => !task.completed);
-  const completed = all.filter((task) => task.completed);
-  if (!all.length) {
-    els.taskList.innerHTML = '<article class="empty-state"><strong>No tasks yet</strong><p>Write one above and keep your day clear.</p></article>';
-    return;
-  }
-  let html = active.length
-    ? active.map((task) => taskMarkup(task)).join("")
-    : '<p class="empty-inline">All caught up — nothing left to do.</p>';
-  if (completed.length) {
-    html += `<button class="completed-toggle ${showCompletedTasks ? "open" : ""}" data-completed-toggle type="button">
-        <span class="completed-label"><i data-lucide="check-circle-2"></i> Completed <span class="completed-count">${completed.length}</span></span>
-        <i data-lucide="chevron-down" class="completed-chevron"></i>
-      </button>
-      <div class="completed-list" ${showCompletedTasks ? "" : "hidden"}>${completed.map((task) => taskMarkup(task)).join("")}</div>`;
-  }
-  els.taskList.innerHTML = html;
-  els.taskList.querySelector("[data-completed-toggle]")?.addEventListener("click", () => {
-    showCompletedTasks = !showCompletedTasks;
-    renderTasks();
-  });
-  els.taskList.querySelectorAll("[data-task-id]").forEach((row) => {
-    const task = state.items.find((item) => item.id === row.dataset.taskId);
-    if (!task) return;
-    row.querySelector("[data-toggle-task]").addEventListener("click", () => toggleTask(task.id));
-    row.querySelector("[data-edit-task]").addEventListener("click", () => openCompose(task.kind, task));
-    row.querySelector("[data-delete-task]").addEventListener("click", () => deleteItem(task.id));
-    row.querySelector("[data-expand-task]").addEventListener("click", () => row.classList.toggle("expanded"));
-    row.querySelector("[data-subtask-form]")?.addEventListener("submit", (event) => {
-      event.preventDefault();
-      addSubtask(task.id, event.target.elements.title.value);
-    });
-    row.querySelectorAll("[data-subtask-index]").forEach((input) => input.addEventListener("change", () => toggleSubtask(task.id, Number(input.dataset.subtaskIndex))));
-  });
-  refreshIcons();
-}
-
-function taskMarkup(task) {
-  const overdue = !task.completed && task.due_date && task.due_date < todayKey();
-  const subtasks = task.subtasks || [];
-  const doneSubs = subtasks.filter((entry) => entry.completed).length;
-  const priority = task.priority || "medium";
-  const metaChips = [
-    task.due_date ? `<span class="meta-chip"><i data-lucide="calendar"></i>${prettyDate(task.due_date)}</span>` : "",
-    subtasks.length ? `<span class="meta-chip"><i data-lucide="list-tree"></i>${doneSubs}/${subtasks.length}</span>` : "",
-  ].join("");
-  return `<article class="task-item ${task.completed ? "completed" : ""}" data-task-id="${task.id}" style="--accent:${colorFor(task.category)}">
-    <button class="task-check" data-toggle-task type="button" aria-label="Complete ${escapeHtml(task.title)}"></button>
-    <div class="task-main">
-      <div class="task-labels"><span class="category-tag">${escapeHtml(task.category || "Personal")}</span><span class="priority-tag" data-priority="${priority}">${priority}</span>${overdue ? '<span class="overdue">Overdue</span>' : ""}</div>
-      <p class="task-title">${escapeHtml(task.title)}</p>
-      ${metaChips ? `<div class="task-meta">${metaChips}</div>` : ""}
-      <div class="subtask-panel">
-        ${subtasks.map((entry, index) => `<label><input type="checkbox" data-subtask-index="${index}" ${entry.completed ? "checked" : ""}/> ${escapeHtml(entry.title)}</label>`).join("")}
-        ${subtasks.length < 5 ? '<form data-subtask-form><input name="title" maxlength="80" required placeholder="Add step" /><button type="submit">+</button></form>' : ""}
-      </div>
-    </div>
-    <div class="task-actions"><button class="icon-button" data-expand-task type="button" title="Details"><i data-lucide="chevron-down"></i></button><button class="icon-button" data-edit-task type="button" title="Edit task"><i data-lucide="pencil"></i></button><button class="icon-button" data-delete-task type="button" title="Delete task"><i data-lucide="trash-2"></i></button></div>
-  </article>`;
 }
 
 function renderCalendar() {
@@ -1811,40 +1728,6 @@ function saveItemFromForm() {
   persist();
   els.composeDialog.close();
   render();
-  void upsertSupabase("life_flow_items", item);
-}
-
-function makeTask({ title, category, due_date }) {
-  return {
-    id: crypto.randomUUID(), owner_key: settings.ownerKey, kind: "daily_task", title, category, priority: "medium",
-    due_date, notes: "", completed: false, subtasks: [], color: colorFor(category), source: "manual", created_at: new Date().toISOString(),
-  };
-}
-
-function toggleTask(id) {
-  const item = state.items.find((task) => task.id === id);
-  item.completed = !item.completed;
-  item.updated_at = new Date().toISOString();
-  persist();
-  render();
-  void upsertSupabase("life_flow_items", item);
-}
-
-function addSubtask(id, title) {
-  const item = state.items.find((task) => task.id === id);
-  if (!item || !title.trim() || (item.subtasks || []).length >= 5) return;
-  item.subtasks = [...(item.subtasks || []), { title: title.trim(), completed: false }];
-  persist();
-  renderTasks();
-  void upsertSupabase("life_flow_items", item);
-}
-
-function toggleSubtask(id, index) {
-  const item = state.items.find((task) => task.id === id);
-  if (!item?.subtasks?.[index]) return;
-  item.subtasks[index].completed = !item.subtasks[index].completed;
-  persist();
-  renderTasks();
   void upsertSupabase("life_flow_items", item);
 }
 
@@ -2399,12 +2282,6 @@ function normalizeItemIds(items) {
       : stableUuid(item.id),
   }));
   return [...new Map(mapped.map((item) => [item.id, item])).values()];
-}
-
-function sortTasks(a, b) {
-  const overdueA = Number(!a.completed && a.due_date && a.due_date < todayKey());
-  const overdueB = Number(!b.completed && b.due_date && b.due_date < todayKey());
-  return overdueB - overdueA || Number(a.completed) - Number(b.completed) || priorityWeight(b.priority) - priorityWeight(a.priority);
 }
 
 function sortByTime(a, b) {

@@ -1649,7 +1649,6 @@ function saveFitnessEntry(entry) {
   persist();
   renderStats();
   renderWorkout();
-  renderTasks();
   void upsertAppState();
 }
 

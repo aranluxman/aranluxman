@@ -1915,7 +1915,7 @@ function saveSleepFromForm() {
   const entry = {
     id: crypto.randomUUID(), owner_key: settings.ownerKey, sleep_date: date,
     slept_at: sleptAt, woke_at: wokeAt, minutes, mood_tag: "", mood_emoji: "",
-    created_at: new Date().toISOString(),
+    source: "manual", created_at: new Date().toISOString(),
   };
   state.sleepEntries = [entry, ...state.sleepEntries.filter((item) => item.sleep_date !== entry.sleep_date)];
   pendingSleepId = entry.id;

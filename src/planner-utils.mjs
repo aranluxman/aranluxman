@@ -217,23 +217,34 @@ export function calculateSleepMinutes(sleptAt, wokeAt) {
   return Math.max(0, Math.round((woke - slept) / 60000));
 }
 
-export function getSleepSummary(entries, goalMinutes = 480) {
-  return summarizeSleep(entries, goalMinutes);
+export function getSleepSummary(entries, goalMinutes = 480, rangeType = "days") {
+  return summarizeSleep(entries, goalMinutes, rangeType);
 }
 
-export function summarizeSleep(entries, goalMinutes = 480) {
+export function summarizeSleep(entries, goalMinutes = 480, rangeType = "days") {
   const sorted = [...entries]
     .map((entry) => ({
       ...entry,
       minutes: Number(entry.minutes) || calculateSleepMinutes(entry.slept_at, entry.woke_at),
     }))
     .filter((entry) => entry.minutes > 0)
-    .sort((a, b) => String(a.sleep_date).localeCompare(String(b.sleep_date)))
-    .slice(-7);
+    .sort((a, b) => String(a.sleep_date).localeCompare(String(b.sleep_date)));
 
-  const maxMinutes = Math.max(1, goalMinutes, ...sorted.map((entry) => entry.minutes));
-  const total = sorted.reduce((sum, entry) => sum + entry.minutes, 0);
-  const averageMinutes = sorted.length ? Math.round(total / sorted.length) : 0;
+  const today = new Date();
+  let filtered = sorted;
+
+  if (rangeType === "days") {
+    filtered = sorted.slice(-7);
+  } else if (rangeType === "weeks") {
+    filtered = sorted.slice(-28);
+  } else if (rangeType === "months") {
+    filtered = sorted.slice(-90);
+  }
+  // for "all", use all filtered data
+
+  const maxMinutes = Math.max(1, goalMinutes, ...filtered.map((entry) => entry.minutes));
+  const total = filtered.reduce((sum, entry) => sum + entry.minutes, 0);
+  const averageMinutes = filtered.length ? Math.round(total / filtered.length) : 0;
 
   return {
     averageMinutes,
@@ -241,7 +252,7 @@ export function summarizeSleep(entries, goalMinutes = 480) {
     goalMinutes,
     averagePercent: goalMinutes ? Math.round((averageMinutes / goalMinutes) * 100) : 0,
     latestPercent: goalMinutes ? Math.round(((sorted.at(-1)?.minutes || 0) / goalMinutes) * 100) : 0,
-    points: sorted.map((entry) => ({
+    points: filtered.map((entry) => ({
       date: entry.sleep_date,
       minutes: entry.minutes,
       label: formatSleepDuration(entry.minutes),

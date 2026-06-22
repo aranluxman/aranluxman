@@ -848,6 +848,7 @@ function wireEvents() {
     const button = event.target.closest("[data-sleep-range]");
     if (!button) return;
     sleepRangeToggle.querySelectorAll("button").forEach((item) => item.classList.toggle("active", item === button));
+    renderSleep();
   });
   els.addSleepButton.addEventListener("click", openSleepDialog);
   els.sleepGoalInput.addEventListener("change", () => {
@@ -1341,7 +1342,10 @@ function selectDate(date) {
 
 function renderSleep() {
   const goalMinutes = settings.sleepGoalHours * 60;
-  const summary = getSleepSummary(state.sleepEntries, goalMinutes);
+  const sleepRangeToggle = document.getElementById("sleepRangeToggle");
+  const selectedRangeButton = sleepRangeToggle?.querySelector(".active");
+  const rangeType = selectedRangeButton?.dataset.sleepRange || "days";
+  const summary = getSleepSummary(state.sleepEntries, goalMinutes, rangeType);
   const sorted = [...state.sleepEntries].sort((a, b) => String(b.sleep_date).localeCompare(String(a.sleep_date)));
   const latest = sorted[0];
   els.sleepGoalInput.value = String(settings.sleepGoalHours);
@@ -1361,7 +1365,7 @@ function renderSleep() {
     return;
   }
   renderSleepGraph(summary.points, goalMinutes);
-  els.sleepList.innerHTML = sorted.slice(0, 7).map((entry) => {
+  els.sleepList.innerHTML = sorted.map((entry) => {
     const entryScore = calculateSleepScore(Number(entry.minutes));
     const trained = eventsForDate(state.items, entry.sleep_date).some((event) => event.category === "Track & Field");
     return `<article class="sleep-row"><div><strong>${prettyDate(entry.sleep_date)} ${trained ? '<span title="Track training day">&#9889;</span>' : ""}</strong><span>${formatTime(entry.slept_at)} &rarr; ${formatTime(entry.woke_at)}</span></div><b>${formatSleepDuration(entry.minutes)}</b><strong class="grade-${entryScore.tone}">${entryScore.grade}</strong><span>${entry.mood_emoji || ""}</span><button class="icon-button" data-delete-sleep="${entry.id}" title="Delete"><i data-lucide="trash-2"></i></button></article>`;

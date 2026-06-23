@@ -723,7 +723,7 @@ function bindElements() {
     "composeTitle", "editingItemIdInput", "toggleAdvancedButton", "advancedFields", "itemTitleInput", "itemKindInput",
     "itemDateInput", "itemCategoryInput", "itemPriorityInput", "itemNotesInput", "itemStartTimeInput", "itemEndTimeInput",
     "itemRepeatInput", "repeatDays", "sleepDialog", "sleepForm", "sleepDateInput", "sleptAtInput", "wokeAtInput",
-    "sleepError", "sleepMoodDialog", "settingsDialog", "settingsForm", "settingsButton",
+    "sleepError", "sleepMoodDialog", "settingsDialog", "settingsForm",
     "brandHomeButton", "sidebarSubtitle", "syncButton", "syncStatus", "syncBanner", "syncBannerText", "displayNameInput",
     "plannerSubtitleInput", "focusGoalInput", "pushupGoalInput", "trackGoalInput", "supabaseUrlInput", "supabaseAnonInput",
     "ownerKeyInput", "calendarUrlInput", "darkModeInput", "resetDataButton",
@@ -742,7 +742,6 @@ function wireEvents() {
   document.getElementById("prevMonthButton").addEventListener("click", () => moveCalendar(-1));
   document.getElementById("nextMonthButton").addEventListener("click", () => moveCalendar(1));
   els.brandHomeButton.addEventListener("click", () => setView("home"));
-  els.settingsButton.addEventListener("click", () => els.settingsDialog.showModal());
   const heroAvatar = document.getElementById("heroAvatar");
   const avatarFileInput = document.getElementById("avatarFileInput");
   heroAvatar?.addEventListener("click", () => avatarFileInput?.click());

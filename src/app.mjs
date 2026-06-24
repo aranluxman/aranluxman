@@ -80,21 +80,6 @@ const goalGroups = [
     "Practice a creative skill 15 min/day for 30 days by end of 2026",
   ] },
 ];
-// Grades page data — edit your courses, marks, and evaluations here.
-const courses = [
-  { code: "PPL1O9-3", name: "Healthy Active Living Education", icon: "footprints", accent: "#ff9738", period: "P1", room: "136B", mark: 94.2, midterm: 93.0, evaluations: [
-    { name: "Activity Block 4: Flag Football, Soccer, Ultimate", mark: 95.0 },
-    { name: "Healthy Relationships Conversation", mark: 100.0 },
-    { name: "Activity Block 3", mark: 95.8 },
-    { name: "Healthy Eating and Nutrition", mark: 86.7 },
-  ] },
-  { code: "SNC1W1-3", name: "Science", icon: "atom", accent: "#27c78a", period: "P2", room: "300", mark: 92.5, midterm: null, evaluations: [] },
-  { code: "CGC1WF-3", name: "Geography of Canada", icon: "globe-2", accent: "#9171ef", period: "P4", room: "333", mark: 90.7, midterm: null, evaluations: [] },
-  { code: "FIF1DF-1", name: "French Immersion", icon: "languages", accent: "#3e9cff", period: "P5", room: "202", mark: 80.0, midterm: 90.0, evaluations: [
-    { name: "Rapport de police (C1, D1)", mark: 83.0 },
-    { name: "Mur d'investigation (D2)", mark: 100.0 },
-  ] },
-];
 // Speak page — practice structures (name, steps, when to use)
 const speakFrameworks = [
   { name: "PREP", steps: ["Point — state your opinion", "Reason — why you hold it", "Example — proof or a quick story", "Point — restate it"], when: "Quick opinions and debates." },
@@ -695,7 +680,7 @@ document.addEventListener("DOMContentLoaded", () => {
   render();
   renderAbout();
   const view = new URLSearchParams(location.search).get("view");
-  if (["home", "tasks", "calendar", "sleep", "grades", "speak", "me", "arcade"].includes(view)) setView(view);
+  if (["home", "calendar", "sleep", "speak", "me", "arcade"].includes(view)) setView(view);
   void initializeCloud();
 });
 
@@ -704,7 +689,6 @@ function bindElements() {
     "greeting", "homeTitle", "currentDateText", "quoteText", "nextQuoteButton", "coachText", "coachButton", "coachDots", "coachBadge", "heroCoins",
     "doneTodayStat", "openTasksStat", "streakStat", "coinsStat", "trackWeekStat", "pushupsWeekStat", "addTrackSessionButton",
     "addPushupsButton", "upcomingTodayList", "workoutList", "goalsList", "goalsProgress",
-    "gradesList", "gradesAverage", "gradesArcFill",
     "speakTopicKind", "speakTopicText", "speakFrameworkName", "speakFrameworkWhen", "speakFrameworkSteps",
     "speakReflectionText", "newTopicButton",
     "rTabs", "rList", "rPracticeCount", "rProgressFill", "rNextSet",
@@ -894,7 +878,6 @@ function render() {
   renderCoach();
   renderWorkout();
   renderGoals();
-  renderGrades();
   renderSpeak();
   renderMemoryNotes();
   renderCalendar();
@@ -1067,41 +1050,6 @@ function renderGoals() {
       <div class="goal-items">${items}</div></div>`;
   }).join("");
   if (els.goalsProgress) els.goalsProgress.textContent = `${done} / ${total} done`;
-  refreshIcons();
-}
-
-function renderGrades() {
-  if (!els.gradesList) return;
-  const average = courses.length ? courses.reduce((sum, course) => sum + course.mark, 0) / courses.length : 0;
-  if (els.gradesAverage) els.gradesAverage.textContent = `${average.toFixed(1)}%`;
-  if (els.gradesArcFill) {
-    const arcLength = Math.PI * 82; // half-circle path radius in the SVG
-    els.gradesArcFill.style.strokeDasharray = String(arcLength);
-    els.gradesArcFill.style.strokeDashoffset = String(arcLength * (1 - Math.min(100, average) / 100));
-  }
-  els.gradesList.innerHTML = courses.map((course, index) => `
-    <article class="grade-card" style="--accent:${course.accent}">
-      <button class="grade-row" type="button" data-grade-toggle="${index}" aria-expanded="false">
-        <span class="grade-icon"><i data-lucide="${course.icon}"></i></span>
-        <span class="grade-info"><b>${escapeHtml(course.code)}</b><small>${escapeHtml(course.name)}</small><small class="grade-meta">${escapeHtml(course.period)} &middot; Room ${escapeHtml(course.room)}</small></span>
-        <strong class="grade-mark">${course.mark.toFixed(1)}<i>%</i></strong>
-        <i data-lucide="chevron-right" class="grade-chevron"></i>
-      </button>
-      <div class="grade-detail" hidden>
-        ${course.midterm != null ? `<span class="grade-midterm">Midterm: ${course.midterm.toFixed(1)}%</span>` : ""}
-        ${course.evaluations.length
-          ? course.evaluations.map((entry) => `<div class="grade-eval"><span>${escapeHtml(entry.name)}</span><b>${entry.mark.toFixed(1)}%</b></div>`).join("")
-          : '<p class="empty-inline">No evaluations posted yet.</p>'}
-      </div>
-    </article>`).join("");
-  els.gradesList.querySelectorAll("[data-grade-toggle]").forEach((button) => button.addEventListener("click", () => {
-    const card = button.closest(".grade-card");
-    const detail = card.querySelector(".grade-detail");
-    const open = detail.hidden;
-    detail.hidden = !open;
-    card.classList.toggle("expanded", open);
-    button.setAttribute("aria-expanded", String(open));
-  }));
   refreshIcons();
 }
 

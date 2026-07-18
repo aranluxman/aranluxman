@@ -134,7 +134,8 @@ const speakTopics = [
   { kind: "story", text: "Share a story about someone who pushed you to be better.", framework: "Past / Present / Future" },
 ];
 const speakKindLabels = { debate: "Debate it", reflection: "Reflect", story: "Tell a story" };
-// R-words articulation drills. Paste your own sentence list here to replace these.
+// R-words articulation drills (curated). These are the hand-written R sentences.
+// They get combined with the S-words and hundreds of generated sentences below.
 // Grouped by where the R sound falls: initial (start), medial (middle), final (end).
 const rWordSentences = {
   initial: [
@@ -301,6 +302,177 @@ const rWordSentences = {
   ],
 };
 const R_SET_SIZE = 10;
+// Once a sentence is checked off (crossed out) it goes on a cooldown and will not
+// appear again until this many days have passed.
+const R_COOLDOWN_DAYS = 7;
+
+// S-words articulation drills (curated), mixed in with the R-words so both sounds
+// get practiced. Same three positions: initial (start), medial (middle), final (end).
+const sWordSentences = {
+  initial: [
+    "Sam sipped a smoothie in the summer sun.",
+    "Sarah sold seven sizzling sausages.",
+    "The seal slid across the slippery sand.",
+    "Sofia sang a soft song at sunset.",
+    "Sean sorted the silver spoons slowly.",
+    "The sailor steered the small ship to shore.",
+    "Sydney searched for six seashells by the sea.",
+    "Simon served soup and a sweet salad.",
+    "The snake slithered past the sandy stones.",
+    "Sally saved a seat for her sister.",
+    "The soldier stood still in the silent square.",
+    "Seven swans swam across the sunny sea.",
+    "Sofia stacked the soft sweaters in a suitcase.",
+    "The scout set up a small tent by sundown.",
+  ],
+  medial: [
+    "The officer misplaced a pencil in the basket.",
+    "Jessica whispered a secret by the castle.",
+    "The dinosaur chased a bicycle down the street.",
+    "Melissa unpacked the groceries in a hurry.",
+    "The passenger fastened the seatbelt quickly.",
+    "A messenger raced past the whistling wrestler.",
+    "The grocer stacked the baskets in the cellar.",
+    "Vanessa listened to the whistle in the distance.",
+    "The wrestler tossed the crystal glass aside.",
+    "A curious lizard escaped the plastic basket.",
+    "The professor answered every question in class.",
+    "Cassidy assembled a puzzle of a dinosaur.",
+  ],
+  final: [
+    "The nurse chased the goose across the grass.",
+    "The princess placed the glass on the staircase.",
+    "A mouse raced past the fence toward the house.",
+    "The waitress rinsed a glass at the sink.",
+    "The boss lost his keys in the tall grass.",
+    "A horse and a goose stood on the ice.",
+    "The witness paced across the empty terrace.",
+    "The class raced across the grass at recess.",
+    "The prince chased a mouse around the palace.",
+    "A moose stood still on the frozen ice.",
+    "The actress wore a dress made of lace.",
+    "The niece placed a vase on the bookcase.",
+  ],
+};
+
+// Deterministic sentence generator. It walks the full cartesian product of the word
+// banks in a fixed pseudo-shuffled order: n -> (n * step) mod total, where step is
+// coprime to total, so the sequence visits every distinct combination exactly once
+// (rich variety across all banks) while staying stable across reloads. That
+// stability is what lets the 7-day cooldown key off sentence ids reliably.
+const gcd = (a, b) => { while (b) { const t = a % b; a = b; b = t; } return a; };
+function coprimeStep(total) {
+  if (total <= 1) return 1;
+  let step = Math.max(1, Math.floor(total * 0.6180339887));
+  while (gcd(step, total) !== 1) step += 1;
+  return step % total || 1;
+}
+function buildSentencePool(template, banks, cap) {
+  const radix = banks.map((bank) => bank.length);
+  const total = radix.reduce((product, size) => product * size, 1);
+  const limit = Math.min(cap, total);
+  const step = coprimeStep(total);
+  const out = [];
+  const seen = new Set();
+  for (let n = 0; out.length < limit && n < total; n += 1) {
+    let index = (n * step) % total;
+    const picks = banks.map((bank, position) => {
+      const value = bank[index % radix[position]];
+      index = Math.floor(index / radix[position]);
+      return value;
+    });
+    const sentence = template(...picks);
+    if (!seen.has(sentence)) { seen.add(sentence); out.push(sentence); }
+  }
+  return out;
+}
+const dedupeSentences = (list) => [...new Set(list.filter(Boolean))];
+
+// ---- Generated pools (hundreds of sentences per position, per sound) ----
+const genInitialR = buildSentencePool(
+  (s, v, o) => `${s} ${v} ${o}.`,
+  [
+    ["Rachel", "Ryan", "Rita", "Roy", "Ronnie", "Riley", "Ruby", "Rico", "Roger", "Rosa", "Ramona", "Ravi", "Robin", "Rex", "Rowan", "The ranger", "The rooster", "The runner", "The racer", "The reporter", "The rancher", "The raccoon"],
+    ["raced past", "rolled toward", "reached for", "raved about", "reviewed", "recorded", "repaired", "rented", "returned", "raised", "wrapped up", "read about", "rescued", "remembered"],
+    ["the red rocket", "a rugged road", "the round ring", "a rusty rope", "the royal rug", "the rapid river", "a ripe raspberry", "the rocky ridge", "the racing rover", "a roaring river", "a rubber raft", "the radio remote"],
+  ],
+  240,
+);
+const genInitialS = buildSentencePool(
+  (s, v, o) => `${s} ${v} ${o}.`,
+  [
+    ["Sam", "Sarah", "Sofia", "Sean", "Sydney", "Sally", "Simon", "Sasha", "Scott", "Sienna", "Silas", "Sonia", "The sailor", "The singer", "The seal", "The soldier", "The scientist", "The server"],
+    ["sang about", "sailed toward", "sorted", "saved", "served", "sipped", "searched for", "sketched", "spotted", "seized", "surprised", "settled near", "sold"],
+    ["the silver spoon", "a soft sofa", "the sandy shore", "seven seashells", "a sunny scene", "the sizzling soup", "a small saddle", "a sturdy sailboat", "the salty sea", "the sparkling stars", "a secret sign", "a sweet cider"],
+  ],
+  240,
+);
+const genMedialR = buildSentencePool(
+  (s, v, o) => `${s} ${v} ${o}.`,
+  [
+    ["Sarah", "Larry", "Harry", "Carol", "Murray", "Gerald", "Theresa", "Caroline", "Barbara", "Jeremy", "Veronica", "The parrot", "The squirrel", "The sparrow", "The terrier", "The warrior", "The pirate", "The tourist"],
+    ["carried", "hurried with", "buried", "borrowed", "arranged", "prepared", "measured", "gathered", "adored", "explored", "admired", "delivered", "cherished", "favored"],
+    ["a fresh carrot", "an orange", "the barrel", "the mirror", "forty berries", "a cherry pie", "a coral scarf", "the marbles", "a narrow arrow", "a peppery curry", "the syrup jar", "a hairy caterpillar"],
+  ],
+  240,
+);
+const genMedialS = buildSentencePool(
+  (s, v, o) => `${s} ${v} ${o}.`,
+  [
+    ["The officer", "The grocer", "The messenger", "The wrestler", "The passenger", "The professor", "Jessica", "Melissa", "Vanessa", "Cassidy", "The listener", "The dinosaur"],
+    ["misplaced", "assembled", "rescued", "passed", "tossed", "fastened", "escaped past", "whistled at", "dusted", "rinsed", "boxed up", "chiseled"],
+    ["a broken pencil", "the plastic basket", "a secret message", "the sandcastle", "a shiny bicycle", "the pink eraser", "a crystal glass", "the grocery list", "a tin whistle", "a bristle brush", "a plastic dinosaur", "a mystery parcel"],
+  ],
+  240,
+);
+const genFinalR = dedupeSentences([
+  ...buildSentencePool(
+    (a, b, o) => `The ${a} offered the ${b} some ${o}.`,
+    [
+      ["teacher", "doctor", "farmer", "painter", "driver", "singer", "dancer", "baker", "sailor", "author", "waiter", "hiker", "jogger", "reporter", "manager", "trainer", "barber", "plumber", "ranger", "actor"],
+      ["doctor", "farmer", "painter", "driver", "singer", "dancer", "baker", "sailor", "author", "waiter", "hiker", "jogger", "reporter", "manager", "trainer", "barber", "plumber", "ranger", "actor", "teacher"],
+      ["water", "butter", "sugar", "cheddar", "chowder", "dinner", "supper", "a cracker", "a wafer", "a burger"],
+    ],
+    200,
+  ),
+  ...buildSentencePool(
+    (a, b, place) => `The ${a} waited for the ${b} near the ${place}.`,
+    [
+      ["teacher", "doctor", "farmer", "painter", "driver", "singer", "dancer", "baker", "sailor", "author", "waiter", "hiker", "jogger", "reporter"],
+      ["manager", "trainer", "barber", "plumber", "ranger", "actor", "waiter", "hiker", "jogger", "reporter", "doctor", "painter", "driver", "singer"],
+      ["door", "corner", "tower", "harbor", "counter", "elevator", "theater", "river"],
+    ],
+    120,
+  ),
+]);
+const genFinalS = dedupeSentences([
+  ...buildSentencePool(
+    (a, x, p) => `The ${a} chased the ${x} across the ${p}.`,
+    [
+      ["nurse", "prince", "princess", "waitress", "actress", "boss", "hostess", "witness", "duchess", "countess"],
+      ["goose", "moose", "mouse", "horse"],
+      ["grass", "ice", "fence", "terrace", "staircase", "palace", "surface", "bookcase"],
+    ],
+    150,
+  ),
+  ...buildSentencePool(
+    (a, o, s) => `The ${a} placed the ${o} on the ${s}.`,
+    [
+      ["princess", "waitress", "actress", "hostess", "duchess", "witness", "boss", "niece"],
+      ["glass", "dress", "vase", "necklace", "suitcase", "purse", "blouse", "fleece"],
+      ["fence", "terrace", "staircase", "bookcase", "surface", "mattress", "canvas"],
+    ],
+    150,
+  ),
+]);
+
+// Combined pools used by the UI: curated + generated, deduped. Each position holds
+// both an R list and an S list; a practice set draws from both so the sounds mix.
+const articulationPools = {
+  initial: { R: dedupeSentences([...rWordSentences.initial, ...genInitialR]), S: dedupeSentences([...sWordSentences.initial, ...genInitialS]) },
+  medial: { R: dedupeSentences([...rWordSentences.medial, ...genMedialR]), S: dedupeSentences([...sWordSentences.medial, ...genMedialS]) },
+  final: { R: dedupeSentences([...rWordSentences.final, ...genFinalR]), S: dedupeSentences([...sWordSentences.final, ...genFinalS]) },
+};
 const workoutMetrics = [
   { key: "pullups", label: "Pull-ups", icon: "dumbbell", accent: "#3e9cff", step: 5, unit: "reps" },
   { key: "pushups", label: "Push-ups", icon: "activity", accent: "#ff9738", step: 5, unit: "reps" },
@@ -472,7 +644,7 @@ const defaultState = {
   goalDone: {},
   aboutMe: {},
   deletedIds: [],
-  rPractice: { date: "", done: [] },
+  rPractice: { completed: {}, sets: {} },
   goalReminder: "Train hard. Give back. Build something.",
   selectedDate: todayKey(),
   monthCursor: `${todayKey().slice(0, 7)}-01`,
@@ -666,7 +838,6 @@ let speakCursor = null;
 let speakFwCursor = null;
 let speakReflectCursor = null;
 let rGroup = "initial";
-const rStart = {};
 const els = {};
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -1089,47 +1260,116 @@ function newPracticeRound() {
   renderSpeak();
 }
 
+function daysSinceKey(dateKey) {
+  const then = new Date(`${dateKey}T00:00:00`);
+  const now = new Date(`${todayKey()}T00:00:00`);
+  return Math.round((now - then) / 86400000);
+}
+
+// A sentence is hidden while it is inside its 7-day cooldown window.
+function isSentenceOnCooldown(id) {
+  const completedOn = state.rPractice.completed[id];
+  if (!completedOn) return false;
+  return daysSinceKey(completedOn) < R_COOLDOWN_DAYS;
+}
+
+// Drop cooldown entries once seven days have passed so the words become available
+// again (and storage stays tidy).
+function purgeExpiredCooldowns() {
+  const completed = state.rPractice.completed;
+  let changed = false;
+  for (const id of Object.keys(completed)) {
+    if (daysSinceKey(completed[id]) >= R_COOLDOWN_DAYS) { delete completed[id]; changed = true; }
+  }
+  if (changed) persist();
+}
+
+function sentenceById(id) {
+  const separator = id.lastIndexOf("-");
+  const prefix = id.slice(0, separator);
+  const index = Number(id.slice(separator + 1));
+  const dash = prefix.indexOf("-");
+  const group = prefix.slice(0, dash);
+  const sound = prefix.slice(dash + 1);
+  const text = articulationPools[group]?.[sound]?.[index] || "";
+  return { text, sound };
+}
+
+function interleaveSentences(first, second) {
+  const out = [];
+  const max = Math.max(first.length, second.length);
+  for (let i = 0; i < max; i += 1) {
+    if (first[i]) out.push(first[i]);
+    if (second[i]) out.push(second[i]);
+  }
+  return out;
+}
+
+// Build a fresh practice set for a position: half R, half S, skipping anything on
+// cooldown, mixed so the two sounds alternate.
+function buildRSet(group) {
+  const pools = articulationPools[group] || { R: [], S: [] };
+  const eligibleFor = (sound) => shuffle((pools[sound] || [])
+    .map((text, index) => ({ id: `${group}-${sound}-${index}`, text, sound }))
+    .filter((sentence) => !isSentenceOnCooldown(sentence.id)));
+  const rPool = eligibleFor("R");
+  const sPool = eligibleFor("S");
+  const half = Math.floor(R_SET_SIZE / 2);
+  const rPicks = rPool.slice(0, half);
+  const sPicks = sPool.slice(0, R_SET_SIZE - half);
+  let combined = interleaveSentences(rPicks, sPicks);
+  if (combined.length < R_SET_SIZE) {
+    const used = new Set(combined.map((sentence) => sentence.id));
+    const extras = [...rPool, ...sPool].filter((sentence) => !used.has(sentence.id));
+    combined = combined.concat(extras.slice(0, R_SET_SIZE - combined.length));
+  }
+  return combined.map((sentence) => sentence.id);
+}
+
 function renderRWords() {
   if (!els.rList) return;
-  if (state.rPractice.date !== todayKey()) {
-    state.rPractice = { date: todayKey(), done: [] };
+  purgeExpiredCooldowns();
+  let active = state.rPractice.sets[rGroup];
+  if (!active || active.date !== todayKey() || !Array.isArray(active.ids) || !active.ids.length) {
+    active = { date: todayKey(), ids: buildRSet(rGroup) };
+    state.rPractice.sets[rGroup] = active;
     persist();
   }
-  const group = rWordSentences[rGroup] || [];
-  if (rStart[rGroup] == null) rStart[rGroup] = group.length ? dailyIndex(group.length) : 0;
-  const size = Math.min(R_SET_SIZE, group.length);
-  const batch = Array.from({ length: size }, (_, i) => {
-    const index = (rStart[rGroup] + i) % group.length;
-    return { id: `${rGroup}-${index}`, text: group[index] };
-  });
-  const done = new Set(state.rPractice.done);
+  const completed = state.rPractice.completed;
+  const batch = active.ids.map((id) => ({ id, ...sentenceById(id) })).filter((sentence) => sentence.text);
   els.rTabs.querySelectorAll("[data-r-group]").forEach((button) => button.classList.toggle("active", button.dataset.rGroup === rGroup));
-  els.rList.innerHTML = batch.map((sentence) => `<button type="button" class="r-sentence ${done.has(sentence.id) ? "done" : ""}" data-r-id="${sentence.id}"><span class="r-check" aria-hidden="true"></span><span class="r-text">${escapeHtml(sentence.text)}</span></button>`).join("");
-  const doneCount = batch.filter((sentence) => done.has(sentence.id)).length;
+  if (!batch.length) {
+    els.rList.innerHTML = `<p class="r-empty">Every sentence here is still resting. Fresh words unlock over the next few days.</p>`;
+    els.rPracticeCount.textContent = "0 of 0 practiced";
+    if (els.rProgressFill) els.rProgressFill.style.width = "0%";
+    return;
+  }
+  els.rList.innerHTML = batch.map((sentence) => `<button type="button" class="r-sentence ${completed[sentence.id] ? "done" : ""}" data-r-id="${sentence.id}"><span class="r-check" aria-hidden="true"></span><span class="r-sound-tag r-sound-${sentence.sound.toLowerCase()}">${sentence.sound}</span><span class="r-text">${escapeHtml(sentence.text)}</span></button>`).join("");
+  const doneCount = batch.filter((sentence) => completed[sentence.id]).length;
   els.rPracticeCount.textContent = `${doneCount} of ${batch.length} practiced`;
   if (els.rProgressFill) els.rProgressFill.style.width = `${batch.length ? Math.round((doneCount / batch.length) * 100) : 0}%`;
 }
 
 function toggleRSentence(id) {
-  const done = new Set(state.rPractice.done);
-  if (done.has(id)) done.delete(id);
-  else done.add(id);
-  state.rPractice = { date: todayKey(), done: [...done] };
+  const completed = state.rPractice.completed;
+  if (completed[id]) delete completed[id];
+  else completed[id] = todayKey();
   persist();
   renderRWords();
   void upsertAppState();
 }
 
 function setRGroup(group) {
-  if (!rWordSentences[group]) return;
+  if (!articulationPools[group]) return;
   rGroup = group;
   renderRWords();
 }
 
 function nextRSet() {
-  const group = rWordSentences[rGroup] || [];
-  if (group.length) rStart[rGroup] = Math.floor(Math.random() * group.length);
+  state.rPractice.sets[rGroup] = { date: todayKey(), ids: buildRSet(rGroup) };
+  persist();
   renderRWords();
+  void upsertAppState();
 }
 
 function renderAbout() {
@@ -2129,9 +2369,21 @@ function normalizeState(saved) {
     goalDone: { ...(saved.goalDone || {}) },
     aboutMe: { ...(saved.aboutMe || {}) },
     deletedIds: Array.isArray(saved.deletedIds) ? saved.deletedIds : [],
-    rPractice: saved.rPractice && typeof saved.rPractice === "object" ? { date: saved.rPractice.date || "", done: Array.isArray(saved.rPractice.done) ? saved.rPractice.done : [] } : { date: "", done: [] },
+    rPractice: normalizeRPractice(saved.rPractice),
   };
   return merged;
+}
+
+function normalizeRPractice(saved) {
+  const base = { completed: {}, sets: {} };
+  if (!saved || typeof saved !== "object") return base;
+  if (saved.completed && typeof saved.completed === "object") base.completed = { ...saved.completed };
+  if (saved.sets && typeof saved.sets === "object") base.sets = { ...saved.sets };
+  // Migrate the old shape ({ date, done: [ids] }) into the cooldown log.
+  if (Array.isArray(saved.done) && saved.date) {
+    for (const id of saved.done) if (!base.completed[id]) base.completed[id] = saved.date;
+  }
+  return base;
 }
 
 function importSleepLog(target) {

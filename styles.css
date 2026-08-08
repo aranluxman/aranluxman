@@ -4,7 +4,8 @@
    CSS only — no HTML/JS/class changes.
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=Barlow+Condensed:wght@500;600;700&display=swap');
+/* Fonts are loaded via <link> in index.html — an @import here would
+   duplicate the request and block CSS parsing. */
 
 :root {
   color-scheme: dark;
@@ -90,8 +91,8 @@ body {
 /* Typography ------------------------------------------------ */
 h1, h2, h3, h4 {
   font-weight: 700;
-  letter-spacing: -0.01em;
   color: var(--ink);
+  text-wrap: balance;
 }
 h1 {
   font-family: var(--font-display);
@@ -204,28 +205,7 @@ a { color: var(--teal); text-decoration: none; }
   transform: translateY(-1px);
 }
 
-/* Settings button (the sidebar ghost button) → floating action */
-.sidebar > .ghost-button {
-  position: fixed;
-  right: 16px;
-  bottom: calc(var(--nav-h) + 10px);
-  z-index: 61;
-  display: grid;
-  place-items: center;
-  width: 46px;
-  height: 46px;
-  padding: 0;
-  border-radius: 50%;
-  background: rgba(17, 24, 39, 0.85);
-  border: 1px solid var(--line-2);
-  color: var(--muted);
-  box-shadow: var(--shadow-soft);
-  backdrop-filter: blur(14px);
-  -webkit-backdrop-filter: blur(14px);
-}
-.sidebar > .ghost-button:active { transform: scale(0.92); }
-.sidebar > .ghost-button span { display: none; }
-.sidebar > .ghost-button i { width: 20px; height: 20px; }
+/* The settings control is styled by .settings-fab in the polish layer. */
 
 /* ============================================================
    CARD SURFACES
@@ -284,7 +264,6 @@ section + section,
 .card-heading h2 { font-size: 1.05rem; font-weight: 700; }
 .card-heading span,
 .section-subtitle { color: var(--faint); font-size: 0.78rem; }
-.heading-info { width: 14px; height: 14px; color: var(--faint); vertical-align: middle; margin-left: 4px; }
 
 /* ============================================================
    HERO
@@ -343,27 +322,6 @@ section + section,
   font-weight: 500;
 }
 .current-date i { width: 14px; height: 14px; color: var(--teal); }
-.fresh-line { color: var(--teal); font-style: italic; margin-top: 6px; }
-
-.coin-chip {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 9px 13px;
-  border-radius: 14px;
-  background: linear-gradient(140deg, rgba(235, 189, 69, 0.18), rgba(235, 189, 69, 0.05));
-  border: 1px solid rgba(235, 189, 69, 0.32);
-}
-.coin-chip i { width: 22px; height: 22px; color: var(--gold); filter: drop-shadow(0 0 6px rgba(235, 189, 69, 0.45)); }
-.coin-chip span { display: grid; line-height: 1.05; }
-.coin-chip strong {
-  font-family: var(--font-display);
-  font-size: 1.35rem;
-  font-weight: 700;
-  color: var(--ink);
-}
-.coin-chip small { color: var(--gold); font-size: 0.66rem; font-weight: 600; }
 
 /* ============================================================
    QUOTE CARD
@@ -387,12 +345,6 @@ section + section,
   font-size: 0.98rem;
   line-height: 1.45;
 }
-
-/* ============================================================
-   STAT TILES
-   ============================================================ */
-.stats-grid { display: grid; gap: 10px; }
-.athlete-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .sleep-summary-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
 .stat-card,
@@ -455,25 +407,6 @@ section + section,
     var(--card);
   border-color: color-mix(in srgb, var(--card-accent) 26%, var(--line));
 }
-
-.mini-add {
-  margin-top: 4px;
-  padding: 4px 10px;
-  border-radius: 99px;
-  background: var(--teal-dim);
-  border: 1px solid rgba(0, 229, 195, 0.3);
-  color: var(--teal);
-  font-size: 0.68rem;
-  font-weight: 700;
-}
-.mini-add:active { transform: scale(0.94); }
-
-.info-button {
-  display: inline-grid;
-  place-items: center;
-  color: var(--faint);
-}
-.info-button i { width: 12px; height: 12px; }
 
 /* ============================================================
    UPCOMING RAIL
@@ -683,17 +616,6 @@ section + section,
 .duke-edit i { width: 15px; height: 15px; }
 .duke-bar:active .duke-edit { color: var(--accent); border-color: color-mix(in srgb, var(--accent) 40%, var(--line)); }
 
-/* details/summary tracker panel */
-.tracker-panel { padding: 14px 16px; }
-.tracker-panel summary {
-  cursor: pointer;
-  font-weight: 700;
-  color: var(--ink);
-  list-style: none;
-}
-.tracker-panel summary::-webkit-details-marker { display: none; }
-.tracker-panel[open] summary { margin-bottom: 12px; }
-
 /* ============================================================
    SECTION HEADINGS + ACTION BUTTONS
    ============================================================ */
@@ -707,7 +629,6 @@ section + section,
   margin-bottom: 16px;
 }
 .section-heading h1 { text-transform: uppercase; }
-.section-heading-tasks { border-color: var(--c-school); }
 .section-heading-calendar { border-color: var(--teal); }
 .section-heading-sleep { border-color: var(--purple); }
 .section-heading-arcade { border-color: var(--orange); }
@@ -765,22 +686,6 @@ section + section,
   color: #04130f;
   background: linear-gradient(140deg, var(--teal-bright), var(--teal));
 }
-
-.filter-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin: 14px 0;
-}
-.filter-pill {
-  padding: 8px 14px;
-  border-radius: 12px;
-  background: var(--card-2);
-  border: 1px solid var(--line);
-  color: var(--muted);
-  font-weight: 600;
-  font-size: 0.82rem;
-}
 .filter-pill.active {
   color: var(--teal);
   background: var(--teal-dim);
@@ -829,42 +734,11 @@ label {
   font-size: 0.8rem;
   font-weight: 600;
 }
-
-/* Filters and Duration Rows */
-.filter-row, .duration-row {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.5rem;
-  margin: 1.2rem 0;
-}
-.filter-pill {
-  padding: 0.5rem 1rem;
-  border: 1px solid var(--line);
-  border-radius: 99px;
-  background: var(--panel-2);
-  gap: 6px;
-  color: var(--muted);
-  font-size: 0.8rem;
-  font-weight: 600;
-  font-size: 0.85rem;
-  transition: all 0.2s ease;
-}
-.filter-pill:hover {
-  color: var(--ink);
-  border-color: var(--muted);
-  transform: translateY(-1px);
-}
 .filter-pill.active {
   color: var(--bg-deep);
   background: linear-gradient(135deg, var(--teal-bright), var(--teal));
   border-color: transparent;
   box-shadow: 0 4px 14px rgba(6, 182, 212, 0.3);
-}
-
-.quick-task {
-  display: grid;
-  gap: 0.85rem;
 }
 .empty-state {
   padding: 3.5rem 1.5rem;
@@ -883,194 +757,6 @@ label {
   gap: 10px;
   padding: 16px;
 }
-.fitness-card {
-  display: grid;
-  gap: 14px;
-}
-.fitness-card > div {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-}
-.fitness-card strong { color: var(--ink); font-size: 0.92rem; }
-
-/* ============================================================
-   TASK ROWS
-   ============================================================ */
-.task-list { display: grid; gap: 10px; }
-
-.task-item,
-.task-item.google-task-row {
-  --accent: var(--teal);
-  display: grid;
-  grid-template-columns: auto 1fr auto;
-  align-items: start;
-  gap: 1rem;
-  padding: 1.15rem 1.25rem;
-  border-radius: 16px;
-  border-left: 3px solid var(--accent);
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.14);
-}
-@media (hover: hover) and (pointer: fine) {
-  .task-item:hover {
-    transform: translateY(-2px);
-    border-left-color: var(--accent);
-    box-shadow: 0 12px 30px rgba(0, 0, 0, 0.24);
-  }
-}
-.task-check {
-  width: 1.55rem;
-  height: 1.55rem;
-  margin-top: 0.15rem;
-  border: 2px solid var(--muted);
-  gap: 12px;
-  padding: 14px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-left: 4px solid var(--accent);
-  border-radius: var(--radius);
-  transition: opacity 0.3s ease, transform 0.2s ease, background 0.3s ease;
-}
-.task-item:active { transform: scale(0.995); }
-
-.task-check,
-.google-task-check {
-  flex-shrink: 0;
-  width: 26px;
-  height: 26px;
-  margin-top: 1px;
-  border: 2px solid var(--faint);
-  border-radius: 50%;
-  background: transparent;
-  position: relative;
-  flex-shrink: 0;
-}
-.task-check:hover {
-  border-color: var(--green);
-  background: rgba(52, 211, 153, 0.1);
-  transform: scale(1.08);
-}
-.task-item.completed {
-  opacity: 0.6;
-}
-.task-item.completed .task-check {
-  border-color: var(--green);
-  background: var(--green);
-}
-.task-item.completed .task-check::after {
-  transition: background 0.25s ease, border-color 0.25s ease, transform 0.2s ease;
-}
-.task-check:active { transform: scale(0.88); }
-.task-check::after,
-.google-task-check::after {
-  content: '';
-  position: absolute;
-  top: 4px;
-  left: 8px;
-  width: 5px;
-  height: 10px;
-  border: solid #04130f;
-  border-width: 0 2px 2px 0;
-  transform: rotate(45deg) scale(0);
-  transition: transform 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-.task-labels {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
-  gap: 0.4rem;
-  margin-bottom: 0.45rem;
-}
-.category-tag, .overdue, .priority-tag {
-  padding: 0.24rem 0.6rem;
-  border-radius: 99px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
-  line-height: 1;
-}
-.category-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.4rem;
-  background: rgba(255, 255, 255, 0.05);
-  border: 1px solid var(--line);
-  color: var(--accent);
-}
-.task-item.completed .task-check,
-.task-item.completed .google-task-check {
-  border-color: var(--green);
-  background: var(--green);
-  box-shadow: 0 0 12px rgba(39, 199, 138, 0.4);
-}
-.task-item.completed .task-check::after { transform: rotate(45deg) scale(1); }
-.task-item.completed { opacity: 0.55; }
-.task-item.completed .task-title { text-decoration: line-through; color: var(--muted); }
-
-.task-main { min-width: 0; }
-.task-labels { display: flex; align-items: center; gap: 7px; margin-bottom: 5px; flex-wrap: wrap; }
-.category-tag {
-  padding: 3px 9px;
-  border-radius: 99px;
-  font-size: 0.66rem;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--accent);
-  background: color-mix(in srgb, var(--accent) 16%, transparent);
-  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
-}
-.category-tag::before {
-  content: '';
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  background: var(--accent);
-}
-.priority-tag {
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--line);
-  color: var(--muted);
-}
-.priority-tag[data-priority="high"] {
-  color: var(--orange);
-  background: rgba(249, 115, 22, 0.12);
-  border-color: rgba(249, 115, 22, 0.25);
-}
-.overdue {
-  background: rgba(248, 113, 113, 0.15);
-  color: var(--red);
-  border: 1px solid rgba(248, 113, 113, 0.25);
-}
-.task-title {
-  font-weight: 600;
-  font-size: 1.05rem;
-  line-height: 1.35;
-  color: var(--ink);
-}
-.task-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.75rem;
-  margin-top: 0.5rem;
-}
-.meta-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 600;
-}
-.meta-chip i, .meta-chip svg {
-  width: 0.9rem;
-  height: 0.9rem;
-}
-.task-actions {
-  display: flex;
-  gap: 0.25rem;
-}
 .task-actions .icon-button {
   width: 2.2rem;
   height: 2.2rem;
@@ -1085,66 +771,8 @@ label {
   background: var(--panel-2);
   border-color: var(--teal-bright);
 }
-.task-actions [data-delete-task]:hover {
-  color: var(--red);
-  border-color: var(--red);
-}
-@media (hover: hover) and (pointer: fine) {
-  .task-actions {
-    opacity: 0;
-    transition: opacity 0.2s ease;
-  }
-  .task-item:hover .task-actions,
-  .task-item:focus-within .task-actions {
-    opacity: 1;
-  }
-}
-.category-dot {
-  width: 9px;
-  height: 9px;
-  border-radius: 50%;
-  background: var(--accent);
-  display: inline-block;
-  flex-shrink: 0;
-}
-.overdue,
-.overdue-inline {
-  padding: 3px 9px;
-  border-radius: 99px;
-  font-size: 0.64rem;
-  font-weight: 700;
-  letter-spacing: 0.03em;
-  color: var(--red);
-  background: rgba(255, 93, 108, 0.14);
-  border: 1px solid rgba(255, 93, 108, 0.3);
-}
-.task-title { color: var(--ink); font-weight: 600; font-size: 1rem; line-height: 1.3; }
-.task-meta { color: var(--faint); font-size: 0.74rem; margin-top: 4px; text-transform: capitalize; }
-.task-actions { display: flex; gap: 6px; }
 .task-actions .icon-button { width: 34px; height: 34px; border-radius: 10px; }
 .task-actions .icon-button i { width: 15px; height: 15px; }
-
-/* Subtasks */
-.subtask-panel {
-  display: none;
-  grid-column: 1 / -1;
-  gap: 8px;
-  margin-top: 10px;
-  padding-top: 10px;
-  border-top: 1px dashed var(--line);
-}
-.task-item.expanded .subtask-panel { display: grid; }
-.subtask-panel label { flex-direction: row; align-items: center; gap: 9px; color: var(--muted); font-weight: 500; }
-.subtask-panel input[type="checkbox"] { width: 18px; height: 18px; }
-.subtask-panel form { display: grid; grid-template-columns: 1fr auto; gap: 8px; }
-.subtask-panel form button {
-  width: 42px;
-  border-radius: 10px;
-  background: var(--card-3);
-  border: 1px solid var(--line);
-  color: var(--teal);
-  font-weight: 700;
-}
 
 .empty-inline { color: var(--faint); font-size: 0.88rem; padding: 8px 2px; }
 .empty-state {
@@ -1481,9 +1109,6 @@ label {
 .arcade-photo-card { display: grid; gap: 14px; }
 .arcade-photo-card img { width: 100%; border-radius: 12px; aspect-ratio: 16 / 9; object-fit: cover; }
 .arcade-photo-card label { color: var(--gold); font-weight: 700; }
-
-/* People-to-remember memory cards (styled defensively if present) */
-.reminder-gallery .photo-rail { display: grid; gap: 12px; }
 .memory-card {
   position: relative;
   margin: 0;
@@ -1560,40 +1185,7 @@ dialog form {
   padding-bottom: 12px;
 }
 .dialog-heading h2 { font-size: 1.25rem; }
-/* Completed tasks — collapsed at the bottom */
-.completed-toggle {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  width: 100%;
-  margin-top: 14px;
-  padding: 13px 16px;
-  border-radius: var(--radius);
-  background: var(--card);
-  border: 1px solid var(--line);
-  color: var(--ink);
-  font-weight: 600;
-  font-size: 0.92rem;
-}
-.completed-toggle:active { transform: scale(0.99); }
-.completed-label { display: inline-flex; align-items: center; gap: 8px; }
-.completed-label i { width: 18px; height: 18px; color: var(--green); }
-.completed-count {
-  display: inline-grid;
-  place-items: center;
-  min-width: 22px;
-  height: 22px;
-  padding: 0 6px;
-  border-radius: 99px;
-  background: var(--teal-dim);
-  color: var(--teal);
-  font-size: 0.74rem;
-  font-weight: 700;
-}
-.completed-chevron { width: 18px; height: 18px; color: var(--faint); transition: transform 0.2s ease; }
 .completed-toggle.open .completed-chevron { transform: rotate(180deg); }
-.completed-list { display: grid; gap: 10px; margin-top: 10px; }
-.completed-list[hidden] { display: none; }
 
 .form-grid { display: grid; grid-template-columns: 1fr; gap: 12px; }
 /* Larger, easy-to-tap inputs inside dialogs (mobile) */
@@ -1704,12 +1296,6 @@ dialog form select {
   animation: spin 0.7s linear infinite;
 }
 @keyframes spin { to { transform: rotate(360deg); } }
-
-/* ============================================================
-   WORKOUT TRACKER (home)
-   ============================================================ */
-.workout-card { padding: 16px; }
-.workout-list { display: grid; gap: 16px; }
 .workout-row {
   --accent: var(--teal);
   display: grid;
@@ -1926,89 +1512,6 @@ dialog form select {
 .dp-message { color: var(--faint); font-size: 0.82rem; margin-top: 10px; }
 
 /* ============================================================
-   TASKS — refreshed mobile UI
-   ============================================================ */
-.tasks-hero {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 4px 2px 14px;
-}
-.tasks-hero h1 { text-transform: uppercase; }
-.tasks-subline { color: var(--faint); font-size: 0.85rem; margin-top: 4px; }
-.tasks-more { border-radius: 50%; }
-
-.tasks-progress {
-  display: grid;
-  gap: 9px;
-  padding: 14px 16px;
-  margin-bottom: 14px;
-  border-color: rgba(0, 229, 195, 0.18);
-  background:
-    linear-gradient(140deg, rgba(0, 229, 195, 0.07), transparent 65%),
-    var(--card);
-}
-.tasks-progress-track {
-  height: 10px;
-  border-radius: 99px;
-  background: rgba(0, 0, 0, 0.35);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  overflow: hidden;
-}
-.tasks-progress-track i {
-  display: block;
-  height: 100%;
-  width: 0;
-  border-radius: inherit;
-  background: linear-gradient(90deg, var(--teal), var(--teal-bright));
-  box-shadow: 0 0 12px rgba(0, 229, 195, 0.5);
-  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.tasks-progress span { color: var(--muted); font-size: 0.82rem; font-weight: 600; }
-
-.task-composer {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 8px 8px 16px;
-  margin-bottom: 14px;
-  border-radius: 99px;
-  background: var(--card);
-  border: 1px solid var(--line);
-  box-shadow: var(--shadow-soft);
-}
-.task-composer:focus-within {
-  border-color: rgba(0, 229, 195, 0.45);
-  box-shadow: 0 0 0 3px rgba(0, 229, 195, 0.14);
-}
-.composer-icon { color: var(--teal); display: grid; place-items: center; }
-.composer-icon i { width: 19px; height: 19px; }
-.task-composer input {
-  flex: 1;
-  min-width: 0;
-  border: none;
-  background: transparent;
-  padding: 10px 0;
-  min-height: 0;
-  font-size: 1rem;
-}
-.task-composer input:focus { box-shadow: none; border: none; background: transparent; }
-.composer-submit {
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  background: linear-gradient(140deg, var(--teal-bright), var(--teal));
-  color: #04130f;
-  box-shadow: 0 5px 14px rgba(0, 229, 195, 0.35);
-}
-.composer-submit:active { transform: scale(0.92); }
-.composer-submit i { width: 19px; height: 19px; }
-
-/* ============================================================
    SIMON SAYS + MATH SPRINT
    ============================================================ */
 .simon-grid {
@@ -2061,143 +1564,6 @@ dialog form select {
   transform: scale(0.96);
   border-color: rgba(0, 229, 195, 0.5);
   background: var(--teal-dim);
-}
-
-/* ============================================================
-   GRADES — course tracker
-   ============================================================ */
-.section-heading-grades { border-color: var(--blue); }
-.grades-summary {
-  padding: 22px 16px 14px;
-  margin-bottom: 14px;
-  background:
-    radial-gradient(circle at 50% 0%, rgba(62, 156, 255, 0.1), transparent 65%),
-    var(--card);
-}
-.grades-arc {
-  position: relative;
-  width: min(280px, 78vw);
-  margin: 0 auto;
-}
-.grades-arc svg { display: block; width: 100%; height: auto; overflow: visible; }
-.grades-arc-bg {
-  fill: none;
-  stroke: rgba(255, 255, 255, 0.08);
-  stroke-width: 13;
-  stroke-linecap: round;
-}
-.grades-arc-fill {
-  fill: none;
-  stroke: var(--teal);
-  stroke-width: 13;
-  stroke-linecap: round;
-  filter: drop-shadow(0 0 10px rgba(0, 229, 195, 0.45));
-  transition: stroke-dashoffset 0.8s cubic-bezier(0.16, 1, 0.3, 1);
-}
-.grades-arc-text {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 4px;
-  display: grid;
-  justify-items: center;
-  gap: 3px;
-}
-.grades-arc-text strong {
-  font-family: var(--font-display);
-  font-size: 2.7rem;
-  font-weight: 700;
-  color: var(--ink);
-  line-height: 0.95;
-}
-.grades-arc-text small {
-  color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 600;
-}
-.grades-hint { color: var(--faint); font-size: 0.78rem; margin-bottom: 10px; padding-left: 2px; }
-.grades-list { display: grid; gap: 12px; }
-.grade-card {
-  --accent: var(--teal);
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow-soft);
-  overflow: hidden;
-}
-.grade-row {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  width: 100%;
-  text-align: left;
-  padding: 14px;
-  color: inherit;
-}
-.grade-row:active { background: var(--card-2); }
-.grade-icon {
-  flex-shrink: 0;
-  display: grid;
-  place-items: center;
-  width: 46px;
-  height: 46px;
-  border-radius: 50%;
-  color: #fff;
-  background: linear-gradient(140deg, color-mix(in srgb, var(--accent) 85%, #fff 0%), var(--accent));
-  box-shadow: 0 5px 14px color-mix(in srgb, var(--accent) 40%, transparent);
-}
-.grade-icon i { width: 22px; height: 22px; }
-.grade-info { flex: 1; min-width: 0; display: grid; gap: 2px; }
-.grade-info b { color: var(--ink); font-size: 1rem; font-weight: 700; }
-.grade-info small { color: var(--muted); font-size: 0.8rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.grade-info .grade-meta { color: var(--faint); font-size: 0.72rem; }
-.grade-mark {
-  flex-shrink: 0;
-  font-family: var(--font-display);
-  font-size: 1.6rem;
-  font-weight: 700;
-  color: var(--ink);
-  font-variant-numeric: tabular-nums;
-}
-.grade-mark i { font-style: normal; font-size: 0.9rem; color: var(--muted); margin-left: 1px; }
-.grade-chevron { flex-shrink: 0; width: 18px; height: 18px; color: var(--faint); transition: transform 0.2s ease; }
-.grade-card.expanded .grade-chevron { transform: rotate(90deg); }
-.grade-detail[hidden] { display: none; }
-.grade-detail {
-  display: grid;
-  gap: 8px;
-  padding: 4px 14px 14px;
-  border-top: 1px solid var(--line);
-  margin-top: -1px;
-  padding-top: 12px;
-}
-.grade-midterm {
-  justify-self: start;
-  padding: 4px 11px;
-  border-radius: 99px;
-  background: color-mix(in srgb, var(--accent) 14%, transparent);
-  border: 1px solid color-mix(in srgb, var(--accent) 30%, transparent);
-  color: var(--accent);
-  font-size: 0.76rem;
-  font-weight: 700;
-}
-.grade-eval {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  padding: 11px 12px;
-  border-radius: 12px;
-  background: var(--card-2);
-  border: 1px solid var(--line);
-}
-.grade-eval span { color: var(--ink); font-size: 0.88rem; line-height: 1.3; }
-.grade-eval b {
-  flex-shrink: 0;
-  font-family: var(--font-display);
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: var(--accent);
 }
 
 /* Fit seven items in the floating nav */
@@ -2476,348 +1842,14 @@ dialog form select {
    LARGER SCREENS — center the phone canvas
    ============================================================ */
 @media (min-width: 560px) {
-  .athlete-stats { gap: 12px; }
-  .arcade-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+.arcade-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .arcade-photo-card { grid-column: 1 / -1; grid-template-columns: minmax(0, 0.7fr) 1fr; align-items: center; }
 }
 
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after { animation-duration: 0.001ms !important; transition-duration: 0.001ms !important; }
-}
-
-/* Google Tasks style overrides */
-.tasks-google-shell {
-  display: grid;
-  grid-template-columns: minmax(210px, 260px) minmax(0, 1fr);
-  gap: 1.25rem;
-  align-items: start;
-}
-
-.tasks-google-rail,
-.tasks-google-board {
-  border: 1px solid rgba(148, 163, 184, 0.18);
-  background: rgba(8, 20, 34, 0.72);
-  box-shadow: 0 18px 55px rgba(0, 0, 0, 0.26);
-  backdrop-filter: blur(18px);
-}
-
-.tasks-google-rail {
-  border-radius: 24px;
-  padding: 1rem;
-  position: sticky;
-  top: 1rem;
-}
-
-.tasks-google-board {
-  border-radius: 28px;
-  padding: 1.35rem;
-  min-height: 520px;
-}
-
-.google-create-button {
-  width: 100%;
-  justify-content: flex-start;
-  gap: 0.8rem;
-  min-height: 58px;
-  border-radius: 18px;
-  font-size: 1rem;
-  box-shadow: 0 14px 34px rgba(14, 165, 233, 0.18);
-}
-
-.google-filter-label {
-  color: rgba(226, 232, 240, 0.62);
-  font-weight: 700;
-  margin: 1.1rem 0 0.55rem;
-  letter-spacing: 0.01em;
-}
-
-.tasks-google-filters {
-  display: grid;
-  gap: 0.35rem;
-}
-
-.tasks-google-filters button {
-  width: 100%;
-  justify-content: flex-start;
-  border: 0;
-  border-radius: 999px;
-  padding: 0.72rem 0.85rem;
-  background: transparent;
-  color: rgba(226, 232, 240, 0.76);
-  font-size: 0.95rem;
-  font-weight: 700;
-  cursor: pointer;
-  transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
-}
-
-.tasks-google-filters button:hover,
-.tasks-google-filters button.active {
-  background: rgba(14, 165, 233, 0.18);
-  color: #e0f2fe;
-}
-
-.tasks-google-filters button:hover {
-  transform: translateX(2px);
-}
-
-.google-side-section {
-  border-top: 1px solid rgba(148, 163, 184, 0.14);
-  margin-top: 1rem;
-  padding-top: 1rem;
-}
-
-.google-tracker,
-.google-fitness {
-  background: rgba(15, 23, 42, 0.58);
-  border: 1px solid rgba(148, 163, 184, 0.14);
-  border-radius: 18px;
-  padding: 0.85rem;
-}
-
-.google-board-header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-bottom: 0.75rem;
-}
-
-.google-board-header h2 {
-  margin: 0;
-  color: #f8fafc;
-  font-size: clamp(1.45rem, 3vw, 2rem);
-}
-
-.google-more {
-  width: 42px;
-  height: 42px;
-  border-radius: 50%;
-  border: 0;
-  display: grid;
-  place-items: center;
-  color: rgba(226, 232, 240, 0.72);
-  background: transparent;
-  cursor: pointer;
-}
-
-.google-more:hover {
-  background: rgba(148, 163, 184, 0.12);
-  color: #e0f2fe;
-}
-
-.google-add-task {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) minmax(140px, 180px) auto;
-  gap: 0.65rem;
-  align-items: center;
-  margin: 0.35rem 0 1rem;
-  padding: 0.35rem 0.15rem 0.75rem;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.13);
-}
-
-.add-task-icon {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-  display: grid;
-  place-items: center;
-  color: #93c5fd;
-  background: rgba(59, 130, 246, 0.12);
-}
-
-.google-add-task input,
-.google-add-task select {
-  min-height: 42px;
-  border: 0;
-  border-radius: 12px;
-  background: transparent;
-  color: #e5e7eb;
-  box-shadow: none;
-  padding: 0.45rem 0.55rem;
-}
-
-.google-add-task input {
-  font-size: 1rem;
-}
-
-.google-add-task input::placeholder {
-  color: #9fc3f5;
-  font-weight: 700;
-}
-
-.google-add-task select {
-  background: rgba(15, 23, 42, 0.78);
-  border: 1px solid rgba(148, 163, 184, 0.16);
-}
-
-.google-add-task button[type="submit"] {
-  min-height: 42px;
-  border-radius: 999px;
-  padding: 0 1rem;
-}
-
-.google-task-list {
-  display: grid;
-  gap: 0.15rem;
-}
-
-.google-task-row {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 0.85rem;
-  align-items: start;
-  padding: 0.78rem 0.25rem;
-  border: 0;
-  border-bottom: 1px solid rgba(148, 163, 184, 0.11);
-  border-radius: 0;
-  background: transparent;
-  box-shadow: none;
-}
-
-.google-task-row:hover {
-  background: rgba(148, 163, 184, 0.07);
-  border-radius: 14px;
-}
-
-.google-task-check {
-  width: 24px;
-  height: 24px;
-  margin-top: 0.12rem;
-  border-radius: 50%;
-  border: 2px solid rgba(226, 232, 240, 0.72);
-  background: transparent;
-  display: grid;
-  place-items: center;
-  color: transparent;
-  cursor: pointer;
-  transition: border-color 0.18s ease, background 0.18s ease, color 0.18s ease;
-}
-
-.google-task-check:hover {
-  border-color: #60a5fa;
-  color: #bfdbfe;
-}
-
-.google-task-row.completed .google-task-check {
-  background: #38bdf8;
-  border-color: #38bdf8;
-  color: #082f49;
-}
-
-.google-task-title {
-  margin: 0;
-  color: #f8fafc;
-  font-size: 1.02rem;
-  font-weight: 700;
-}
-
-.google-task-row.completed .google-task-title {
-  color: rgba(226, 232, 240, 0.52);
-  text-decoration: line-through;
-}
-
-.google-task-meta {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 0.45rem;
-  margin-top: 0.25rem;
-  color: rgba(226, 232, 240, 0.58);
-  font-size: 0.83rem;
-}
-
-.google-task-dot {
-  width: 0.5rem;
-  height: 0.5rem;
-  border-radius: 50%;
-  display: inline-flex;
-}
-
-.google-task-due {
-  border: 1px solid rgba(147, 197, 253, 0.28);
-  color: #bfdbfe;
-  background: rgba(59, 130, 246, 0.12);
-  padding: 0.18rem 0.5rem;
-  border-radius: 999px;
-  font-weight: 700;
-}
-
-.google-task-overdue {
-  color: #fecaca;
-  background: rgba(239, 68, 68, 0.16);
-  border: 1px solid rgba(248, 113, 113, 0.26);
-  border-radius: 999px;
-  padding: 0.18rem 0.5rem;
-  font-size: 0.72rem;
-  font-weight: 800;
-}
-
-.google-task-actions {
-  display: flex;
-  align-items: center;
-  gap: 0.25rem;
-  opacity: 0.78;
-}
-
-.google-task-row:hover .google-task-actions {
-  opacity: 1;
-}
-
-.google-task-actions .icon-button {
-  width: 34px;
-  height: 34px;
-  border-radius: 50%;
-}
-
-.google-empty {
-  margin-top: 2rem;
-  border: 1px dashed rgba(147, 197, 253, 0.32);
-  background: rgba(14, 165, 233, 0.08);
-  border-radius: 20px;
-}
-
-@media (max-width: 820px) {
-  .tasks-google-shell {
-    grid-template-columns: 1fr;
-    gap: 0.85rem;
-  }
-
-  .tasks-google-rail {
-    position: static;
-  }
-
-  .tasks-google-filters {
-    display: flex;
-    overflow-x: auto;
-    padding-bottom: 0.2rem;
-  }
-
-  .tasks-google-filters button {
-    width: auto;
-    white-space: nowrap;
-  }
-
-  .google-add-task {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .google-add-task select,
-  .google-add-task button[type="submit"] {
-    grid-column: 2;
-  }
-
-  .google-task-row {
-    grid-template-columns: auto minmax(0, 1fr);
-  }
-
-  .google-task-actions {
-    grid-column: 2;
-  }
-}
+/* reduced-motion handling lives in the motion layer at the end of this file */
 
 /* Section artwork and cleaned-up tasks, preserving the current navy/teal theme */
 .home-hero,
-.tasks-header,
 .calendar-header,
 .sleep-header,
 .arcade-header {
@@ -2834,7 +1866,6 @@ dialog form select {
     url("/assets/home-hero.png");
 }
 
-.tasks-header,
 .calendar-header,
 .sleep-header,
 .arcade-header {
@@ -2844,13 +1875,6 @@ dialog form select {
   border-left: 0;
   border-radius: var(--radius-lg);
   overflow: hidden;
-}
-
-.tasks-header {
-  margin-bottom: 12px;
-  background-image:
-    linear-gradient(90deg, rgba(10, 15, 30, 0.92), rgba(10, 15, 30, 0.52)),
-    url("/assets/tasks-banner.png");
 }
 
 .calendar-header {
@@ -2881,134 +1905,592 @@ dialog form select {
   opacity: 0.9;
 }
 
-.tasks-google-shell {
-  grid-template-columns: minmax(0, 1fr);
-  max-width: 980px;
-  margin-inline: auto;
-  gap: 12px;
-}
-
-.tasks-google-rail {
-  position: static;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  gap: 10px;
-  align-items: center;
-  padding: 10px;
-  border-radius: var(--radius-lg);
-  background: var(--card);
-  box-shadow: var(--shadow-soft);
-}
-
-.google-create-button {
-  width: auto;
-  min-height: 46px;
-  padding: 0 16px;
-  border-radius: 999px;
-}
-
-.tasks-google-filters {
-  display: flex;
-  gap: 6px;
-  overflow-x: auto;
-  padding: 2px;
-}
-
-.tasks-google-filters button {
-  width: auto;
-  white-space: nowrap;
-  padding: 9px 12px;
-  color: var(--muted);
-}
-
-.tasks-google-filters button:hover,
-.tasks-google-filters button.active {
-  background: var(--teal-dim);
-  color: var(--teal-bright);
-}
-
-.google-tracker,
-.google-fitness {
-  grid-column: 1 / -1;
-  margin-top: 0;
-  background: var(--card-2);
-  border-color: var(--line);
-}
-
-.google-tracker { padding: 11px 13px; }
-.google-tracker summary { cursor: pointer; }
-
-.google-fitness {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
-  padding: 11px 13px;
-}
-
-.tasks-google-board {
-  min-height: 460px;
-  padding: 14px;
-  background: var(--card);
-}
-
-.tasks-board-heading {
-  display: flex;
-  align-items: end;
-  justify-content: space-between;
-  gap: 12px;
-}
-
-.tasks-board-heading h1 {
-  margin: 0;
-  color: var(--ink);
-}
-
-.google-add-task {
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  gap: 8px;
-  margin-top: 6px;
-  padding: 4px 4px 12px;
-}
-
-.google-add-task select { display: none; }
-
-.google-add-task input {
-  min-height: 48px;
-  color: var(--ink);
-}
-
-.google-add-task input::placeholder {
-  color: var(--teal-bright);
-}
-
-.google-add-task button[type="submit"] {
-  min-height: 42px;
-}
-
-.google-task-row {
-  padding: 12px 6px;
-}
-
-.google-task-actions { opacity: 0.45; }
-
 @media (max-width: 820px) {
-  .tasks-google-rail {
-    grid-template-columns: 1fr;
-  }
-
-  .google-create-button {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .google-fitness {
-    grid-template-columns: 1fr;
-  }
-
-  .tasks-header,
   .calendar-header,
   .sleep-header,
   .arcade-header {
     min-height: 112px;
   }
+}
+
+/* ============================================================
+   POLISH + MOTION LAYER
+   Loaded last so it refines the base rules above rather than
+   replacing them. Two jobs:
+     1. Consistency — one spacing scale, one shadow scale, one
+        set of easings and durations, size-aware typography.
+     2. Motion — short, ease-out, compositor-only transforms and
+        opacity, with a real reduced-motion path at the bottom.
+   ============================================================ */
+
+:root {
+  /* Spacing scale — every gap/padding below picks from this set. */
+  --s-1: 4px;
+  --s-2: 8px;
+  --s-3: 12px;
+  --s-4: 16px;
+  --s-5: 22px;
+  --s-6: 30px;
+
+  /* Elevation. Cards sit low; floating chrome sits high. */
+  --e-1: 0 1px 2px rgba(0, 0, 0, 0.28);
+  --e-2: 0 4px 14px rgba(0, 0, 0, 0.32), 0 1px 2px rgba(0, 0, 0, 0.3);
+  --e-3: 0 12px 30px rgba(0, 0, 0, 0.42), 0 2px 6px rgba(0, 0, 0, 0.3);
+  --e-4: 0 22px 55px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.35);
+  /* A hairline of light on the top edge reads as a real material. */
+  --sheen: inset 0 1px 0 rgba(255, 255, 255, 0.06);
+
+  /* Motion. Durations stay short; ease-out so things arrive settled. */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --t-fast: 120ms;
+  --t-base: 200ms;
+  --t-slow: 320ms;
+}
+
+/* An explicit `hidden` must always win. Author `display` rules were silently
+   defeating it (the repeat-day picker and sync banner showed when hidden). */
+[hidden] { display: none !important; }
+
+/* ---------- Typography: tracking and leading scale with size ---------- */
+h1 { letter-spacing: -0.02em; line-height: 1.02; }
+h2 { letter-spacing: -0.011em; line-height: 1.22; font-size: 1.1rem; }
+h3 { letter-spacing: -0.006em; line-height: 1.3; }
+p  { letter-spacing: 0; }
+small, .section-subtitle { letter-spacing: 0.008em; }
+.card-heading h2 { font-weight: 700; }
+.section-subtitle { color: var(--muted); font-size: 0.85rem; line-height: 1.45; }
+
+/* Numeric readouts shouldn't reflow as digits change width. */
+.hero-progress-text strong, #dpTasks, #dpFocus, #dpStreak, #arcadeCoins,
+#reactionBest, #sprintBest, #stopClockBest, #numberRushBest, #targetBest,
+#simonBest, #mathBest, .rush-cell, .math-answer, .calendar-day > span {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
+/* ---------- Surfaces: one consistent card treatment ---------- */
+.surface, .quote-card, .upcoming-card, .coach-card, .arcade-card,
+.sleep-card, .last-night, .stat-card, .day-agenda, .gcal-card {
+  box-shadow: var(--e-2), var(--sheen);
+  transition: box-shadow var(--t-base) var(--ease-out),
+              border-color var(--t-base) var(--ease-out),
+              transform var(--t-base) var(--ease-out);
+}
+
+/* ---------- Focus: visible for keyboards, quiet for pointers ---------- */
+:focus { outline: none; }
+:focus-visible {
+  outline: 2px solid var(--teal);
+  outline-offset: 2px;
+  border-radius: 10px;
+}
+.nav-item:focus-visible { outline-offset: -2px; }
+
+/* ---------- Buttons: feedback on press, not on release ---------- */
+.primary-button, .ghost-button, .icon-button, .add-button,
+.segmented button, .goal-item, .r-sentence, .see-all {
+  transition: transform var(--t-fast) var(--ease-out),
+              background-color var(--t-base) var(--ease-out),
+              border-color var(--t-base) var(--ease-out),
+              color var(--t-base) var(--ease-out),
+              box-shadow var(--t-base) var(--ease-out),
+              opacity var(--t-base) var(--ease-out);
+}
+.primary-button:active:not(:disabled),
+.add-button:active:not(:disabled) { transform: scale(0.965); }
+.ghost-button:active:not(:disabled),
+.icon-button:active:not(:disabled) { transform: scale(0.94); }
+
+@media (hover: hover) and (pointer: fine) {
+  .primary-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 22px rgba(0, 229, 195, 0.28);
+  }
+  .ghost-button:hover:not(:disabled),
+  .icon-button:hover:not(:disabled) {
+    background: var(--card-3);
+    border-color: var(--line-2);
+    color: var(--ink);
+  }
+  .surface:hover, .arcade-card:hover, .gcal-card:hover {
+    border-color: var(--line-2);
+    box-shadow: var(--e-3), var(--sheen);
+  }
+  .calendar-day:not(.selected):hover {
+    background: var(--card-3);
+    transform: scale(1.06);
+    z-index: 2;
+  }
+  .agenda-item:hover .agenda-done,
+  .agenda-item:hover .agenda-delete { opacity: 1; }
+  .goal-item:hover .goal-check { border-color: var(--teal); }
+  .nav-item:not(.active):hover { color: var(--muted); background: rgba(255, 255, 255, 0.04); }
+}
+
+/* ---------- View + card entrance ---------- */
+/* Cards rise in a short stagger so the eye lands top-first. The delay is
+   capped so a long page never feels like it is loading in slow motion. */
+.view.active > * {
+  animation: card-rise 340ms var(--ease-out) backwards;
+  /* Capped so a six-card page finishes arriving in ~0.5s, not ~0.7s. */
+  animation-delay: calc(min(var(--card-index, 0), 6) * 32ms);
+}
+@keyframes card-rise {
+  from { opacity: 0; transform: translate3d(0, 14px, 0); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* The View Transitions API already cross-fades the whole panel on tab change;
+   the per-view keyframe on top of it produced a visible double animation. */
+.view.active { animation: none; }
+
+::view-transition-old(root) { animation: vt-out 180ms var(--ease-in-out) both; }
+::view-transition-new(root) { animation: vt-in 260ms var(--ease-out) both; }
+@keyframes vt-out { to { opacity: 0; transform: translate3d(0, -6px, 0); } }
+@keyframes vt-in { from { opacity: 0; transform: translate3d(0, 10px, 0); } }
+
+/* ---------- Progress ring + bars ---------- */
+.hero-ring-fill {
+  transition: stroke-dashoffset 900ms var(--ease-out), stroke 400ms var(--ease-out);
+}
+.hero-ring-fill.is-complete { stroke: var(--teal-bright); filter: drop-shadow(0 0 6px var(--teal-glow)); }
+.dp-track, .r-progress-track { overflow: hidden; }
+#dpProgressFill, #rProgressFill {
+  transition: width 700ms var(--ease-out);
+  will-change: width;
+}
+/* A soft highlight travels the filled portion so progress reads as live. */
+#dpProgressFill::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+  transform: translateX(-100%);
+  animation: bar-sheen 2.6s var(--ease-in-out) infinite;
+}
+#dpProgressFill { position: relative; overflow: hidden; }
+@keyframes bar-sheen { to { transform: translateX(100%); } }
+
+/* ---------- Marking something done ---------- */
+.agenda-item {
+  transition: opacity var(--t-slow) var(--ease-out),
+              transform var(--t-slow) var(--ease-out),
+              background-color var(--t-slow) var(--ease-out);
+}
+.agenda-item.completed { opacity: 0.55; }
+.agenda-item.completed strong { text-decoration: line-through; text-decoration-thickness: 1.5px; }
+.agenda-done, .agenda-delete {
+  position: relative;
+  overflow: visible;
+  opacity: 0.6;
+  transition: opacity var(--t-base) var(--ease-out), transform var(--t-fast) var(--ease-out), color var(--t-base) var(--ease-out);
+}
+.agenda-item.completed .agenda-done { opacity: 1; color: var(--teal); }
+.agenda-delete:hover { color: var(--red); }
+/* Expanding ring left behind by celebrateDone(). */
+.done-ripple {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--teal-glow) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+/* ---------- Daily Boost celebration ---------- */
+.boost-pop { animation: boost-pop 620ms var(--ease-out); }
+@keyframes boost-pop {
+  0%   { transform: scale(1); }
+  30%  { transform: scale(1.06) rotate(-0.6deg); }
+  55%  { transform: scale(0.985); }
+  100% { transform: scale(1); }
+}
+.boost-spark {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+/* ---------- Calendar transitions ---------- */
+/* Month/week changes slide in from the direction of travel, so paging forward
+   and paging back feel like opposite moves rather than the same flash. */
+.calendar-grid.slide-next > .calendar-day,
+.week-grid.slide-next .week-columns > *  { animation: cal-next 320ms var(--ease-out) backwards; }
+.calendar-grid.slide-prev > .calendar-day,
+.week-grid.slide-prev .week-columns > *  { animation: cal-prev 320ms var(--ease-out) backwards; }
+.calendar-grid.slide-next > .calendar-day,
+.calendar-grid.slide-prev > .calendar-day {
+  animation-delay: calc(min(var(--row, 0), 5) * 22ms);
+}
+@keyframes cal-next {
+  from { opacity: 0; transform: translate3d(16px, 0, 0); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes cal-prev {
+  from { opacity: 0; transform: translate3d(-16px, 0, 0); }
+  to   { opacity: 1; transform: none; }
+}
+.calendar-day {
+  transition: background-color var(--t-base) var(--ease-out),
+              transform var(--t-fast) var(--ease-out),
+              border-color var(--t-base) var(--ease-out),
+              box-shadow var(--t-base) var(--ease-out);
+}
+.calendar-day:active { transform: scale(0.93); }
+.calendar-day.selected { box-shadow: 0 4px 16px rgba(0, 229, 195, 0.3); }
+.calendar-day .dots i { transition: transform var(--t-base) var(--ease-out); }
+.calendar-day.selected .dots i { transform: scale(1.25); }
+
+/* ---------- Segmented controls ---------- */
+.segmented button { position: relative; }
+.segmented button::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--teal-dim);
+  opacity: 0;
+  transform: scale(0.9);
+  transition: opacity var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out);
+}
+.segmented button.active::before { opacity: 1; transform: scale(1); }
+
+/* ---------- Google Calendar sync card ---------- */
+.gcal-card {
+  display: grid;
+  gap: var(--s-3);
+  padding: var(--s-4);
+  margin-top: var(--s-3);
+}
+.gcal-head { display: flex; align-items: center; gap: var(--s-3); }
+.gcal-mark {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: var(--card-3);
+  color: var(--muted);
+  border: 1px solid var(--line);
+  transition: background-color var(--t-slow) var(--ease-out), color var(--t-slow) var(--ease-out), border-color var(--t-slow) var(--ease-out);
+}
+.gcal-mark[data-state="on"] {
+  background: var(--teal-dim);
+  color: var(--teal);
+  border-color: rgba(0, 229, 195, 0.3);
+}
+.gcal-mark i, .gcal-mark svg { width: 20px; height: 20px; }
+.gcal-copy { min-width: 0; }
+.gcal-copy h2 { font-size: 1rem; margin-bottom: 2px; }
+.gcal-copy p { font-size: 0.8rem; color: var(--muted); line-height: 1.4; }
+.gcal-actions { display: flex; flex-wrap: wrap; gap: var(--s-2); }
+.gcal-actions button { flex: 1 1 auto; justify-content: center; min-height: 40px; }
+.gcal-note {
+  font-size: 0.78rem;
+  line-height: 1.45;
+  color: var(--muted);
+  padding: var(--s-2) var(--s-3);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--line);
+}
+.gcal-note[data-tone="ok"]   { color: var(--green); border-color: rgba(39, 199, 138, 0.25); background: rgba(39, 199, 138, 0.08); }
+.gcal-note[data-tone="warn"] { color: var(--orange); border-color: rgba(255, 151, 56, 0.25); background: rgba(255, 151, 56, 0.08); }
+.is-spinning i, .is-spinning svg { animation: spin 0.9s linear infinite; }
+
+/* Agenda detail lines added for Google events. */
+.agenda-body { display: grid; gap: 3px; min-width: 0; }
+.agenda-meta { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; font-size: 0.78rem; color: var(--muted); }
+.agenda-src {
+  font-style: normal;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  padding: 2px 6px;
+  border-radius: 999px;
+  color: var(--teal);
+  background: var(--teal-dim);
+  border: 1px solid rgba(0, 229, 195, 0.22);
+}
+.agenda-location {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.78rem;
+  color: var(--faint);
+  min-width: 0;
+}
+.agenda-location i, .agenda-location svg { width: 13px; height: 13px; flex-shrink: 0; }
+.agenda-item p { font-size: 0.8rem; color: var(--faint); line-height: 1.45; white-space: pre-line; }
+
+/* ---------- Settings entry point ---------- */
+/* The old floating settings button was removed from the markup, which stranded
+   the whole settings dialog. This is its replacement. */
+.settings-fab {
+  position: fixed;
+  right: var(--s-4);
+  bottom: calc(var(--nav-h) + 10px);
+  z-index: 61;
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  background: rgba(17, 24, 39, 0.85);
+  border: 1px solid var(--line-2);
+  color: var(--muted);
+  box-shadow: var(--e-3);
+  backdrop-filter: blur(14px) saturate(140%);
+  -webkit-backdrop-filter: blur(14px) saturate(140%);
+  transition: transform var(--t-base) var(--ease-out), color var(--t-base) var(--ease-out), border-color var(--t-base) var(--ease-out);
+}
+.settings-fab span { display: none; }
+.settings-fab i, .settings-fab svg { width: 19px; height: 19px; }
+.settings-fab:active { transform: scale(0.92); }
+@media (hover: hover) and (pointer: fine) {
+  .settings-fab:hover { color: var(--teal); border-color: rgba(0, 229, 195, 0.35); transform: rotate(35deg); }
+}
+.field-hint { display: block; font-weight: 400; color: var(--faint); font-size: 0.72rem; line-height: 1.4; margin: 2px 0 5px; }
+.danger-zone { display: grid; gap: var(--s-2); margin-top: var(--s-3); padding-top: var(--s-3); border-top: 1px solid var(--line); }
+
+/* ---------- Dialogs materialise rather than just fading ---------- */
+.compose-dialog::backdrop {
+  background: rgba(4, 8, 16, 0.62);
+  backdrop-filter: blur(3px);
+  animation: fade-in var(--t-base) var(--ease-out);
+}
+.compose-dialog[open] { animation: sheet-rise 300ms var(--ease-out); }
+@keyframes sheet-rise {
+  from { opacity: 0; transform: translateY(16px) scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
+
+/* ---------- Memory Match card flip ---------- */
+.memory-grid button {
+  transform-style: preserve-3d;
+  transition: transform 320ms var(--ease-out), background-color var(--t-base) var(--ease-out), border-color var(--t-base) var(--ease-out);
+}
+.memory-grid button.revealed { transform: rotateY(180deg); }
+.memory-grid button.revealed > * { transform: rotateY(180deg); }
+.memory-grid button.matched { animation: matched-pop 420ms var(--ease-out); }
+@keyframes matched-pop {
+  0% { transform: rotateY(180deg) scale(1); }
+  45% { transform: rotateY(180deg) scale(1.12); }
+  100% { transform: rotateY(180deg) scale(1); }
+}
+
+/* ---------- Upcoming rail ---------- */
+.upcoming-item { transition: transform var(--t-base) var(--ease-out), border-color var(--t-base) var(--ease-out); }
+@media (hover: hover) and (pointer: fine) {
+  .upcoming-item:hover { transform: translateY(-2px); }
+}
+
+/* ---------- Goals + articulation rows ---------- */
+.goal-item .goal-check { transition: background-color var(--t-base) var(--ease-out), border-color var(--t-base) var(--ease-out), transform var(--t-fast) var(--ease-out); }
+.goal-item.done .goal-check { animation: check-pop 380ms var(--ease-out); }
+.r-sentence.done { opacity: 0.5; }
+.r-sentence .r-check { transition: background-color var(--t-base) var(--ease-out), border-color var(--t-base) var(--ease-out); }
+.r-sentence.done .r-check { animation: check-pop 380ms var(--ease-out); }
+@keyframes check-pop {
+  0% { transform: scale(1); }
+  40% { transform: scale(1.3); }
+  100% { transform: scale(1); }
+}
+
+/* ============================================================
+   DESKTOP — the layout was a 460px phone column at every width,
+   which left ~1000px of empty canvas on a laptop. Above 1000px
+   the nav becomes a real sidebar and the content gets a grid.
+   ============================================================ */
+@media (min-width: 1000px) {
+  :root { --nav-h: 0px; }
+
+  .workspace {
+    max-width: 1180px;
+    padding: var(--s-6) var(--s-6) var(--s-6) calc(248px + var(--s-6));
+  }
+
+  .sidebar {
+    top: 0;
+    left: 0;
+    bottom: 0;
+    width: 228px;
+    height: 100vh;
+    transform: none;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: var(--s-2);
+    padding: var(--s-5) var(--s-3);
+    border-radius: 0;
+    border: none;
+    border-right: 1px solid var(--line);
+    background: rgba(11, 16, 30, 0.72);
+    box-shadow: none;
+  }
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: var(--s-3);
+    padding: var(--s-2) var(--s-3) var(--s-5);
+    text-align: left;
+    color: var(--ink);
+  }
+  .brand-mark {
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    border-radius: 11px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    color: #04130f;
+    background: linear-gradient(140deg, var(--teal-bright), var(--teal));
+  }
+  .brand strong { display: block; font-size: 0.98rem; }
+  .brand small { display: block; color: var(--faint); font-size: 0.72rem; }
+
+  .nav-list { flex-direction: column; flex: 0 0 auto; gap: var(--s-1); }
+  .nav-item {
+    flex-direction: row;
+    justify-content: flex-start;
+    gap: var(--s-3);
+    padding: 10px var(--s-3);
+    font-size: 0.9rem;
+    border-radius: 11px;
+  }
+  .nav-item i, .nav-item svg { width: 19px; height: 19px; }
+  .nav-item span { opacity: 1; }
+
+  .settings-fab {
+    position: static;
+    width: auto;
+    height: auto;
+    margin-top: auto;
+    padding: 10px var(--s-3);
+    border-radius: 11px;
+    display: flex;
+    justify-content: flex-start;
+    gap: var(--s-3);
+    background: transparent;
+    border-color: transparent;
+    box-shadow: none;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  .settings-fab span { display: inline; }
+  .settings-fab:hover { transform: none; background: rgba(255, 255, 255, 0.05); }
+
+  /* Two columns, filled in DOM order. Cards are NOT pinned to a specific
+     column: forcing that leaves a sparse grid full of holes whenever the two
+     sides have different heights. */
+  .view.active#homeView,
+  .view.active#calendarView,
+  .view.active#sleepView,
+  .view.active#speakView,
+  .view.active#meView {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--s-4);
+    align-items: start;
+  }
+  /* Full-bleed rows: headers, and anything that needs the width to read well. */
+  .home-hero, .section-heading, .gcal-card, .calendar-topline, .calendar-toolbar,
+  #monthCalendar, .week-grid, .sleep-list, .speak-articulation,
+  .speak-new-round, .sleep-goal, .goals-card, .about-card {
+    grid-column: 1 / -1;
+  }
+
+  .arcade-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .calendar-day { min-height: 74px; }
+  h1 { font-size: 2.3rem; }
+}
+
+@media (min-width: 1400px) {
+  .workspace { max-width: 1320px; }
+  .arcade-grid { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+/* ============================================================
+   MOTION PREFERENCES
+   Reduced motion means gentler, not none: keep short cross-fades
+   (they aid comprehension) and drop travel, overshoot and loops.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 160ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 160ms !important;
+    scroll-behavior: auto !important;
+  }
+  /* No travel, no scaling, no rotation — opacity only. */
+  .view.active > *,
+  .calendar-grid.slide-next > .calendar-day,
+  .calendar-grid.slide-prev > .calendar-day,
+  .week-grid.slide-next .week-columns > *,
+  .week-grid.slide-prev .week-columns > *,
+  .compose-dialog[open] {
+    animation-name: fade-in !important;
+    animation-delay: 0ms !important;
+  }
+  .boost-pop, .memory-grid button.matched, .goal-item.done .goal-check,
+  .r-sentence.done .r-check { animation: none !important; }
+  .memory-grid button.revealed { transform: none; }
+  .memory-grid button.revealed > * { transform: none; }
+  /* Purely decorative loops stop entirely rather than running fast. */
+  #dpProgressFill::after, .reaction-pad.waiting { animation: none !important; }
+  .is-spinning i, .is-spinning svg, .spinner { animation-duration: 0.9s !important; animation-iteration-count: infinite !important; }
+  ::view-transition-old(root), ::view-transition-new(root) { animation: none !important; }
+  @media (hover: hover) and (pointer: fine) {
+    .primary-button:hover:not(:disabled),
+    .calendar-day:not(.selected):hover,
+    .upcoming-item:hover,
+    .settings-fab:hover { transform: none; }
+  }
+}
+
+/* Frostier surfaces when the user asks for less transparency. */
+@media (prefers-reduced-transparency: reduce) {
+  .sidebar, .settings-fab {
+    background: #0f1626;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root { --line: rgba(255, 255, 255, 0.22); --line-2: rgba(255, 255, 255, 0.34); --muted: #c2cede; --faint: #93a3b6; }
+  .surface, .arcade-card, .gcal-card { border-color: var(--line-2); }
+}
+
+/* ---------- Desktop refinements ---------- */
+@media (min-width: 1000px) {
+  /* Day cells were stretching to fill the grid row, producing ~150px squares.
+     Keep them close to square and let the month block stay compact. */
+  .calendar-grid { grid-auto-rows: minmax(0, 1fr); }
+  .calendar-day {
+    min-height: 0;
+    aspect-ratio: 1 / 0.82;
+    align-content: center;
+  }
+
+  /* Actions shouldn't stretch across the full card width when there is only
+     one of them. */
+  .gcal-actions { justify-content: flex-start; }
+  .gcal-actions button { flex: 0 1 auto; min-width: 150px; }
+  .gcal-note { max-width: 72ch; }
+
+  /* The section header artwork gets very tall at width; cap it. */
+  .section-heading { min-height: 0; padding-block: var(--s-4); }
+  .home-hero { padding: var(--s-5) var(--s-5); }
 }

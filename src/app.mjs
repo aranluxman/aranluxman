@@ -18,6 +18,8 @@ import {
   summarizeFitnessWeek,
   todayKey,
 } from "./planner-utils.mjs";
+import { createIcons } from "./icons.mjs";
+import * as gcal from "./google-calendar.mjs";
 
 const STORE_KEY = "aran-life-flow-state";
 const SETTINGS_KEY = "aran-life-flow-settings";
@@ -663,6 +665,10 @@ const defaultSettings = {
   pushupGoal: 60,
   trackGoal: 3,
   darkMode: true,
+  // Connection state only. The access token is deliberately never persisted —
+  // see src/google-calendar.mjs.
+  googleConnected: false,
+  googleEmail: "",
 };
 // Real schedule is imported from calendarImport below, so no placeholder recurring events.
 const recurringTemplates = [];
@@ -767,9 +773,11 @@ document.addEventListener("DOMContentLoaded", () => {
   persist();
   render();
   renderAbout();
+  indexCards(document.querySelector(".view.active"));
   const view = new URLSearchParams(location.search).get("view");
   if (["home", "calendar", "sleep", "speak", "me", "arcade"].includes(view)) setView(view);
   void initializeCloud();
+  void initGoogleCalendar();
 });
 
 function bindElements() {
@@ -798,7 +806,8 @@ function bindElements() {
     "sleepError", "sleepMoodDialog", "settingsDialog", "settingsForm",
     "brandHomeButton", "sidebarSubtitle", "syncButton", "syncStatus", "syncBanner", "syncBannerText", "displayNameInput",
     "plannerSubtitleInput", "focusGoalInput", "pushupGoalInput", "trackGoalInput", "supabaseUrlInput", "supabaseAnonInput",
-    "ownerKeyInput", "calendarUrlInput", "darkModeInput", "resetDataButton",
+    "ownerKeyInput", "calendarUrlInput", "darkModeInput", "resetDataButton", "clearImportedButton", "openSettingsButton",
+    "gcalMark", "gcalStatus", "gcalNote", "gcalConnectButton", "gcalRefreshButton", "gcalDisconnectButton",
   ].forEach((id) => {
     els[id] = document.getElementById(id);
   });
@@ -957,6 +966,32 @@ function wireEvents() {
     saveSettings();
   });
   els.resetDataButton.addEventListener("click", resetAllData);
+  els.clearImportedButton?.addEventListener("click", clearImportedSchedule);
+  // The settings dialog had no way in at all after the nav button was removed,
+  // which stranded the owner key, Supabase config and iCal URL.
+  els.openSettingsButton?.addEventListener("click", () => {
+    hydrateSettingsForm();
+    els.settingsDialog.showModal();
+  });
+  els.gcalConnectButton?.addEventListener("click", () => void syncGoogleCalendar({ interactive: true }));
+  els.gcalRefreshButton?.addEventListener("click", () => void syncGoogleCalendar());
+  els.gcalDisconnectButton?.addEventListener("click", disconnectGoogle);
+
+  // Refresh when the user comes back to the tab, so switching from the Google
+  // Calendar app back to Life Flow shows the change straight away.
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState !== "visible") return;
+    if (!settings.googleConnected) return;
+    if (Date.now() - gcalLastSync < 60_000) return;
+    void syncGoogleCalendar();
+  });
+
+  // Escape closes dialogs natively; make the backdrop click do the same.
+  [els.composeDialog, els.sleepDialog, els.settingsDialog].forEach((dialog) => {
+    dialog?.addEventListener("click", (event) => {
+      if (event.target === dialog) dialog.close();
+    });
+  });
 }
 
 function render() {
@@ -1031,15 +1066,22 @@ function renderStats() {
 }
 
 function renderDailyProgress() {
-  const todays = state.items.filter((item) => item.kind === "daily_task" && item.due_date === todayKey());
-  const done = todays.filter((item) => item.completed).length;
-  const total = todays.length;
+  // Today's plan = the day's calendar events plus any dated tasks. It used to
+  // count only `daily_task` items, but nothing in the UI creates those since
+  // the Tasks page was removed, so the ring sat at 0% forever.
+  const key = todayKey();
+  const todaysEvents = eventsForDate(state.items, key);
+  const todaysTasks = state.items.filter((item) => item.kind === "daily_task" && item.due_date === key);
+  const done = todaysEvents.filter((event) => (event.completed_dates || []).includes(key)).length
+    + todaysTasks.filter((item) => item.completed).length;
+  const total = todaysEvents.length + todaysTasks.length;
   const percent = total ? Math.round((done / total) * 100) : 0;
   if (els.heroProgressPercent) els.heroProgressPercent.textContent = `${percent}%`;
   if (els.heroRingFill) {
     const circumference = 2 * Math.PI * 31;
     els.heroRingFill.style.strokeDasharray = String(circumference);
     els.heroRingFill.style.strokeDashoffset = String(circumference * (1 - percent / 100));
+    els.heroRingFill.classList.toggle("is-complete", total > 0 && done === total);
   }
 
   // Home "Daily Progress" card
@@ -1053,11 +1095,57 @@ function renderDailyProgress() {
   if (els.dpProgressFill) els.dpProgressFill.style.width = `${percent}%`;
   if (els.dpMessage) {
     els.dpMessage.textContent = !total
-      ? "Add a task to start today's progress."
+      ? "Nothing scheduled today — a clear run."
       : done === total
-        ? "Every task done — finish the week strong! 🎉"
-        : "Keep going! You're on track for a great week.";
+        ? "Everything done — finish the week strong! 🎉"
+        : `${total - done} left today. Keep going.`;
   }
+}
+
+/**
+ * Ripple + check pop when something is marked done.
+ * Uses the Web Animations API rather than a CSS class so the element can be
+ * re-rendered underneath us without leaving a stuck animation behind.
+ */
+function celebrateDone(trigger) {
+  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  trigger.animate(
+    [
+      { transform: "scale(1)" },
+      { transform: "scale(1.35)", offset: 0.35 },
+      { transform: "scale(1)" },
+    ],
+    { duration: 420, easing: "cubic-bezier(0.16, 1, 0.3, 1)" },
+  );
+  const ripple = document.createElement("span");
+  ripple.className = "done-ripple";
+  trigger.appendChild(ripple);
+  ripple.animate(
+    [
+      { transform: "scale(0.2)", opacity: 0.7 },
+      { transform: "scale(2.4)", opacity: 0 },
+    ],
+    { duration: 520, easing: "cubic-bezier(0.16, 1, 0.3, 1)" },
+  ).finished.finally(() => ripple.remove());
+}
+
+/**
+ * Drop the schedule that was transcribed into the source from Aran's calendar
+ * PDF. Once Google is connected those rows are redundant duplicates.
+ */
+function clearImportedSchedule() {
+  const imported = state.items.filter((item) => item.kind === "calendar_event" && item.source === "import");
+  if (!imported.length) {
+    window.alert("There are no pre-loaded events left to remove.");
+    return;
+  }
+  if (!window.confirm(`Remove ${imported.length} pre-loaded event${imported.length === 1 ? "" : "s"}? Events from Google and ones you added yourself are kept.`)) return;
+  state.deletedIds = [...new Set([...state.deletedIds, ...imported.map((item) => item.id)])].slice(-300);
+  state.items = state.items.filter((item) => !(item.kind === "calendar_event" && item.source === "import"));
+  persist();
+  render();
+  void Promise.all(imported.map((item) => deleteSupabaseItem(item.id).catch(() => {})));
+  void upsertAppState();
 }
 
 function renderUpcomingToday() {
@@ -1313,45 +1401,81 @@ function renderCalendar() {
     els.monthLabel.textContent = cursor.toLocaleDateString("en", { month: "long", year: "numeric" });
   }
   els.calendarViewToggle.querySelectorAll("button").forEach((button) => button.classList.toggle("active", button.dataset.calendarView === state.calendarView));
+  els.calendarViewToggle.querySelectorAll("button").forEach((button) =>
+    button.setAttribute("aria-selected", String(button.dataset.calendarView === state.calendarView)));
   els.monthCalendar.hidden = state.calendarView !== "month";
   els.weekGrid.hidden = state.calendarView !== "week";
   if (state.calendarView === "month") renderMonth(cursor);
   else renderWeek();
   renderAgenda();
+  renderGcalCard();
 }
 
 function renderMonth(cursor) {
-  els.calendarGrid.innerHTML = buildMonthDays(cursor.getFullYear(), cursor.getMonth()).map((day) => {
-    const dots = eventsForDate(state.items, day.key).slice(0, 3).map((event) => `<i style="background:${colorFor(event.category)}"></i>`).join("");
-    return `<button class="calendar-day ${!day.isCurrentMonth ? "outside" : ""} ${day.key === todayKey() ? "today" : ""} ${day.key === state.selectedDate ? "selected" : ""}" data-date="${day.key}" type="button"><span>${day.dayNumber}</span><b class="dots">${dots}</b></button>`;
+  els.calendarGrid.innerHTML = buildMonthDays(cursor.getFullYear(), cursor.getMonth()).map((day, index) => {
+    const events = eventsForDate(state.items, day.key);
+    const dots = events.slice(0, 3).map((event) => `<i style="background:${colorFor(event.category)}"></i>`).join("");
+    const label = `${new Date(`${day.key}T00:00:00`).toLocaleDateString("en", { weekday: "long", month: "long", day: "numeric" })}, ${events.length} event${events.length === 1 ? "" : "s"}`;
+    return `<button class="calendar-day ${!day.isCurrentMonth ? "outside" : ""} ${day.key === todayKey() ? "today" : ""} ${day.key === state.selectedDate ? "selected" : ""}" data-date="${day.key}" type="button" role="gridcell" aria-label="${label}" aria-selected="${day.key === state.selectedDate}" style="--row:${Math.floor(index / 7)}"><span>${day.dayNumber}</span><b class="dots">${dots}</b></button>`;
   }).join("");
   els.calendarGrid.querySelectorAll("[data-date]").forEach((button) => button.addEventListener("click", () => selectDate(button.dataset.date)));
+  applySlide(els.calendarGrid);
+}
+
+// Replay the directional slide once, then clear it so an unrelated re-render
+// (a Google sync landing, say) does not animate the grid again.
+let calendarSlide = "";
+function applySlide(container) {
+  if (!container || !calendarSlide) return;
+  container.classList.remove("slide-next", "slide-prev");
+  void container.offsetWidth;
+  container.classList.add(calendarSlide);
+  calendarSlide = "";
 }
 
 function renderWeek() {
   const start = startOfWeek(state.selectedDate);
   const days = Array.from({ length: 7 }, (_, index) => addDays(start, index));
+  const weekCount = days.reduce((sum, date) => sum + eventsForDate(state.items, date).length, 0);
   els.weekGrid.innerHTML = `<div class="week-head">${days.map((date) => `<button data-date="${date}" class="${date === todayKey() ? "today" : ""}">${new Date(`${date}T00:00:00`).toLocaleDateString("en", { weekday: "short", day: "numeric" })}</button>`).join("")}</div>
     <div class="week-columns">${days.map((date) => `<div>${eventsForDate(state.items, date).map((event) => `<article class="week-event" style="--accent:${colorFor(event.category)}"><small>${formatEventTime(event)}</small>${escapeHtml(event.title)}</article>`).join("") || '<span class="week-empty"></span>'}</div>`).join("")}</div>
-    <p class="week-range">Schedule window: 7 AM - 10 PM</p>`;
+    <p class="week-range">${weekCount} event${weekCount === 1 ? "" : "s"} this week</p>`;
   els.weekGrid.querySelectorAll("[data-date]").forEach((button) => button.addEventListener("click", () => selectDate(button.dataset.date)));
+  applySlide(els.weekGrid);
 }
 
 function renderAgenda() {
   const events = eventsForDate(state.items, state.selectedDate).sort(sortByTime);
   const selected = new Date(`${state.selectedDate}T00:00:00`);
   els.agendaTitle.textContent = state.selectedDate === todayKey() ? `Today - ${prettyDate(state.selectedDate)}` : formatDisplayDate(selected);
-  els.agendaList.innerHTML = events.length ? events.map((event) => {
+  els.agendaList.innerHTML = events.length ? events.map((event, index) => {
     const done = (event.completed_dates || []).includes(state.selectedDate);
-    return `<article class="agenda-item ${done ? "completed" : ""}" style="--accent:${colorFor(event.category)}">
-      <div><strong>${escapeHtml(event.title)}</strong><span>${formatEventTime(event)} &middot; ${escapeHtml(event.category)}</span>${event.notes ? `<p>${escapeHtml(event.notes)}</p>` : ""}</div>
-      <button class="icon-button" data-done-event="${event.id}" title="Mark done"><i data-lucide="check"></i></button>
-      <button class="icon-button" data-delete-event="${event.id}" title="Delete"><i data-lucide="trash-2"></i></button>
+    const fromGoogle = event.source === "google";
+    // Location gets its own line with a pin so it reads the way Google shows it.
+    const location = event.location ? `<span class="agenda-location"><i data-lucide="map-pin"></i>${escapeHtml(event.location)}</span>` : "";
+    const description = descriptionOf(event);
+    return `<article class="agenda-item ${done ? "completed" : ""}" style="--accent:${colorFor(event.category)};--i:${index}">
+      <div class="agenda-body">
+        <strong>${escapeHtml(event.title)}</strong>
+        <span class="agenda-meta">${formatEventTime(event)} &middot; ${escapeHtml(event.google_calendar_name || event.category)}${fromGoogle ? '<em class="agenda-src">Google</em>' : ""}</span>
+        ${location}
+        ${description ? `<p>${escapeHtml(description)}</p>` : ""}
+      </div>
+      <button class="icon-button agenda-done" data-done-event="${event.id}" title="${done ? "Mark not done" : "Mark done"}" aria-label="${done ? "Mark not done" : "Mark done"}: ${escapeHtml(event.title)}" aria-pressed="${done}"><i data-lucide="check"></i></button>
+      <button class="icon-button agenda-delete" data-delete-event="${event.id}" title="Delete" aria-label="Delete ${escapeHtml(event.title)}"><i data-lucide="trash-2"></i></button>
     </article>`;
   }).join("") : '<article class="empty-inline">Nothing scheduled for this day.</article>';
   els.agendaList.querySelectorAll("[data-done-event]").forEach((button) => button.addEventListener("click", () => toggleEventDone(button.dataset.doneEvent, state.selectedDate)));
   els.agendaList.querySelectorAll("[data-delete-event]").forEach((button) => button.addEventListener("click", () => deleteItem(button.dataset.deleteEvent)));
   refreshIcons();
+}
+
+// Notes hold "location\ndescription"; the location is rendered separately, so
+// strip it here to avoid printing the same string twice.
+function descriptionOf(event) {
+  const notes = String(event.notes || "");
+  if (!event.location) return notes;
+  return notes.startsWith(event.location) ? notes.slice(event.location.length).trim() : notes;
 }
 
 function selectDate(date) {
@@ -1383,6 +1507,7 @@ function renderSleep() {
   if (!summary.points.length) {
     els.sleepChart.innerHTML = '<article class="empty-state compact"><strong>No sleep yet</strong><p>Add a date plus the time you fell asleep and woke up.</p></article>';
     els.sleepList.innerHTML = "";
+    refreshIcons();
     return;
   }
   renderSleepGraph(summary.points, goalMinutes);
@@ -1836,16 +1961,31 @@ function saveItemFromForm() {
 
 function toggleEventDone(id, date) {
   const event = state.items.find((item) => item.id === id);
+  if (!event) return;
+  const completing = !(event.completed_dates || []).includes(date);
   const completed = new Set(event.completed_dates || []);
   if (completed.has(date)) completed.delete(date);
   else completed.add(date);
   event.completed_dates = [...completed];
   persist();
   render();
+  // Celebrate *after* the re-render: render() replaces the agenda markup, so
+  // animating the button that was clicked would throw the animation away with it.
+  if (completing) {
+    const button = els.agendaList.querySelector(`[data-done-event="${CSS.escape(id)}"]`);
+    if (button) celebrateDone(button);
+  }
   void upsertSupabase("life_flow_items", event);
 }
 
 function deleteItem(id) {
+  const target = state.items.find((item) => item.id === id);
+  if (target && !window.confirm(`Delete "${target.title}"?`)) return;
+  if (target?.source === "google") {
+    // Deleting locally would just come back on the next sync, so be honest.
+    window.alert("This event comes from Google Calendar. Delete it in Google and refresh to remove it here.");
+    return;
+  }
   state.items = state.items.filter((item) => item.id !== id);
   // Tombstone the id so other devices drop it too instead of re-uploading it.
   state.deletedIds = [...new Set([...state.deletedIds, id])].slice(-300);
@@ -1856,15 +1996,22 @@ function deleteItem(id) {
 }
 
 function moveCalendar(direction) {
+  calendarSlide = direction > 0 ? "slide-next" : "slide-prev";
   if (state.calendarView === "week") {
     // Move week-by-week relative to the currently shown week.
     state.selectedDate = addDays(startOfWeek(state.selectedDate), direction * 7);
     state.monthCursor = `${state.selectedDate.slice(0, 7)}-01`;
   } else {
+    // Build the target month from its first day: setMonth() on a 29th-31st
+    // overflows into the month after (Jan 31 + 1 month = Mar 3).
     const base = new Date(`${state.monthCursor}T00:00:00`);
-    base.setMonth(base.getMonth() + direction);
-    state.monthCursor = `${formatDateKey(base).slice(0, 7)}-01`;
-    state.selectedDate = formatDateKey(base);
+    const target = new Date(base.getFullYear(), base.getMonth() + direction, 1);
+    state.monthCursor = formatDateKey(target);
+    // Keep the day-of-month where it still exists, else clamp to the last day.
+    const previousDay = Number(state.selectedDate.slice(8, 10));
+    const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
+    target.setDate(Math.min(previousDay, lastDay));
+    state.selectedDate = formatDateKey(target);
   }
   persist();
   renderCalendar();
@@ -1932,10 +2079,49 @@ function deleteSleepEntry(id) {
 
 function completeDailyBoost() {
   if (state.rewards.some((reward) => reward.type === "daily_boost" && reward.date === todayKey())) return;
+  const card = els.arcadeBoostButton?.closest(".arcade-card");
   state.rewards.unshift({ id: crypto.randomUUID(), type: "daily_boost", amount: 20, date: todayKey() });
   persist();
   render();
+  celebrateBoost(card);
   void upsertAppState();
+}
+
+// A short pop on the card plus a burst of sparks from the button. Worth the
+// extra code only because completing the boost is the one deliberately
+// rewarding action on the page.
+function celebrateBoost(card) {
+  if (!card || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+  card.classList.remove("boost-pop");
+  void card.offsetWidth;
+  card.classList.add("boost-pop");
+  card.addEventListener("animationend", () => card.classList.remove("boost-pop"), { once: true });
+
+  const button = card.querySelector("#arcadeBoostButton");
+  if (!button) return;
+  const origin = button.getBoundingClientRect();
+  const host = card.getBoundingClientRect();
+  const colors = ["#00e5c3", "#4ff5dc", "#ff9738", "#ebbd45"];
+  for (let i = 0; i < 14; i += 1) {
+    const spark = document.createElement("span");
+    spark.className = "boost-spark";
+    spark.style.background = colors[i % colors.length];
+    spark.style.left = `${origin.left - host.left + origin.width / 2}px`;
+    spark.style.top = `${origin.top - host.top + origin.height / 2}px`;
+    card.appendChild(spark);
+    const angle = (Math.PI * 2 * i) / 14 + Math.random() * 0.4;
+    const distance = 46 + Math.random() * 44;
+    spark.animate(
+      [
+        { transform: "translate(-50%, -50%) scale(1)", opacity: 1 },
+        {
+          transform: `translate(calc(-50% + ${Math.cos(angle) * distance}px), calc(-50% + ${Math.sin(angle) * distance}px)) scale(0.3)`,
+          opacity: 0,
+        },
+      ],
+      { duration: 620 + Math.random() * 220, easing: "cubic-bezier(0.16, 1, 0.3, 1)" },
+    ).finished.finally(() => spark.remove());
+  }
 }
 
 function startReaction() {
@@ -2120,9 +2306,14 @@ async function syncFromSupabase() {
         state.aboutMe = { ...(appData.aboutMe || {}), ...state.aboutMe };
         state.gameBests = { ...state.gameBests, ...(appData.gameBests || {}) };
         state.deletedIds = [...new Set([...(appData.deletedIds || []), ...state.deletedIds])].slice(-300);
-        if (appData.rPractice?.date === todayKey()) {
-          const merged = new Set([...(appData.rPractice.done || []), ...(state.rPractice.date === todayKey() ? state.rPractice.done : [])]);
-          state.rPractice = { date: todayKey(), done: [...merged] };
+        // normalizeRPractice migrates the legacy {date, done[]} shape into the
+        // cooldown log; merging through it keeps local progress intact.
+        if (appData.rPractice) {
+          const incoming = normalizeRPractice(appData.rPractice);
+          state.rPractice = {
+            completed: { ...incoming.completed, ...state.rPractice.completed },
+            sets: { ...incoming.sets, ...state.rPractice.sets },
+          };
         }
       }
       settings = normalizeSettings({ ...settings, ...prefs });
@@ -2168,14 +2359,153 @@ async function importCalendar() {
   try {
     const response = await fetch(`/api/calendar?url=${encodeURIComponent(settings.calendarUrl)}`);
     if (!response.ok) throw new Error("Calendar unavailable");
-    const imported = parseIcsEvents(await response.text()).map((event) => ({ ...event, id: stableUuid(`${settings.ownerKey}:${event.id}`), owner_key: settings.ownerKey }));
-    state.items = mergeById(state.items, imported);
+    const imported = parseIcsEvents(await response.text()).map((event) => ({
+      ...event, id: stableUuid(`${settings.ownerKey}:${event.id}`), owner_key: settings.ownerKey,
+    }));
+    // Replace the whole ICS set rather than merging, so events deleted upstream
+    // disappear here too instead of lingering forever.
+    state.items = [...state.items.filter((item) => item.source !== "ics"), ...imported];
     persist();
     render();
     if (canSync()) await Promise.all(imported.map((event) => upsertSupabase("life_flow_items", event)));
   } catch {
     setSyncStatus("Calendar import skipped");
   }
+}
+
+/* ============================================================
+   GOOGLE CALENDAR
+   ============================================================ */
+
+let gcalBusy = false;
+let gcalLastSync = 0;
+let gcalTimerId = null;
+
+function setGcalNote(text, tone = "") {
+  if (!els.gcalNote) return;
+  els.gcalNote.hidden = !text;
+  els.gcalNote.textContent = text || "";
+  els.gcalNote.dataset.tone = tone;
+}
+
+function renderGcalCard() {
+  if (!els.gcalStatus) return;
+  const connected = gcal.isConnected();
+  const count = state.items.filter((item) => item.source === "google").length;
+
+  els.gcalMark.dataset.state = connected ? "on" : "off";
+  els.gcalConnectButton.hidden = connected;
+  els.gcalRefreshButton.hidden = !connected;
+  els.gcalDisconnectButton.hidden = !connected;
+  els.gcalRefreshButton.disabled = gcalBusy;
+  els.gcalConnectButton.disabled = gcalBusy;
+  els.gcalRefreshButton.classList.toggle("is-spinning", gcalBusy);
+
+  if (gcalBusy) {
+    els.gcalStatus.textContent = "Syncing with Google…";
+  } else if (connected) {
+    const when = gcalLastSync
+      ? new Date(gcalLastSync).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit" })
+      : "just now";
+    const who = settings.googleEmail ? `${settings.googleEmail} · ` : "";
+    els.gcalStatus.textContent = `${who}${count} event${count === 1 ? "" : "s"} synced · updated ${when}`;
+  } else if (settings.calendarUrl) {
+    els.gcalStatus.textContent = "Using the iCal feed from Settings. Connect for live, exact sync.";
+  } else {
+    els.gcalStatus.textContent = "Not connected — showing saved events only.";
+  }
+  refreshIcons();
+}
+
+/**
+ * Pull from Google and make its events the source of truth.
+ *
+ * Every `source: "google"` item is replaced wholesale on each sync. That is
+ * what makes edits and deletions in Google propagate here: an event that no
+ * longer comes back simply stops existing locally, with no tombstone bookkeeping.
+ */
+async function syncGoogleCalendar({ interactive = false } = {}) {
+  if (gcalBusy) return;
+  gcalBusy = true;
+  renderGcalCard();
+  try {
+    if (interactive) {
+      const email = await gcal.connect();
+      settings.googleConnected = true;
+      settings.googleEmail = email || "";
+      saveJson(SETTINGS_KEY, settings);
+    } else {
+      await gcal.reconnectSilently();
+    }
+
+    const events = await gcal.fetchEvents();
+    const withOwner = events.map((event) => ({ ...event, owner_key: settings.ownerKey }));
+    state.items = [...state.items.filter((item) => item.source !== "google"), ...withOwner];
+    gcalLastSync = Date.now();
+    settings.googleConnected = true;
+    saveJson(SETTINGS_KEY, settings);
+    persist();
+    render();
+    setGcalNote(
+      events.length
+        ? `Synced ${events.length} event${events.length === 1 ? "" : "s"} from Google Calendar.`
+        : "Connected — no events found in the next 12 months.",
+      "ok",
+    );
+    scheduleGcalRefresh();
+  } catch (error) {
+    if (error?.needsConsent) {
+      // A silent refresh legitimately fails when there is no live Google
+      // session; only nag the user if they asked for this explicitly.
+      settings.googleConnected = false;
+      saveJson(SETTINGS_KEY, settings);
+      if (interactive) setGcalNote(error.message, "warn");
+      else setGcalNote("");
+    } else {
+      setGcalNote(error?.message || "Could not reach Google Calendar.", "warn");
+    }
+  } finally {
+    gcalBusy = false;
+    renderGcalCard();
+  }
+}
+
+function disconnectGoogle() {
+  gcal.disconnect();
+  settings.googleConnected = false;
+  settings.googleEmail = "";
+  saveJson(SETTINGS_KEY, settings);
+  state.items = state.items.filter((item) => item.source !== "google");
+  if (gcalTimerId) { clearTimeout(gcalTimerId); gcalTimerId = null; }
+  persist();
+  render();
+  setGcalNote("Disconnected. Google events removed from this device.", "ok");
+}
+
+// Keep the calendar fresh without polling a hidden tab.
+function scheduleGcalRefresh() {
+  if (gcalTimerId) clearTimeout(gcalTimerId);
+  gcalTimerId = window.setTimeout(() => {
+    if (document.visibilityState === "visible" && settings.googleConnected) void syncGoogleCalendar();
+    else scheduleGcalRefresh();
+  }, 5 * 60 * 1000);
+}
+
+async function initGoogleCalendar() {
+  if (!els.gcalStatus) return;
+  const configured = await gcal.isConfigured();
+  if (!configured) {
+    els.gcalConnectButton.disabled = true;
+    setGcalNote(
+      "Google sign-in isn't configured for this deployment yet. Add GOOGLE_OAUTH_CLIENT_ID in Cloudflare Pages, or paste a secret iCal URL in Settings as a fallback.",
+      "info",
+    );
+    renderGcalCard();
+    return;
+  }
+  renderGcalCard();
+  // Resume a previous connection without showing a popup.
+  if (settings.googleConnected) await syncGoogleCalendar();
 }
 
 async function upsertSupabase(table, row, onConflict = "id") {
@@ -2261,11 +2591,25 @@ function setSyncStatus(text) {
   els.syncBanner.hidden = true;
 }
 
+// Index each panel's direct children so CSS can stagger their entrance.
+function indexCards(panel) {
+  if (!panel) return;
+  [...panel.children].forEach((child, index) => child.style.setProperty("--card-index", String(index)));
+}
+
 function setView(view) {
   const change = () => {
-    document.querySelectorAll(".nav-item").forEach((button) => button.classList.toggle("active", button.dataset.view === view));
+    document.querySelectorAll(".nav-item").forEach((button) => {
+      const selected = button.dataset.view === view;
+      button.classList.toggle("active", selected);
+      button.setAttribute("aria-selected", String(selected));
+    });
     document.querySelectorAll(".view").forEach((panel) => panel.classList.toggle("active", panel.id === `${view}View`));
+    const active = document.getElementById(`${view}View`);
+    indexCards(active);
     refreshIcons();
+    // Scroll position is per-app, not per-panel; land at the top of the new tab.
+    window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
   };
   if (document.startViewTransition) document.startViewTransition(change);
   else change();
@@ -2407,7 +2751,7 @@ function sortByTime(a, b) {
 }
 
 function formatEventTime(event) {
-  if (!event.start_time) return "Reminder";
+  if (!event.start_time) return "All day";
   return `${clock(event.start_time)}${event.end_time ? ` - ${clock(event.end_time)}` : ""}`;
 }
 
@@ -2490,7 +2834,7 @@ function toggleSecret(button) {
 }
 
 function refreshIcons() {
-  window.lucide?.createIcons();
+  createIcons();
 }
 
 function createOwnerKey() {

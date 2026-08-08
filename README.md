@@ -4,14 +4,34 @@ A calm personal planner for daily tasks, long-term to-dos, calendar-style events
 
 ## Features
 
-- Starter task list with Aran's current school tasks
-- Daily tasks and long-term to-dos
-- Calendar view with manual events and optional iCal import
-- Pomodoro-style focus mode
-- Sleep tracker with calculated duration and a weekly graph
+- Six sections: Home, Calendar, Sleep, Speak, Me, Arcade
+- **Google Calendar sync** over OAuth 2.0 (read-only), with a secret iCal feed as
+  a zero-setup fallback — see [docs/GOOGLE_CALENDAR_SETUP.md](docs/GOOGLE_CALENDAR_SETUP.md)
+- Month and week calendar views with an agenda, plus manually added events
+- Sleep tracker with calculated duration, a scrubable graph, and sleep scores
+- Speaking practice: rotating topics, frameworks, and R/S articulation drills
+- Goals and an About Me profile, saved automatically
+- Arcade: coins earned from real work, plus nine mini-games
 - Masked Supabase settings, dark mode, and iOS-friendly PWA metadata
-- Mood check-in, streak, coins, and quotes
-- Supabase sync for tasks, calendar items, moods, focus sessions, and sleep logs
+- Supabase sync for items, moods, focus sessions, and sleep logs
+
+## Running locally
+
+```bash
+npm run dev     # static preview + /api stubs on http://localhost:4173
+npm test        # unit tests
+```
+
+## Architecture notes
+
+No build step and no framework: `index.html` + `styles.css` + ES modules in
+`src/`, deployed as static files to Cloudflare Pages. Because there is no
+bundler, anything that would normally be a build-time environment variable is
+served at runtime by a Pages Function in `functions/api/`.
+
+Icons are a vendored ~12KB subset of Lucide (`src/icons.mjs`) rather than a
+358KB CDN bundle, so the installed PWA still renders offline and an upstream
+release cannot change the UI.
 
 ## Supabase
 
@@ -33,4 +53,17 @@ The owner key is stored in the browser and sent as `x-owner-key` so row-level se
 
 ## Cloudflare
 
-The repo includes a Cloudflare Pages Function at `functions/api/calendar.js` so `/api/calendar` works when deployed to Cloudflare Pages.
+Pages Functions in `functions/api/`:
+
+- `calendar.js` — CORS proxy for secret iCal feeds (`/api/calendar?url=…`)
+- `google-config.js` — serves the public Google OAuth client ID from the
+  `GOOGLE_OAUTH_CLIENT_ID` environment variable
+
+### Environment variables
+
+| Name | Where | Purpose |
+| --- | --- | --- |
+| `GOOGLE_OAUTH_CLIENT_ID` | Pages → Settings → Environment variables | Google Calendar sign-in. Optional; without it the Connect button explains what to set and the iCal fallback still works. |
+
+No client secret is used or needed — the frontend is a public OAuth client, and
+access tokens live in memory only, never in web storage.

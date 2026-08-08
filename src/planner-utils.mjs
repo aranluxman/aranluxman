@@ -191,6 +191,10 @@ export function parseIcsEvents(icsText) {
       const rrule = readIcsField(block, "RRULE");
       const startDate = parseIcsDate(start);
       const endDate = parseIcsDate(end);
+      const location = unescapeIcs(readIcsField(block, "LOCATION"));
+      const description = unescapeIcs(readIcsField(block, "DESCRIPTION"));
+      // A DTSTART of the bare form YYYYYMMDD (VALUE=DATE) is an all-day event.
+      const allDay = /^\d{8}$/.test(start.trim());
 
       if (!startDate) return [];
 
@@ -204,7 +208,8 @@ export function parseIcsEvents(icsText) {
       );
       const starts = rrule ? expandRecurrence(startDate, rrule).filter((date) => !exclusions.has(formatDateKey(date))) : [startDate];
 
-      return starts.map((instanceStart) => buildIcsItem({ start, title, instanceStart, durationMinutes }));
+      return starts.map((instanceStart) =>
+        buildIcsItem({ start, title, instanceStart, durationMinutes, allDay, location, description }));
     })
     .filter(Boolean)
     .sort((a, b) => String(a.scheduled_at).localeCompare(String(b.scheduled_at)));
@@ -293,20 +298,34 @@ function addDays(dateKey, days) {
   return formatDateKey(date);
 }
 
-function buildIcsItem({ start, title, instanceStart, durationMinutes }) {
+function buildIcsItem({ start, title, instanceStart, durationMinutes, allDay = false, location = "", description = "" }) {
   const key = `${start}-${title}-${instanceStart.toISOString()}`.replace(/[^a-z0-9-]/gi, "-").toLowerCase();
+  const end = new Date(instanceStart.getTime() + durationMinutes * 60000);
+  const hhmm = (date) => `${String(date.getHours()).padStart(2, "0")}:${String(date.getMinutes()).padStart(2, "0")}`;
+
   return {
     id: `ics-${key}`,
     kind: "calendar_event",
     title: unescapeIcs(title),
-    notes: "",
+    // Location first so it is the line the agenda leads with, matching Google.
+    notes: [location, description].filter(Boolean).join("\n"),
+    location,
     category: "Calendar",
     priority: "medium",
     due_date: formatDateKey(instanceStart),
-    scheduled_at: instanceStart.toISOString(),
-    duration_minutes: durationMinutes,
+    // Without these the event renders as a timeless "Reminder" and sorts to the
+    // bottom of the day, which is what made the old ICS import look broken.
+    start_time: allDay ? "" : hhmm(instanceStart),
+    end_time: allDay ? "" : hhmm(end),
+    all_day: allDay,
+    repeat_pattern: "none",
+    repeat_days: [],
+    completed_dates: [],
+    subtasks: [],
+    scheduled_at: allDay ? null : instanceStart.toISOString(),
+    duration_minutes: allDay ? 1440 : durationMinutes,
     completed: false,
-    color: "#155a8a",
+    color: "",
     source: "ics",
   };
 }

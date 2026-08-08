@@ -13,8 +13,40 @@ const types = {
   ".webmanifest": "application/manifest+json",
 };
 
+// Minimal stand-ins for the Cloudflare Pages Functions, so `/api/*` behaves the
+// same locally as it does in production.
+const apiRoutes = {
+  "/api/google-config": (_url, response) => {
+    const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID || "";
+    response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    response.end(JSON.stringify({ clientId, configured: Boolean(clientId) }));
+  },
+  "/api/calendar": async (url, response) => {
+    const raw = url.searchParams.get("url");
+    if (!raw || !/^https:\/\/.+/i.test(raw)) {
+      response.writeHead(400);
+      response.end("Missing calendar URL");
+      return;
+    }
+    try {
+      const upstream = await fetch(raw);
+      if (!upstream.ok) throw new Error("bad upstream");
+      response.writeHead(200, { "Content-Type": "text/calendar; charset=utf-8" });
+      response.end(await upstream.text());
+    } catch {
+      response.writeHead(502);
+      response.end("Calendar feed unavailable");
+    }
+  },
+};
+
 createServer((request, response) => {
   const url = new URL(request.url || "/", "http://localhost");
+  const route = apiRoutes[url.pathname];
+  if (route) {
+    void route(url, response);
+    return;
+  }
   const requested = url.pathname === "/" ? "/index.html" : url.pathname;
   const filePath = normalize(join(root, requested));
 

@@ -808,6 +808,7 @@ function bindElements() {
     "plannerSubtitleInput", "focusGoalInput", "pushupGoalInput", "trackGoalInput", "supabaseUrlInput", "supabaseAnonInput",
     "ownerKeyInput", "calendarUrlInput", "darkModeInput", "resetDataButton", "clearImportedButton", "openSettingsButton",
     "gcalMark", "gcalStatus", "gcalNote", "gcalConnectButton", "gcalRefreshButton", "gcalDisconnectButton",
+    "icalUrlInput", "icalSaveButton", "icalRefreshButton", "icalServerNote",
   ].forEach((id) => {
     els[id] = document.getElementById(id);
   });
@@ -976,6 +977,11 @@ function wireEvents() {
   els.gcalConnectButton?.addEventListener("click", () => void syncGoogleCalendar({ interactive: true }));
   els.gcalRefreshButton?.addEventListener("click", () => void syncGoogleCalendar());
   els.gcalDisconnectButton?.addEventListener("click", disconnectGoogle);
+  els.icalSaveButton?.addEventListener("click", saveIcalUrl);
+  els.icalRefreshButton?.addEventListener("click", () => void refreshIcalFeed());
+  els.icalUrlInput?.addEventListener("keydown", (event) => {
+    if (event.key === "Enter") { event.preventDefault(); saveIcalUrl(); }
+  });
 
   // Refresh when the user comes back to the tab, so switching from the Google
   // Calendar app back to Life Flow shows the change straight away.
@@ -2354,23 +2360,79 @@ async function syncToSupabase() {
   }
 }
 
-async function importCalendar() {
-  if (!settings.calendarUrl) return;
+// True when the deployment has CALENDAR_ICAL_URL set, meaning the app can pull
+// the feed without the URL ever being handed to the browser.
+let icalServerConfigured = false;
+let icalServerLabel = "";
+let icalLastSync = 0;
+
+async function loadIcalConfig() {
   try {
-    const response = await fetch(`/api/calendar?url=${encodeURIComponent(settings.calendarUrl)}`);
-    if (!response.ok) throw new Error("Calendar unavailable");
+    const response = await fetch("/api/calendar-config", { headers: { Accept: "application/json" } });
+    if (!response.ok) return;
+    const data = await response.json();
+    icalServerConfigured = Boolean(data.configured);
+    icalServerLabel = data.label || "";
+  } catch {
+    icalServerConfigured = false;
+  }
+}
+
+/**
+ * Pull the iCal feed. Uses the server-side CALENDAR_ICAL_URL when one is
+ * configured, otherwise the URL saved in Settings.
+ * @returns {Promise<{ok: boolean, count?: number, error?: string}>}
+ */
+async function importCalendar({ silent = true } = {}) {
+  if (!settings.calendarUrl && !icalServerConfigured) return { ok: false, error: "No calendar URL set" };
+  try {
+    // Omitting `url` lets the Function supply the secret from its environment.
+    const endpoint = settings.calendarUrl
+      ? `/api/calendar?url=${encodeURIComponent(settings.calendarUrl)}`
+      : "/api/calendar";
+    const response = await fetch(endpoint, { cache: "no-store" });
+    if (!response.ok) {
+      // Surface the Function's actual explanation (404 = wrong address form,
+      // 422 = not a calendar) instead of a generic "skipped".
+      throw new Error((await response.text().catch(() => "")) || `Calendar feed error ${response.status}`);
+    }
     const imported = parseIcsEvents(await response.text()).map((event) => ({
       ...event, id: stableUuid(`${settings.ownerKey}:${event.id}`), owner_key: settings.ownerKey,
     }));
     // Replace the whole ICS set rather than merging, so events deleted upstream
     // disappear here too instead of lingering forever.
     state.items = [...state.items.filter((item) => item.source !== "ics"), ...imported];
+    icalLastSync = Date.now();
     persist();
     render();
-    if (canSync()) await Promise.all(imported.map((event) => upsertSupabase("life_flow_items", event)));
-  } catch {
+    // Push to Supabase in the background. The events are already on screen and
+    // saved locally, so making the user wait on the upload just to see "synced"
+    // adds latency for no benefit — and a slow cloud write shouldn't look like
+    // a slow calendar.
+    if (canSync()) {
+      void Promise.all(imported.map((event) => upsertSupabase("life_flow_items", event).catch(() => {})));
+    }
+    return { ok: true, count: imported.length };
+  } catch (error) {
+    if (!silent) setGcalNote(error.message, "warn");
     setSyncStatus("Calendar import skipped");
+    return { ok: false, error: error.message };
   }
+}
+
+async function refreshIcalFeed() {
+  setGcalNote("Fetching calendar feed…");
+  renderGcalCard();
+  const result = await importCalendar({ silent: false });
+  if (result.ok) {
+    setGcalNote(
+      result.count
+        ? `Synced ${result.count} event${result.count === 1 ? "" : "s"} from the calendar feed.`
+        : "Feed reached, but it contains no events.",
+      "ok",
+    );
+  }
+  renderGcalCard();
 }
 
 /* ============================================================
@@ -2380,6 +2442,8 @@ async function importCalendar() {
 let gcalBusy = false;
 let gcalLastSync = 0;
 let gcalTimerId = null;
+// Whether this deployment has GOOGLE_OAUTH_CLIENT_ID set. Null until checked.
+let googleConfigured = null;
 
 function setGcalNote(text, tone = "") {
   if (!els.gcalNote) return;
@@ -2398,8 +2462,22 @@ function renderGcalCard() {
   els.gcalRefreshButton.hidden = !connected;
   els.gcalDisconnectButton.hidden = !connected;
   els.gcalRefreshButton.disabled = gcalBusy;
-  els.gcalConnectButton.disabled = gcalBusy;
+  els.gcalConnectButton.disabled = gcalBusy || googleConfigured === false;
   els.gcalRefreshButton.classList.toggle("is-spinning", gcalBusy);
+
+  // The feed path is independent of OAuth: show its refresh whenever a feed is
+  // available, from Settings or from the server-side CALENDAR_ICAL_URL.
+  const feedAvailable = Boolean(settings.calendarUrl || icalServerConfigured);
+  if (els.icalRefreshButton) els.icalRefreshButton.hidden = connected || !feedAvailable;
+  if (els.icalUrlInput && document.activeElement !== els.icalUrlInput) {
+    els.icalUrlInput.value = settings.calendarUrl || "";
+  }
+  if (els.icalServerNote) {
+    els.icalServerNote.hidden = !icalServerConfigured;
+    els.icalServerNote.textContent = icalServerConfigured
+      ? `A feed is already configured on the server (${icalServerLabel}). Leave the box empty to keep using it.`
+      : "";
+  }
 
   if (gcalBusy) {
     els.gcalStatus.textContent = "Syncing with Google…";
@@ -2409,8 +2487,14 @@ function renderGcalCard() {
       : "just now";
     const who = settings.googleEmail ? `${settings.googleEmail} · ` : "";
     els.gcalStatus.textContent = `${who}${count} event${count === 1 ? "" : "s"} synced · updated ${when}`;
-  } else if (settings.calendarUrl) {
-    els.gcalStatus.textContent = "Using the iCal feed from Settings. Connect for live, exact sync.";
+  } else if (settings.calendarUrl || icalServerConfigured) {
+    const feedCount = state.items.filter((item) => item.source === "ics").length;
+    const when = icalLastSync
+      ? ` · updated ${new Date(icalLastSync).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit" })}`
+      : "";
+    els.gcalStatus.textContent = feedCount
+      ? `Calendar feed · ${feedCount} event${feedCount === 1 ? "" : "s"}${when}`
+      : "Calendar feed set. Tap Refresh feed to pull events.";
   } else {
     els.gcalStatus.textContent = "Not connected — showing saved events only.";
   }
@@ -2491,15 +2575,68 @@ function scheduleGcalRefresh() {
   }, 5 * 60 * 1000);
 }
 
+/**
+ * Validate and store a pasted iCal URL, then pull it immediately.
+ *
+ * The check is deliberately specific: the overwhelmingly common mistake is
+ * grabbing the "public address" (.../public/basic.ics) for a calendar that is
+ * not shared publicly, which Google answers with a 404 and no explanation.
+ */
+function saveIcalUrl() {
+  const raw = els.icalUrlInput.value.trim();
+  if (!raw) {
+    settings.calendarUrl = "";
+    saveJson(SETTINGS_KEY, settings);
+    state.items = state.items.filter((item) => item.source !== "ics");
+    persist();
+    render();
+    setGcalNote("Calendar feed cleared.", "ok");
+    return;
+  }
+
+  let parsed;
+  try {
+    parsed = new URL(raw);
+  } catch {
+    setGcalNote("That doesn't look like a URL. Paste the whole link, starting with https://", "warn");
+    return;
+  }
+  if (parsed.protocol !== "https:") {
+    setGcalNote("The calendar link must start with https://", "warn");
+    return;
+  }
+  if (!/\.ics$/i.test(parsed.pathname)) {
+    setGcalNote("That link doesn't end in .ics — copy the iCal format address, not the calendar's web page.", "warn");
+    return;
+  }
+  if (parsed.pathname.includes("/public/")) {
+    setGcalNote(
+      "That's the public address, which only works if your calendar is shared with the whole internet. Copy the Secret address instead — it contains \"private-\".",
+      "warn",
+    );
+    return;
+  }
+
+  settings.calendarUrl = raw;
+  saveJson(SETTINGS_KEY, settings);
+  void refreshIcalFeed();
+}
+
 async function initGoogleCalendar() {
   if (!els.gcalStatus) return;
-  const configured = await gcal.isConfigured();
-  if (!configured) {
-    els.gcalConnectButton.disabled = true;
-    setGcalNote(
-      "Google sign-in isn't configured for this deployment yet. Add GOOGLE_OAUTH_CLIENT_ID in Cloudflare Pages, or paste a secret iCal URL in Settings as a fallback.",
-      "info",
-    );
+  await loadIcalConfig();
+  // A feed configured either way should populate the calendar on load.
+  if (settings.calendarUrl || icalServerConfigured) void importCalendar();
+  googleConfigured = await gcal.isConfigured();
+  if (!googleConfigured) {
+    els.gcalConnectButton.title = "Needs GOOGLE_OAUTH_CLIENT_ID on the deployment";
+    // Only nag about OAuth when there is no working feed already.
+    if (!settings.calendarUrl && !icalServerConfigured) {
+      setGcalNote(
+        "Google sign-in isn't set up on this deployment. Either add GOOGLE_OAUTH_CLIENT_ID in Cloudflare Pages, or use a calendar feed link below.",
+        "info",
+      );
+    }
     renderGcalCard();
     return;
   }
@@ -2508,11 +2645,32 @@ async function initGoogleCalendar() {
   if (settings.googleConnected) await syncGoogleCalendar();
 }
 
+// PostgREST reports an unknown column as PGRST204 and names it in the message.
+const UNKNOWN_COLUMN = /Could not find the '([^']+)' column/i;
+
 async function upsertSupabase(table, row, onConflict = "id") {
   if (!canSync()) return;
-  await supabaseFetch(`${table}?on_conflict=${encodeURIComponent(onConflict)}`, {
-    method: "POST", headers: { Prefer: "resolution=merge-duplicates" }, body: JSON.stringify({ ...row, owner_key: settings.ownerKey }),
+  const send = (body) => supabaseFetch(`${table}?on_conflict=${encodeURIComponent(onConflict)}`, {
+    method: "POST", headers: { Prefer: "resolution=merge-duplicates" }, body: JSON.stringify(body),
   });
+
+  let payload = { ...row, owner_key: settings.ownerKey };
+  // A single column the deployed schema has not caught up with used to abort
+  // the whole sync ("Saving paused: Could not find the 'source' column…").
+  // Drop what the server does not know about and retry instead, so one missing
+  // column can never strand every other field.
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      return await send(payload);
+    } catch (error) {
+      const missing = UNKNOWN_COLUMN.exec(String(error.message))?.[1];
+      if (!missing || !(missing in payload)) throw error;
+      const { [missing]: _dropped, ...rest } = payload;
+      payload = rest;
+      console.warn(`Supabase: "${table}" has no "${missing}" column on this project; syncing without it.`);
+    }
+  }
+  return send(payload);
 }
 
 async function upsertItemSafely(item) {

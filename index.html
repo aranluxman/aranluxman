@@ -102,8 +102,24 @@
               <button class="primary-button compact" id="gcalConnectButton" type="button"><i data-lucide="link-2"></i><span>Connect Google</span></button>
               <button class="ghost-button compact" id="gcalRefreshButton" type="button" hidden><i data-lucide="rotate-cw"></i><span>Refresh</span></button>
               <button class="ghost-button compact" id="gcalDisconnectButton" type="button" hidden><i data-lucide="cloud-off"></i><span>Disconnect</span></button>
+              <button class="ghost-button compact" id="icalRefreshButton" type="button" hidden><i data-lucide="rotate-cw"></i><span>Refresh feed</span></button>
             </div>
             <p class="gcal-note" id="gcalNote" role="status" aria-live="polite" hidden></p>
+            <details class="gcal-ical">
+              <summary>Use a calendar feed link instead</summary>
+              <p class="gcal-ical-help">
+                Paste the <strong>Secret address in iCal format</strong> from Google Calendar &rarr;
+                your calendar &rarr; <em>Settings and sharing</em> &rarr; <em>Integrate calendar</em>.
+                It ends in <code>/basic.ics</code> and contains <code>private-</code>.
+                Treat it like a password &mdash; anyone with it can read your calendar.
+              </p>
+              <div class="gcal-ical-row">
+                <input id="icalUrlInput" type="url" inputmode="url" autocomplete="off" spellcheck="false"
+                       placeholder="https://calendar.google.com/calendar/ical/.../private-.../basic.ics" />
+                <button class="primary-button compact" id="icalSaveButton" type="button">Save &amp; sync</button>
+              </div>
+              <p class="gcal-ical-server" id="icalServerNote" hidden></p>
+            </details>
           </section>
           <div class="calendar-topline"><div class="segmented" id="calendarViewToggle" role="tablist" aria-label="Calendar view"><button class="active" data-calendar-view="month" type="button" role="tab" aria-selected="true">Month</button><button data-calendar-view="week" type="button" role="tab" aria-selected="false">Week</button></div><button class="ghost-button compact" id="todayButton" type="button">Jump to today</button></div>
           <div class="calendar-toolbar"><button class="icon-button" id="prevMonthButton" type="button" aria-label="Previous month"><i data-lucide="chevron-left"></i></button><strong id="monthLabel" aria-live="polite">May 2026</strong><button class="icon-button" id="nextMonthButton" type="button" aria-label="Next month"><i data-lucide="chevron-right"></i></button></div>

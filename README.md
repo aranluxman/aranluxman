@@ -55,7 +55,11 @@ The owner key is stored in the browser and sent as `x-owner-key` so row-level se
 
 Pages Functions in `functions/api/`:
 
-- `calendar.js` — CORS proxy for secret iCal feeds (`/api/calendar?url=…`)
+- `calendar.js` — CORS proxy for iCal feeds (`/api/calendar?url=…`). Forwards
+  only to an allowlist of calendar hosts, and falls back to `CALENDAR_ICAL_URL`
+  when no `url` is given, so the secret feed address can stay server-side.
+- `calendar-config.js` — reports whether a server-side feed is configured
+  (boolean + redacted label; never the URL itself)
 - `google-config.js` — serves the public Google OAuth client ID from the
   `GOOGLE_OAUTH_CLIENT_ID` environment variable
 
@@ -64,6 +68,7 @@ Pages Functions in `functions/api/`:
 | Name | Where | Purpose |
 | --- | --- | --- |
 | `GOOGLE_OAUTH_CLIENT_ID` | Pages → Settings → Environment variables | Google Calendar sign-in. Optional; without it the Connect button explains what to set and the iCal fallback still works. |
+| `CALENDAR_ICAL_URL` | Pages → Settings → Environment variables | Secret iCal feed address. Optional. When set, the feed is fetched server-side and the URL never reaches the browser. |
 
 No client secret is used or needed — the frontend is a public OAuth client, and
 access tokens live in memory only, never in web storage.

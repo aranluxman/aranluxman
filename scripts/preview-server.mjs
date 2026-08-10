@@ -21,21 +21,46 @@ const apiRoutes = {
     response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
     response.end(JSON.stringify({ clientId, configured: Boolean(clientId) }));
   },
+  "/api/calendar-config": (_url, response) => {
+    const url = process.env.CALENDAR_ICAL_URL || "";
+    let label = "";
+    if (url) {
+      try {
+        const parsed = new URL(url);
+        label = `${parsed.hostname}/…/${parsed.pathname.split("/").pop()}`;
+      } catch { label = "configured"; }
+    }
+    response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
+    response.end(JSON.stringify({ configured: Boolean(url), label }));
+  },
   "/api/calendar": async (url, response) => {
-    const raw = url.searchParams.get("url");
-    if (!raw || !/^https:\/\/.+/i.test(raw)) {
+    const raw = url.searchParams.get("url") || process.env.CALENDAR_ICAL_URL || "";
+    if (!raw) {
       response.writeHead(400);
-      response.end("Missing calendar URL");
+      response.end("No calendar URL configured");
       return;
     }
     try {
-      const upstream = await fetch(raw);
-      if (!upstream.ok) throw new Error("bad upstream");
+      const upstream = await fetch(raw, { headers: { Accept: "text/calendar, text/plain" } });
+      if (!upstream.ok) {
+        const detail = upstream.status === 404
+          ? "Calendar feed not found (404). If you used the public address, the calendar must be shared publicly — otherwise use the secret address from Google Calendar settings."
+          : `Calendar feed unavailable (${upstream.status})`;
+        response.writeHead(upstream.status === 404 ? 404 : 502);
+        response.end(detail);
+        return;
+      }
+      const body = await upstream.text();
+      if (!body.includes("BEGIN:VCALENDAR")) {
+        response.writeHead(422);
+        response.end("That URL did not return a calendar feed");
+        return;
+      }
       response.writeHead(200, { "Content-Type": "text/calendar; charset=utf-8" });
-      response.end(await upstream.text());
+      response.end(body);
     } catch {
       response.writeHead(502);
-      response.end("Calendar feed unavailable");
+      response.end("Could not reach the calendar feed");
     }
   },
 };

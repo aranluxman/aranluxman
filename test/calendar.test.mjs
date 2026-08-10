@@ -135,3 +135,42 @@ test("ICS recurring events expand to multiple dated instances", () => {
   assert.ok(events.every((event) => event.start_time === "18:00"));
   assert.equal(new Set(events.map((event) => event.due_date)).size, 3);
 });
+
+// ---- iCal proxy: host allowlist ----
+// The proxy used to forward any https:// URL, which made it usable as an open
+// proxy for probing arbitrary hosts from Cloudflare's network.
+const { onRequestGet } = await import("../functions/api/calendar.js");
+
+const call = (url, env = {}) =>
+  onRequestGet({ request: new Request(`https://app.test/api/calendar?url=${encodeURIComponent(url)}`), env });
+
+test("proxy rejects hosts outside the allowlist", async () => {
+  for (const url of [
+    "https://evil.example.com/basic.ics",
+    "https://169.254.169.254/latest/meta-data/",
+    "https://localhost/admin",
+  ]) {
+    const response = await call(url);
+    assert.equal(response.status, 400, `expected ${url} to be rejected`);
+    assert.match(await response.text(), /not allowed/i);
+  }
+});
+
+test("proxy rejects non-https schemes", async () => {
+  const response = await call("http://calendar.google.com/calendar/ical/x/private-y/basic.ics");
+  assert.equal(response.status, 400);
+  assert.match(await response.text(), /https/i);
+});
+
+test("proxy requires a URL when none is configured server-side", async () => {
+  const response = await onRequestGet({ request: new Request("https://app.test/api/calendar"), env: {} });
+  assert.equal(response.status, 400);
+  assert.match(await response.text(), /No calendar URL configured/i);
+});
+
+test("proxy accepts an allowlisted Google host", async () => {
+  // Reaching the network is out of scope here; a 502 proves it got past
+  // validation and attempted the fetch rather than rejecting the host.
+  const response = await call("https://calendar.google.com/calendar/ical/x/private-y/basic.ics");
+  assert.notEqual(response.status, 400);
+});

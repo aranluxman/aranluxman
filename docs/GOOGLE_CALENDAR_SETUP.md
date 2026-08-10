@@ -82,6 +82,8 @@ read-only access, and your events appear.
 
 ```bash
 GOOGLE_OAUTH_CLIENT_ID="...apps.googleusercontent.com" npm run dev
+# or, for the feed path:
+CALENDAR_ICAL_URL="https://calendar.google.com/calendar/ical/.../private-.../basic.ics" npm run dev
 ```
 
 Then open <http://localhost:4173>. `scripts/preview-server.mjs` serves the same
@@ -89,24 +91,57 @@ Then open <http://localhost:4173>. `scripts/preview-server.mjs` serves the same
 
 ---
 
-## Option B — Secret iCal URL (no setup)
+## Option B — iCal feed URL (no setup)
 
 Zero configuration, but **Google only regenerates these feeds every few hours**,
 so a change you make now may not appear here until much later. Use it if you do
 not want to create a Google Cloud project.
 
+### Getting the right URL
+
+This is the step people get wrong, so read it carefully. Google offers **two**
+iCal addresses and they are not interchangeable:
+
+| Address | Looks like | Works when |
+| --- | --- | --- |
+| **Secret address** ✅ | `.../ical/you%40gmail.com/`**`private-a1b2c3…`**`/basic.ics` | Always. Use this one. |
+| Public address ❌ | `.../ical/you%40gmail.com/`**`public`**`/basic.ics` | Only if the calendar is shared with the entire internet. Otherwise Google returns **404**. |
+
+If you paste a `/public/` URL for a calendar that is not publicly shared, the
+app will tell you so rather than failing silently — but the fix is to use the
+secret address, **not** to make your calendar public.
+
+To find it:
+
 1. In Google Calendar on the web, hover the calendar in the left sidebar →
    **⋮ → Settings and sharing**.
-2. Scroll to **Integrate calendar** and copy the
-   **Secret address in iCal format** (ends in `/basic.ics`).
-3. In Life Flow, open **Settings** (the gear, bottom of the sidebar on desktop /
-   bottom-right on mobile) and paste it into
-   **Google Calendar secret iCal URL**, then **Save settings**.
+2. Scroll to **Integrate calendar**.
+3. Copy **Secret address in iCal format**. (Click the eye icon to reveal it.)
 
-That URL is a password in disguise — anyone holding it can read your calendar.
-Do not commit it or share it. It is stored only in your browser and is sent to
-`/api/calendar`, a small proxy that exists purely because Google's iCal endpoint
-does not send CORS headers.
+### Where to put it
+
+**Either** paste it into the app — Calendar tab → *Use a calendar feed link
+instead* → **Save & sync**. It is stored in your browser only.
+
+**Or**, better, set it as a deployment secret so it never touches the browser:
+
+- Cloudflare Pages → **Settings → Environment variables**
+- Name: `CALENDAR_ICAL_URL`, value: your secret address
+- Add to Production and Preview, save, and redeploy
+
+With `CALENDAR_ICAL_URL` set, the app calls `/api/calendar` with **no URL at
+all** and the Pages Function supplies it server-side. The secret address never
+reaches the client, never appears in browser storage, and is not in the repo.
+
+> That URL is a password in disguise — anyone holding it can read your whole
+> calendar. Never commit it, and never paste it into a public issue or chat.
+
+### About the proxy
+
+`/api/calendar` exists purely because Google's iCal endpoints send no CORS
+headers, so the page cannot fetch them directly. It only forwards requests to a
+short allowlist of calendar hosts (Google, Outlook, iCloud), so it cannot be
+used as an open proxy to reach arbitrary addresses.
 
 ### Which one should I use?
 
@@ -116,7 +151,7 @@ does not send CORS headers.
 | Freshness | Immediate on refresh / tab focus | Hours behind |
 | Calendars | All you can read | One per URL |
 | Event detail | Title, time, location, description | Title, time, location, description |
-| Credential | Short-lived token, memory only | A secret URL stored in the browser |
+| Credential | Short-lived token, memory only | A secret URL — server-side if you set `CALENDAR_ICAL_URL`, otherwise in the browser |
 | Re-auth | Every 7 days while app is in Testing | Never |
 
 ---
@@ -153,3 +188,30 @@ does not send CORS headers.
 - Events you create inside Life Flow, and the pre-loaded schedule, are untouched
   by Google syncs. To clear the pre-loaded schedule once Google is connected,
   use **Settings → Remove pre-loaded schedule**.
+
+
+---
+
+## Troubleshooting
+
+**"Calendar feed not found (404)"**
+You used the public address for a calendar that is not publicly shared. Use the
+**secret address** (contains `private-`) instead.
+
+**"That link doesn't end in .ics"**
+You copied the calendar's web page URL rather than the iCal address. Go back to
+*Integrate calendar* and copy the field labelled *Secret address in iCal format*.
+
+**"Calendar host … is not allowed"**
+The proxy only forwards to known calendar providers. If you need another one,
+add its hostname to `ALLOWED_HOSTS` in `functions/api/calendar.js`.
+
+**"Saving paused: Could not find the 'source' column"**
+A Supabase schema drift — the deployed database was missing a column the app
+writes. Fixed by `supabase/migrations/20260810000000_add_source_to_sleep_entries.sql`.
+The client now also drops unknown columns and retries instead of aborting the
+whole sync, so a future drift degrades rather than stopping cloud saves.
+
+**Events appear at the wrong time**
+Times are rendered in the browser's local timezone, which is what Google shows
+you. If a device's clock or timezone is wrong, the calendar will look wrong too.

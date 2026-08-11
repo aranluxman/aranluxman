@@ -56,7 +56,7 @@
               <span class="hero-progress-text"><strong id="heroProgressPercent">0%</strong><small>today</small></span>
             </div>
           </header>
-          <section class="quote-card">
+          <section class="quote-card home-quote">
             <span class="quote-mark" aria-hidden="true"><i data-lucide="quote"></i></span>
             <p id="quoteText"></p>
             <button class="icon-button" id="nextQuoteButton" type="button" aria-label="New quote" title="New quote"><i data-lucide="refresh-cw"></i></button>
@@ -76,20 +76,20 @@
             </button>
             <div class="coach-dots" id="coachDots" aria-hidden="true"></div>
           </section>
-          <section class="daily-progress-card surface" aria-labelledby="dailyProgressTitle">
-            <div class="card-heading"><h2 id="dailyProgressTitle">Daily Progress</h2></div>
-            <div class="daily-progress-stats">
-              <div class="dp-stat"><span class="dp-icon dp-teal"><i data-lucide="target"></i></span><div><strong id="dpTasks">0 / 0</strong><small>Tasks Completed</small></div></div>
-              <div class="dp-stat"><span class="dp-icon dp-blue"><i data-lucide="clock"></i></span><div><strong id="dpFocus">0h</strong><small>Focus Time</small></div></div>
-              <div class="dp-stat"><span class="dp-icon dp-orange"><i data-lucide="flame"></i></span><div><strong id="dpStreak">0</strong><small>Day Streak</small></div></div>
-            </div>
-            <div class="dp-track"><i id="dpProgressFill"></i></div>
-            <p class="dp-message" id="dpMessage">Keep going! You're on track for a great week.</p>
-          </section>
         </section>
 
         <section class="view" id="calendarView" role="tabpanel" tabindex="0" aria-labelledby="calendarTitle">
           <div class="section-heading section-heading-calendar calendar-header"><h1 id="calendarTitle">Calendar</h1><button class="add-button labeled" data-open-compose="calendar_event" type="button" title="Add Event"><i data-lucide="plus"></i><span>Add Event</span></button></div>
+          <div class="calendar-topline"><div class="segmented" id="calendarViewToggle" role="tablist" aria-label="Calendar view"><button class="active" data-calendar-view="month" type="button" role="tab" aria-selected="true">Month</button><button data-calendar-view="week" type="button" role="tab" aria-selected="false">Week</button></div><button class="ghost-button compact" id="todayButton" type="button">Jump to today</button></div>
+          <div class="calendar-toolbar"><button class="icon-button" id="prevMonthButton" type="button" aria-label="Previous month"><i data-lucide="chevron-left"></i></button><strong id="monthLabel" aria-live="polite">May 2026</strong><button class="icon-button" id="nextMonthButton" type="button" aria-label="Next month"><i data-lucide="chevron-right"></i></button></div>
+          <div id="monthCalendar">
+            <div class="weekday-row" aria-hidden="true"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
+            <div class="calendar-grid" id="calendarGrid" role="grid" aria-label="Month"></div>
+          </div>
+          <div class="week-grid" id="weekGrid" hidden></div>
+          <section class="day-agenda surface">
+            <h2 id="agendaTitle">Today</h2><p class="section-subtitle" id="agendaHint">Tap a day to see events.</p><div id="agendaList"></div>
+          </section>
           <section class="surface gcal-card" id="calendarSyncCard" aria-labelledby="gcalTitle">
             <div class="gcal-head">
               <span class="gcal-mark" id="gcalMark" data-state="off" aria-hidden="true"><i data-lucide="calendar-days"></i></span>
@@ -120,16 +120,6 @@
               </div>
               <p class="gcal-ical-server" id="icalServerNote" hidden></p>
             </details>
-          </section>
-          <div class="calendar-topline"><div class="segmented" id="calendarViewToggle" role="tablist" aria-label="Calendar view"><button class="active" data-calendar-view="month" type="button" role="tab" aria-selected="true">Month</button><button data-calendar-view="week" type="button" role="tab" aria-selected="false">Week</button></div><button class="ghost-button compact" id="todayButton" type="button">Jump to today</button></div>
-          <div class="calendar-toolbar"><button class="icon-button" id="prevMonthButton" type="button" aria-label="Previous month"><i data-lucide="chevron-left"></i></button><strong id="monthLabel" aria-live="polite">May 2026</strong><button class="icon-button" id="nextMonthButton" type="button" aria-label="Next month"><i data-lucide="chevron-right"></i></button></div>
-          <div id="monthCalendar">
-            <div class="weekday-row" aria-hidden="true"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
-            <div class="calendar-grid" id="calendarGrid" role="grid" aria-label="Month"></div>
-          </div>
-          <div class="week-grid" id="weekGrid" hidden></div>
-          <section class="day-agenda surface">
-            <h2 id="agendaTitle">Today</h2><p class="section-subtitle" id="agendaHint">Tap a day to see events.</p><div id="agendaList"></div>
           </section>
         </section>
 
@@ -167,14 +157,18 @@
           <section class="surface about-card" aria-labelledby="aboutTitle">
             <div class="card-heading"><h2 id="aboutTitle">About Me</h2><span class="saved-pill"><i data-lucide="check"></i> Auto-saved</span></div>
             <div class="about-grid">
-              <label>Favourite food<input data-about="food" maxlength="120" placeholder="e.g. Grilled chicken &amp; rice" /></label>
-              <label>Favourite colour<input data-about="colour" maxlength="60" placeholder="e.g. Teal" /></label>
-              <label>Favourite sport<input data-about="sport" maxlength="80" placeholder="e.g. Track &amp; basketball" /></label>
-              <label>What I like<textarea data-about="likes" rows="2" placeholder="Things you enjoy doing..."></textarea></label>
-              <label>My current plan<textarea data-about="plan" rows="3" placeholder="What you're focused on right now..."></textarea></label>
-              <label>What I'm grateful for<textarea data-about="grateful" rows="3" placeholder="People and things you appreciate..."></textarea></label>
-              <label>My strengths<textarea data-about="strengths" rows="2" placeholder="What you're good at..."></textarea></label>
-              <label>My purpose<textarea data-about="purpose" rows="4" placeholder="Who you are and why you do what you do..."></textarea></label>
+              <div class="about-section about-favourites">
+                <label>Favourite food<input data-about="food" maxlength="120" placeholder="e.g. Grilled chicken &amp; rice" /></label>
+                <label>Favourite colour<input data-about="colour" maxlength="60" placeholder="e.g. Teal" /></label>
+                <label>Favourite sport<input data-about="sport" maxlength="80" placeholder="e.g. Track &amp; basketball" /></label>
+              </div>
+              <div class="about-section about-reflections">
+                <label>What I like<textarea data-about="likes" rows="2" placeholder="Things you enjoy doing..."></textarea></label>
+                <label>My current plan<textarea data-about="plan" rows="3" placeholder="What you're focused on right now..."></textarea></label>
+                <label>What I'm grateful for<textarea data-about="grateful" rows="3" placeholder="People and things you appreciate..."></textarea></label>
+                <label>My strengths<textarea data-about="strengths" rows="2" placeholder="What you're good at..."></textarea></label>
+                <label>My purpose<textarea data-about="purpose" rows="4" placeholder="Who you are and why you do what you do..."></textarea></label>
+              </div>
             </div>
           </section>
           <section class="surface goals-card" aria-labelledby="goalsTitle">

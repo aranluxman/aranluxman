@@ -1587,13 +1587,35 @@ dialog form select {
   font-weight: 700;
 }
 .saved-pill i { width: 13px; height: 13px; }
-.about-grid { display: grid; gap: 14px; }
+.about-grid { display: grid; gap: 18px; }
+.about-section { display: grid; gap: 14px; }
+.about-favourites {
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line);
+}
 .about-grid label { color: var(--muted); font-size: 0.8rem; font-weight: 600; }
 .about-grid input, .about-grid textarea { font-size: 1rem; }
 .about-grid textarea { resize: vertical; line-height: 1.5; }
+.about-grid label:focus-within { color: var(--teal); }
+.about-grid input, .about-grid textarea {
+  transition: border-color var(--t-base) var(--ease-out), box-shadow var(--t-base) var(--ease-out), background-color var(--t-base) var(--ease-out);
+}
+.about-grid input:focus, .about-grid textarea:focus {
+  border-color: color-mix(in srgb, var(--teal) 58%, var(--line));
+  background: color-mix(in srgb, var(--teal) 5%, var(--card-3));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--teal) 12%, transparent);
+}
 
-.goals-groups { display: grid; gap: 18px; }
+.goals-groups { display: grid; gap: 14px; }
 .goal-group { --accent: var(--teal); display: grid; gap: 10px; }
+.goal-group {
+  padding: 14px;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
+  background:
+    linear-gradient(145deg, color-mix(in srgb, var(--accent) 8%, transparent), transparent 52%),
+    color-mix(in srgb, var(--card-2) 88%, var(--accent) 4%);
+}
 .goal-group-head { display: flex; align-items: center; gap: 10px; }
 .goal-group-icon {
   display: grid;
@@ -1615,7 +1637,7 @@ dialog form select {
   gap: 11px;
   width: 100%;
   text-align: left;
-  padding: 12px 14px;
+  padding: 13px 14px;
   border-radius: 12px;
   background: var(--card-2);
   border: 1px solid var(--line);
@@ -1624,6 +1646,12 @@ dialog form select {
   line-height: 1.35;
 }
 .goal-item:active { transform: scale(0.99); }
+.goal-item.done {
+  border-color: color-mix(in srgb, var(--accent) 35%, var(--line));
+  background: color-mix(in srgb, var(--accent) 9%, var(--card-2));
+}
+.goal-item:hover { border-color: color-mix(in srgb, var(--accent) 42%, var(--line)); }
+.goal-item:hover .goal-check { transform: scale(1.06); }
 .goal-check {
   flex-shrink: 0;
   width: 22px;
@@ -1651,6 +1679,12 @@ dialog form select {
 }
 .goal-item.done .goal-check::after { transform: rotate(45deg) scale(1); }
 .goal-item.done .goal-text { text-decoration: line-through; color: var(--muted); }
+
+@media (min-width: 720px) {
+  .about-favourites { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .about-reflections { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .about-reflections label:last-child { grid-column: 1 / -1; }
+}
 
 /* ============================================================
    SPEAK — communication practice
@@ -2166,7 +2200,7 @@ small, .section-subtitle { letter-spacing: 0.008em; }
   display: grid;
   gap: var(--s-3);
   padding: var(--s-4);
-  margin-top: var(--s-3);
+  margin-top: var(--s-5);
 }
 .gcal-head { display: flex; align-items: center; gap: var(--s-3); }
 .gcal-mark {
@@ -2405,10 +2439,14 @@ small, .section-subtitle { letter-spacing: 0.008em; }
     align-items: start;
   }
   /* Full-bleed rows: headers, and anything that needs the width to read well. */
-  .home-hero, .section-heading, .gcal-card, .calendar-topline, .calendar-toolbar,
+  .home-hero, .home-quote, .section-heading, .gcal-card, .calendar-topline, .calendar-toolbar,
   #monthCalendar, .week-grid, .sleep-list, .speak-articulation,
   .speak-new-round, .sleep-goal, .goals-card, .about-card {
     grid-column: 1 / -1;
+  }
+  .view.active#homeView .upcoming-card,
+  .view.active#homeView .coach-card {
+    align-self: stretch;
   }
 
   .arcade-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }

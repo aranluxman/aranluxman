@@ -789,7 +789,6 @@ function bindElements() {
     "speakReflectionText", "newTopicButton",
     "rTabs", "rList", "rPracticeCount", "rProgressFill", "rNextSet",
     "heroRingFill", "heroProgressPercent",
-    "dpTasks", "dpFocus", "dpStreak", "dpProgressFill", "dpMessage",
     "simonStart", "simonGrid", "simonStatus", "simonBest", "mathStart", "mathQuestion", "mathAnswers", "mathStatus", "mathBest",
     "sprintPad", "sprintStatus", "sprintBest", "stopClockPad", "stopClockStatus", "stopClockBest",
     "numberRushStart", "numberRushGrid", "numberRushStatus", "numberRushBest",
@@ -1090,22 +1089,6 @@ function renderDailyProgress() {
     els.heroRingFill.classList.toggle("is-complete", total > 0 && done === total);
   }
 
-  // Home "Daily Progress" card
-  const stats = calculateStats(state.items, state.focusSessions, todayKey(), state.sleepEntries, state.rewards, settings.sleepGoalHours * 60);
-  const focusMinutes = state.focusSessions
-    .filter((entry) => !entry.is_break && String(entry.completed_at || "").slice(0, 10) === todayKey())
-    .reduce((sum, entry) => sum + Number(entry.minutes || 0), 0);
-  if (els.dpTasks) els.dpTasks.textContent = `${done} / ${total}`;
-  if (els.dpFocus) els.dpFocus.textContent = `${(focusMinutes / 60).toFixed(focusMinutes % 60 === 0 ? 0 : 1)}h`;
-  if (els.dpStreak) els.dpStreak.textContent = String(stats.streakDays || 0);
-  if (els.dpProgressFill) els.dpProgressFill.style.width = `${percent}%`;
-  if (els.dpMessage) {
-    els.dpMessage.textContent = !total
-      ? "Nothing scheduled today — a clear run."
-      : done === total
-        ? "Everything done — finish the week strong! 🎉"
-        : `${total - done} left today. Keep going.`;
-  }
 }
 
 /**

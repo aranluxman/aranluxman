@@ -1852,7 +1852,9 @@ dialog form select {
 .r-sentence.done .r-text { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 2px; }
 .r-sound-tag {
   flex-shrink: 0;
-  width: 20px;
+  /* Sized to fit the two-character TH and SH tags without stretching R and S. */
+  min-width: 20px;
+  padding: 0 4px;
   height: 20px;
   border-radius: 6px;
   display: inline-flex;
@@ -1864,6 +1866,8 @@ dialog form select {
 }
 .r-sound-r { color: #04130f; background: linear-gradient(140deg, var(--teal-bright), var(--teal)); }
 .r-sound-s { color: #12061c; background: linear-gradient(140deg, #ffcf6b, #ff9738); }
+.r-sound-th { color: #f4ecff; background: linear-gradient(140deg, #a97bff, #6d43d6); }
+.r-sound-sh { color: #041b26; background: linear-gradient(140deg, #7fdcff, #38bdf8); }
 .r-sentence.done .r-sound-tag { opacity: 0.5; }
 .r-empty { color: var(--muted); font-size: 0.9rem; line-height: 1.4; padding: 8px 2px; text-align: center; }
 .r-next { width: 100%; justify-content: center; margin-top: 12px; }

@@ -304,6 +304,10 @@ const rWordSentences = {
   ],
 };
 const R_SET_SIZE = 10;
+// How many of each target sound make up one 10-sentence practice set. R and S carry
+// the bulk of the drill; TH and SH get one slot each so they stay in rotation
+// without crowding out the two sounds this module was built for.
+const R_SET_MIX = { R: 4, S: 4, TH: 1, SH: 1 };
 // Once a sentence is checked off (crossed out) it goes on a cooldown and will not
 // appear again until this many days have passed.
 const R_COOLDOWN_DAYS = 7;
@@ -354,6 +358,150 @@ const sWordSentences = {
     "A moose stood still on the frozen ice.",
     "The actress wore a dress made of lace.",
     "The niece placed a vase on the bookcase.",
+  ],
+};
+
+// TH-words articulation drills. Unlike R and S these are hand-written only: the
+// combinatorial generator below cannot guarantee a TH lands in the right position
+// for every combination it produces, and a medial drill full of final-TH words is
+// worse than a shorter list. Both the voiceless /th/ ("think") and the voiced /th/
+// ("mother") count — they share the same tongue-between-teeth placement.
+const thWordSentences = {
+  initial: [
+    "Thomas thought about three thick books.",
+    "Thirty thirsty thinkers thanked the theater.",
+    "Theo threw the thin thread over the thorn.",
+    "Thursday's thunder shook the thatched roof.",
+    "The thoughtful thief thanked me for the thermos.",
+    "Think through the theory before Thursday.",
+    "Three thousand thistles grew by the path.",
+    "Thelma thumbed through a thrilling thriller.",
+    "The thermometer read thirty-three degrees.",
+    "Thank the thoughtful theater for the thick program.",
+    "Thad threaded the needle with his thumb.",
+    "Thirsty and thrilled, they thanked the thunderstorm.",
+    "The therapist thought the theme was thoughtful.",
+    "Throw the thick thermos through the doorway.",
+    "Theodore thrives on Thursday theater practice.",
+    "The thrush and the thistle thrived together.",
+    "Thoughts of Thanksgiving filled Thelma's Thursday.",
+    "Three thin threads held the thick thimble.",
+    "Thankfully the thunder passed by Thursday.",
+    "The thirsty thoroughbred thundered through the field.",
+  ],
+  medial: [
+    "My birthday falls on a healthy Thursday.",
+    "Mother and Father gathered by the weather vane.",
+    "The athlete ran a marathon without anything to drink.",
+    "My brother brushed his teeth with a new toothbrush.",
+    "Heather bothered the panther in the northern zoo.",
+    "Arthur would rather gather feathers together.",
+    "Nothing was worthy of the wealthy author.",
+    "The python slithered through the earthy pathway.",
+    "Kathy's method was healthier than anything else.",
+    "Either the weather or the leather will bother him.",
+    "Together they gathered everything for the birthday.",
+    "The author's brother is a faithful athlete.",
+    "My grandmother bathed the puppy in the bathtub.",
+    "Anthony gathered sympathy from another brother.",
+    "The northern weather bothered the youthful athletes.",
+    "Ruthie ran a marathon on her birthday.",
+    "Feathers and leather gathered in the bathroom.",
+    "Neither brother bothered with the birthday cake.",
+    "The wealthy author gathered nothing but sympathy.",
+    "Katherine's mother is a faithful marathon runner.",
+  ],
+  final: [
+    "I take a warm bath after math.",
+    "Brush both rows of teeth every month.",
+    "The moth flew north above the path.",
+    "Take a deep breath and open your mouth.",
+    "Growth takes both health and youth.",
+    "The cloth on the fifth shelf is smooth.",
+    "Beth walked south along the narrow path.",
+    "Tell the truth about the broken tooth.",
+    "The earth beneath the path felt smooth.",
+    "Both the math and the health test were tough.",
+    "Wealth is worth less than health.",
+    "The fifth month brought steady growth.",
+    "Keith held his breath underneath the cloth.",
+    "A moth landed on the birdbath by the path.",
+    "Go north, then south, then back to the path.",
+    "Every month I clean my teeth and my mouth.",
+    "The youth showed growth and real strength.",
+    "Smooth cloth is worth the extra length.",
+    "Beneath the bath sat a small gray moth.",
+    "Tell the truth: is the path north or south?",
+  ],
+};
+// SH-words articulation drills (/sh/ as in "shoe"). Hand-written for the same
+// positional reason as TH above.
+const shWordSentences = {
+  initial: [
+    "She showed us her shiny new shoes.",
+    "The shark shot past the shallow shore.",
+    "Sharon shoveled snow off the short shed.",
+    "Shawn shared his shirt with his shivering sister.",
+    "The shepherd shooed the sheep into the shade.",
+    "Shelly shopped for shampoo and a shower cap.",
+    "Shine the flashlight and show me the shelf.",
+    "The ship sheltered in the shadow of the shore.",
+    "Sharp shells shimmered on the shallow shoreline.",
+    "Shut the shutters before the shower starts.",
+    "Sheila shouted from the shortest shortcut.",
+    "The shy shopper shrugged at the shrinking shelf.",
+    "Shane shaped the short shovel handle.",
+    "Show the shopkeeper your shiny shell.",
+    "Shirley shared a shortcake with the shepherd.",
+    "The shuttle shook as it shot past the shore.",
+    "Shallow shells shifted in the shining sand.",
+    "Shawn's shoulder shifted under the sheep.",
+    "She shouted, then showed us the shortcut.",
+    "The shopkeeper shelved the shiny shoes.",
+  ],
+  medial: [
+    "The washer shook the ocean-blue cushion.",
+    "Sunshine filled the fishing station all morning.",
+    "Michelle washed the dishes after the workshop.",
+    "The patient waited by the ancient bookshelf.",
+    "A delicious milkshake beat any marshmallow.",
+    "The machine at the station needed washing.",
+    "Mushrooms grew beside the seashell path.",
+    "Special flashlights lit the ocean workshop.",
+    "The magician's motion was precious to watch.",
+    "Trisha finished washing the seashell dishes.",
+    "The nation watched the ocean in motion.",
+    "Marshall wished for a milkshake and a mushroom.",
+    "An ancient brochure sat on the bookshelf.",
+    "The fisherman's flashlight lit the ocean.",
+    "Washing machines rushed through the workshop.",
+    "The patient found a precious seashell.",
+    "Sunshine and ocean motion filled the station.",
+    "Alicia washed the cushions in the machine.",
+    "A delicious marshmallow melted in the sunshine.",
+    "The magician's special motion astonished us.",
+  ],
+  final: [
+    "The fish splashed in the fresh dish.",
+    "Wash the brush before the trash goes out.",
+    "I wish I could finish the radish salad.",
+    "Push the cash into the small dish.",
+    "A flash of light made the goldfish dash.",
+    "The crash of the wave made a big splash.",
+    "Josh will finish the English homework.",
+    "Polish the brush until the finish is fresh.",
+    "The shellfish hid beneath the marsh.",
+    "Don't rush; just finish and wash up.",
+    "Trish put the radish in the fresh dish.",
+    "A splash of water hit the windshield sash.",
+    "The jellyfish drifted past in a flash.",
+    "Brush the ash off the fresh trash bin.",
+    "I wish the goldfish would finish its dish.",
+    "Push the cart, then wash the fresh squash.",
+    "The English class had to finish the quiz.",
+    "Ash and trash filled the old brush pile.",
+    "Cash and a fresh radish sat in the dish.",
+    "The starfish and jellyfish caused a splash.",
   ],
 };
 
@@ -433,7 +581,9 @@ const genFinalR = dedupeSentences([
     [
       ["teacher", "doctor", "farmer", "painter", "driver", "singer", "dancer", "baker", "sailor", "author", "waiter", "hiker", "jogger", "reporter", "manager", "trainer", "barber", "plumber", "ranger", "actor"],
       ["doctor", "farmer", "painter", "driver", "singer", "dancer", "baker", "sailor", "author", "waiter", "hiker", "jogger", "reporter", "manager", "trainer", "barber", "plumber", "ranger", "actor", "teacher"],
-      ["water", "butter", "sugar", "cheddar", "chowder", "dinner", "supper", "a cracker", "a wafer", "a burger"],
+      // All plural/mass nouns: the template reads "…some ${o}", so "a cracker"
+      // here produced "offered the hiker some a cracker".
+      ["water", "butter", "sugar", "cheddar", "chowder", "dinner", "supper", "crackers", "wafers", "burgers"],
     ],
     200,
   ),
@@ -469,11 +619,26 @@ const genFinalS = dedupeSentences([
 ]);
 
 // Combined pools used by the UI: curated + generated, deduped. Each position holds
-// both an R list and an S list; a practice set draws from both so the sounds mix.
+// one list per target sound; a practice set draws from all four so the sounds mix.
 const articulationPools = {
-  initial: { R: dedupeSentences([...rWordSentences.initial, ...genInitialR]), S: dedupeSentences([...sWordSentences.initial, ...genInitialS]) },
-  medial: { R: dedupeSentences([...rWordSentences.medial, ...genMedialR]), S: dedupeSentences([...sWordSentences.medial, ...genMedialS]) },
-  final: { R: dedupeSentences([...rWordSentences.final, ...genFinalR]), S: dedupeSentences([...sWordSentences.final, ...genFinalS]) },
+  initial: {
+    R: dedupeSentences([...rWordSentences.initial, ...genInitialR]),
+    S: dedupeSentences([...sWordSentences.initial, ...genInitialS]),
+    TH: dedupeSentences(thWordSentences.initial),
+    SH: dedupeSentences(shWordSentences.initial),
+  },
+  medial: {
+    R: dedupeSentences([...rWordSentences.medial, ...genMedialR]),
+    S: dedupeSentences([...sWordSentences.medial, ...genMedialS]),
+    TH: dedupeSentences(thWordSentences.medial),
+    SH: dedupeSentences(shWordSentences.medial),
+  },
+  final: {
+    R: dedupeSentences([...rWordSentences.final, ...genFinalR]),
+    S: dedupeSentences([...sWordSentences.final, ...genFinalS]),
+    TH: dedupeSentences(thWordSentences.final),
+    SH: dedupeSentences(shWordSentences.final),
+  },
 };
 const workoutMetrics = [
   { key: "pullups", label: "Pull-ups", icon: "dumbbell", accent: "#3e9cff", step: 5, unit: "reps" },
@@ -1299,22 +1464,27 @@ function interleaveSentences(first, second) {
   return out;
 }
 
-// Build a fresh practice set for a position: half R, half S, skipping anything on
-// cooldown, mixed so the two sounds alternate.
+// Build a fresh practice set for a position: 4 R, 4 S, 1 TH and 1 SH (R_SET_MIX),
+// skipping anything on cooldown. R and S alternate as they always have, then the
+// single TH and SH slot in at spread-out positions so they never land side by side.
 function buildRSet(group) {
-  const pools = articulationPools[group] || { R: [], S: [] };
+  const pools = articulationPools[group] || {};
   const eligibleFor = (sound) => shuffle((pools[sound] || [])
     .map((text, index) => ({ id: `${group}-${sound}-${index}`, text, sound }))
     .filter((sentence) => !isSentenceOnCooldown(sentence.id)));
-  const rPool = eligibleFor("R");
-  const sPool = eligibleFor("S");
-  const half = Math.floor(R_SET_SIZE / 2);
-  const rPicks = rPool.slice(0, half);
-  const sPicks = sPool.slice(0, R_SET_SIZE - half);
-  let combined = interleaveSentences(rPicks, sPicks);
+  const eligible = Object.fromEntries(Object.keys(R_SET_MIX).map((sound) => [sound, eligibleFor(sound)]));
+  const picked = Object.fromEntries(Object.entries(R_SET_MIX).map(([sound, count]) => [sound, eligible[sound].slice(0, count)]));
+
+  let combined = interleaveSentences(picked.R, picked.S);
+  // Spread the two singles through the R/S run rather than tacking them on the end.
+  [...picked.TH, ...picked.SH].forEach((sentence, slot) => {
+    combined.splice(Math.min(3 + slot * 4, combined.length), 0, sentence);
+  });
   if (combined.length < R_SET_SIZE) {
+    // A sound whose pool is thinned by cooldown gives its slots back to the others
+    // so a set is always full rather than short.
     const used = new Set(combined.map((sentence) => sentence.id));
-    const extras = [...rPool, ...sPool].filter((sentence) => !used.has(sentence.id));
+    const extras = Object.keys(R_SET_MIX).flatMap((sound) => eligible[sound]).filter((sentence) => !used.has(sentence.id));
     combined = combined.concat(extras.slice(0, R_SET_SIZE - combined.length));
   }
   return combined.map((sentence) => sentence.id);

@@ -1009,6 +1009,147 @@ label {
 .sleep-row b { font-family: var(--font-display); font-size: 1.05rem; color: var(--ink); }
 
 /* ============================================================
+   SUGAR
+   ============================================================ */
+.section-heading-sugar { border-color: var(--orange); }
+.sugar-today-card, .sugar-history-card { margin-bottom: 16px; }
+.sugar-readout {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+.sugar-readout strong { font-family: var(--font-display); font-size: 2.1rem; line-height: 1; color: var(--ink); }
+.sugar-readout span { color: var(--muted); font-size: 0.84rem; }
+.sugar-progress-track {
+  height: 12px;
+  border-radius: 99px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  overflow: hidden;
+}
+.sugar-progress-track i {
+  display: block;
+  height: 100%;
+  width: 0;
+  border-radius: inherit;
+  background: linear-gradient(90deg, var(--teal), var(--teal-bright));
+  box-shadow: 0 0 10px rgba(0, 229, 195, 0.5);
+  transition: width 0.4s ease, background 0.3s ease;
+}
+/* Over the limit the bar is pinned at 100%, so colour carries the signal. */
+.sugar-progress-track.over i {
+  background: linear-gradient(90deg, var(--orange), var(--red));
+  box-shadow: 0 0 12px rgba(255, 93, 108, 0.55);
+}
+.sugar-over-flag {
+  margin-top: 8px;
+  color: var(--red);
+  font-size: 0.82rem;
+  font-weight: 600;
+}
+.sugar-add-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 96px auto;
+  gap: 10px;
+  align-items: end;
+  margin-top: 16px;
+}
+.sugar-field { display: grid; gap: 5px; min-width: 0; }
+.sugar-field span { color: var(--faint); font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.06em; }
+.sugar-field input {
+  width: 100%;
+  padding: 10px 12px;
+  background: var(--card-2);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  color: var(--ink);
+  font-family: var(--font-body);
+  font-size: 0.9rem;
+}
+.sugar-field input:focus-visible { outline: 2px solid var(--teal); outline-offset: 1px; }
+.sugar-add-form button { height: 40px; }
+.sugar-error { margin-top: 8px; color: var(--red); font-size: 0.8rem; }
+.sugar-list { display: grid; gap: 9px; margin-top: 14px; }
+.sugar-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.sugar-row strong { color: var(--ink); font-size: 0.9rem; overflow-wrap: anywhere; }
+.sugar-row span { display: block; margin-top: 3px; color: var(--faint); font-size: 0.78rem; }
+.sugar-row b { font-family: var(--font-display); font-size: 1.05rem; color: var(--ink); }
+
+.sugar-chart { min-height: 150px; }
+.sugar-bars {
+  position: relative;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6px;
+  height: 150px;
+  padding-top: 6px;
+}
+/* Sits at the height 25g reaches on the tallest bar in view. The 24px subtracted
+   below is the container's 6px top padding plus the 18px date-label row, leaving
+   exactly the track the bars are drawn in. */
+.sugar-limit-line {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: calc(18px + (100% - 24px) * var(--limit-ratio, 1));
+  border-top: 1px dashed rgba(255, 255, 255, 0.45);
+  pointer-events: none;
+  /* Above the bars: on a day that ran over, the line's whole job is to show
+     where the limit sat inside the bar. */
+  z-index: 1;
+}
+/* Fixed label row so the bar percentages resolve against a definite track
+   height rather than the whole column. */
+/* max-width keeps a single tracked day from rendering as a full-width slab. */
+.sugar-bar { flex: 1; min-width: 0; max-width: 54px; display: grid; grid-template-rows: minmax(0, 1fr) 14px; gap: 4px; height: 100%; }
+.sugar-bar-slot { display: flex; align-items: flex-end; min-height: 0; }
+.sugar-bar i {
+  display: block;
+  width: 100%;
+  border-radius: 6px 6px 2px 2px;
+  background: linear-gradient(180deg, var(--teal-bright), var(--teal));
+  transition: height 0.4s ease;
+}
+.sugar-bar.over i { background: linear-gradient(180deg, var(--orange), var(--red)); }
+.sugar-bar small { color: var(--faint); font-size: 0.66rem; text-align: center; height: 14px; }
+.sugar-range { display: flex; width: 100%; margin-top: 14px; }
+.sugar-range button { flex: 1; text-align: center; }
+.sugar-summary-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.sugar-history-list { display: grid; gap: 9px; }
+.sugar-history-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: center;
+  padding: 12px 14px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+.sugar-history-row strong { color: var(--ink); font-size: 0.9rem; }
+.sugar-history-row span { display: block; margin-top: 3px; color: var(--faint); font-size: 0.78rem; }
+.sugar-history-row b { font-family: var(--font-display); font-size: 1.05rem; color: var(--ink); }
+.sugar-history-row.over { border-color: rgba(255, 93, 108, 0.35); }
+.sugar-history-row.over b { color: var(--red); }
+
+@media (max-width: 620px) {
+  .sugar-add-form { grid-template-columns: minmax(0, 1fr) 88px; }
+  .sugar-add-form button { grid-column: 1 / -1; width: 100%; justify-content: center; }
+}
+
+/* ============================================================
    ARCADE
    ============================================================ */
 .coins-banner {
@@ -1852,7 +1993,9 @@ dialog form select {
 .r-sentence.done .r-text { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 2px; }
 .r-sound-tag {
   flex-shrink: 0;
-  width: 20px;
+  /* Sized to fit the two-character TH and SH tags without stretching R and S. */
+  min-width: 20px;
+  padding: 0 4px;
   height: 20px;
   border-radius: 6px;
   display: inline-flex;
@@ -1864,6 +2007,8 @@ dialog form select {
 }
 .r-sound-r { color: #04130f; background: linear-gradient(140deg, var(--teal-bright), var(--teal)); }
 .r-sound-s { color: #12061c; background: linear-gradient(140deg, #ffcf6b, #ff9738); }
+.r-sound-th { color: #f4ecff; background: linear-gradient(140deg, #a97bff, #6d43d6); }
+.r-sound-sh { color: #041b26; background: linear-gradient(140deg, #7fdcff, #38bdf8); }
 .r-sentence.done .r-sound-tag { opacity: 0.5; }
 .r-empty { color: var(--muted); font-size: 0.9rem; line-height: 1.4; padding: 8px 2px; text-align: center; }
 .r-next { width: 100%; justify-content: center; margin-top: 12px; }

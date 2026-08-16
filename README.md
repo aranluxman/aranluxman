@@ -9,7 +9,7 @@ A calm personal planner for daily tasks, long-term to-dos, calendar-style events
   a zero-setup fallback — see [docs/GOOGLE_CALENDAR_SETUP.md](docs/GOOGLE_CALENDAR_SETUP.md)
 - Month and week calendar views with an agenda, plus manually added events
 - Sleep tracker with calculated duration, a scrubable graph, and sleep scores
-- Speaking practice: rotating topics, frameworks, and R/S articulation drills
+- Speaking practice: rotating topics, frameworks, and R/S/TH/SH articulation drills
 - Goals and an About Me profile, saved automatically
 - Arcade: coins earned from real work, plus nine mini-games
 - Masked Supabase settings, dark mode, and iOS-friendly PWA metadata

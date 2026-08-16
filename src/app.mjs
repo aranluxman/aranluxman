@@ -14,8 +14,13 @@ import {
   getGreetingEmoji,
   getHomeSubtitle,
   getSleepSummary,
+  getSugarProgress,
   parseIcsEvents,
+  SUGAR_DAILY_LIMIT_GRAMS,
+  sugarEntriesForDate,
   summarizeFitnessWeek,
+  summarizeSugar,
+  sumSugarForDate,
   todayKey,
 } from "./planner-utils.mjs";
 import { createIcons } from "./icons.mjs";
@@ -304,6 +309,10 @@ const rWordSentences = {
   ],
 };
 const R_SET_SIZE = 10;
+// How many of each target sound make up one 10-sentence practice set. R and S carry
+// the bulk of the drill; TH and SH get one slot each so they stay in rotation
+// without crowding out the two sounds this module was built for.
+const R_SET_MIX = { R: 4, S: 4, TH: 1, SH: 1 };
 // Once a sentence is checked off (crossed out) it goes on a cooldown and will not
 // appear again until this many days have passed.
 const R_COOLDOWN_DAYS = 7;
@@ -354,6 +363,150 @@ const sWordSentences = {
     "A moose stood still on the frozen ice.",
     "The actress wore a dress made of lace.",
     "The niece placed a vase on the bookcase.",
+  ],
+};
+
+// TH-words articulation drills. Unlike R and S these are hand-written only: the
+// combinatorial generator below cannot guarantee a TH lands in the right position
+// for every combination it produces, and a medial drill full of final-TH words is
+// worse than a shorter list. Both the voiceless /th/ ("think") and the voiced /th/
+// ("mother") count — they share the same tongue-between-teeth placement.
+const thWordSentences = {
+  initial: [
+    "Thomas thought about three thick books.",
+    "Thirty thirsty thinkers thanked the theater.",
+    "Theo threw the thin thread over the thorn.",
+    "Thursday's thunder shook the thatched roof.",
+    "The thoughtful thief thanked me for the thermos.",
+    "Think through the theory before Thursday.",
+    "Three thousand thistles grew by the path.",
+    "Thelma thumbed through a thrilling thriller.",
+    "The thermometer read thirty-three degrees.",
+    "Thank the thoughtful theater for the thick program.",
+    "Thad threaded the needle with his thumb.",
+    "Thirsty and thrilled, they thanked the thunderstorm.",
+    "The therapist thought the theme was thoughtful.",
+    "Throw the thick thermos through the doorway.",
+    "Theodore thrives on Thursday theater practice.",
+    "The thrush and the thistle thrived together.",
+    "Thoughts of Thanksgiving filled Thelma's Thursday.",
+    "Three thin threads held the thick thimble.",
+    "Thankfully the thunder passed by Thursday.",
+    "The thirsty thoroughbred thundered through the field.",
+  ],
+  medial: [
+    "My birthday falls on a healthy Thursday.",
+    "Mother and Father gathered by the weather vane.",
+    "The athlete ran a marathon without anything to drink.",
+    "My brother brushed his teeth with a new toothbrush.",
+    "Heather bothered the panther in the northern zoo.",
+    "Arthur would rather gather feathers together.",
+    "Nothing was worthy of the wealthy author.",
+    "The python slithered through the earthy pathway.",
+    "Kathy's method was healthier than anything else.",
+    "Either the weather or the leather will bother him.",
+    "Together they gathered everything for the birthday.",
+    "The author's brother is a faithful athlete.",
+    "My grandmother bathed the puppy in the bathtub.",
+    "Anthony gathered sympathy from another brother.",
+    "The northern weather bothered the youthful athletes.",
+    "Ruthie ran a marathon on her birthday.",
+    "Feathers and leather gathered in the bathroom.",
+    "Neither brother bothered with the birthday cake.",
+    "The wealthy author gathered nothing but sympathy.",
+    "Katherine's mother is a faithful marathon runner.",
+  ],
+  final: [
+    "I take a warm bath after math.",
+    "Brush both rows of teeth every month.",
+    "The moth flew north above the path.",
+    "Take a deep breath and open your mouth.",
+    "Growth takes both health and youth.",
+    "The cloth on the fifth shelf is smooth.",
+    "Beth walked south along the narrow path.",
+    "Tell the truth about the broken tooth.",
+    "The earth beneath the path felt smooth.",
+    "Both the math and the health test were tough.",
+    "Wealth is worth less than health.",
+    "The fifth month brought steady growth.",
+    "Keith held his breath underneath the cloth.",
+    "A moth landed on the birdbath by the path.",
+    "Go north, then south, then back to the path.",
+    "Every month I clean my teeth and my mouth.",
+    "The youth showed growth and real strength.",
+    "Smooth cloth is worth the extra length.",
+    "Beneath the bath sat a small gray moth.",
+    "Tell the truth: is the path north or south?",
+  ],
+};
+// SH-words articulation drills (/sh/ as in "shoe"). Hand-written for the same
+// positional reason as TH above.
+const shWordSentences = {
+  initial: [
+    "She showed us her shiny new shoes.",
+    "The shark shot past the shallow shore.",
+    "Sharon shoveled snow off the short shed.",
+    "Shawn shared his shirt with his shivering sister.",
+    "The shepherd shooed the sheep into the shade.",
+    "Shelly shopped for shampoo and a shower cap.",
+    "Shine the flashlight and show me the shelf.",
+    "The ship sheltered in the shadow of the shore.",
+    "Sharp shells shimmered on the shallow shoreline.",
+    "Shut the shutters before the shower starts.",
+    "Sheila shouted from the shortest shortcut.",
+    "The shy shopper shrugged at the shrinking shelf.",
+    "Shane shaped the short shovel handle.",
+    "Show the shopkeeper your shiny shell.",
+    "Shirley shared a shortcake with the shepherd.",
+    "The shuttle shook as it shot past the shore.",
+    "Shallow shells shifted in the shining sand.",
+    "Shawn's shoulder shifted under the sheep.",
+    "She shouted, then showed us the shortcut.",
+    "The shopkeeper shelved the shiny shoes.",
+  ],
+  medial: [
+    "The washer shook the ocean-blue cushion.",
+    "Sunshine filled the fishing station all morning.",
+    "Michelle washed the dishes after the workshop.",
+    "The patient waited by the ancient bookshelf.",
+    "A delicious milkshake beat any marshmallow.",
+    "The machine at the station needed washing.",
+    "Mushrooms grew beside the seashell path.",
+    "Special flashlights lit the ocean workshop.",
+    "The magician's motion was precious to watch.",
+    "Trisha finished washing the seashell dishes.",
+    "The nation watched the ocean in motion.",
+    "Marshall wished for a milkshake and a mushroom.",
+    "An ancient brochure sat on the bookshelf.",
+    "The fisherman's flashlight lit the ocean.",
+    "Washing machines rushed through the workshop.",
+    "The patient found a precious seashell.",
+    "Sunshine and ocean motion filled the station.",
+    "Alicia washed the cushions in the machine.",
+    "A delicious marshmallow melted in the sunshine.",
+    "The magician's special motion astonished us.",
+  ],
+  final: [
+    "The fish splashed in the fresh dish.",
+    "Wash the brush before the trash goes out.",
+    "I wish I could finish the radish salad.",
+    "Push the cash into the small dish.",
+    "A flash of light made the goldfish dash.",
+    "The crash of the wave made a big splash.",
+    "Josh will finish the English homework.",
+    "Polish the brush until the finish is fresh.",
+    "The shellfish hid beneath the marsh.",
+    "Don't rush; just finish and wash up.",
+    "Trish put the radish in the fresh dish.",
+    "A splash of water hit the windshield sash.",
+    "The jellyfish drifted past in a flash.",
+    "Brush the ash off the fresh trash bin.",
+    "I wish the goldfish would finish its dish.",
+    "Push the cart, then wash the fresh squash.",
+    "The English class had to finish the quiz.",
+    "Ash and trash filled the old brush pile.",
+    "Cash and a fresh radish sat in the dish.",
+    "The starfish and jellyfish caused a splash.",
   ],
 };
 
@@ -433,7 +586,9 @@ const genFinalR = dedupeSentences([
     [
       ["teacher", "doctor", "farmer", "painter", "driver", "singer", "dancer", "baker", "sailor", "author", "waiter", "hiker", "jogger", "reporter", "manager", "trainer", "barber", "plumber", "ranger", "actor"],
       ["doctor", "farmer", "painter", "driver", "singer", "dancer", "baker", "sailor", "author", "waiter", "hiker", "jogger", "reporter", "manager", "trainer", "barber", "plumber", "ranger", "actor", "teacher"],
-      ["water", "butter", "sugar", "cheddar", "chowder", "dinner", "supper", "a cracker", "a wafer", "a burger"],
+      // All plural/mass nouns: the template reads "…some ${o}", so "a cracker"
+      // here produced "offered the hiker some a cracker".
+      ["water", "butter", "sugar", "cheddar", "chowder", "dinner", "supper", "crackers", "wafers", "burgers"],
     ],
     200,
   ),
@@ -469,11 +624,26 @@ const genFinalS = dedupeSentences([
 ]);
 
 // Combined pools used by the UI: curated + generated, deduped. Each position holds
-// both an R list and an S list; a practice set draws from both so the sounds mix.
+// one list per target sound; a practice set draws from all four so the sounds mix.
 const articulationPools = {
-  initial: { R: dedupeSentences([...rWordSentences.initial, ...genInitialR]), S: dedupeSentences([...sWordSentences.initial, ...genInitialS]) },
-  medial: { R: dedupeSentences([...rWordSentences.medial, ...genMedialR]), S: dedupeSentences([...sWordSentences.medial, ...genMedialS]) },
-  final: { R: dedupeSentences([...rWordSentences.final, ...genFinalR]), S: dedupeSentences([...sWordSentences.final, ...genFinalS]) },
+  initial: {
+    R: dedupeSentences([...rWordSentences.initial, ...genInitialR]),
+    S: dedupeSentences([...sWordSentences.initial, ...genInitialS]),
+    TH: dedupeSentences(thWordSentences.initial),
+    SH: dedupeSentences(shWordSentences.initial),
+  },
+  medial: {
+    R: dedupeSentences([...rWordSentences.medial, ...genMedialR]),
+    S: dedupeSentences([...sWordSentences.medial, ...genMedialS]),
+    TH: dedupeSentences(thWordSentences.medial),
+    SH: dedupeSentences(shWordSentences.medial),
+  },
+  final: {
+    R: dedupeSentences([...rWordSentences.final, ...genFinalR]),
+    S: dedupeSentences([...sWordSentences.final, ...genFinalS]),
+    TH: dedupeSentences(thWordSentences.final),
+    SH: dedupeSentences(shWordSentences.final),
+  },
 };
 const workoutMetrics = [
   { key: "pullups", label: "Pull-ups", icon: "dumbbell", accent: "#3e9cff", step: 5, unit: "reps" },
@@ -636,6 +806,7 @@ const memoryIconPool = [
 const defaultState = {
   items: [],
   sleepEntries: [],
+  sugarEntries: [],
   focusSessions: [],
   fitnessLog: [],
   rewards: [],
@@ -775,7 +946,16 @@ document.addEventListener("DOMContentLoaded", () => {
   renderAbout();
   indexCards(document.querySelector(".view.active"));
   const view = new URLSearchParams(location.search).get("view");
-  if (["home", "calendar", "sleep", "speak", "me", "arcade"].includes(view)) setView(view);
+  if (["home", "calendar", "sleep", "sugar", "speak", "me", "arcade"].includes(view)) setView(view);
+  scheduleMidnightRollover();
+  // A phone that was asleep at midnight fires the timer late, or not until the
+  // tab is looked at again; re-check the date whenever the app becomes visible.
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      handleDateRollover();
+      scheduleMidnightRollover();
+    }
+  });
   void initializeCloud();
   void initGoogleCalendar();
 });
@@ -797,6 +977,9 @@ function bindElements() {
     "weekGrid", "calendarViewToggle", "agendaTitle", "agendaList", "addSleepButton", "sleepGoalInput",
     "lastNightDate", "lastBedtime", "lastWake", "lastDuration", "lastMood",
     "averageSleepStat", "sleepScoreStat", "sleepHint", "sleepChart", "sleepList",
+    "sugarForm", "sugarNameInput", "sugarGramsInput", "sugarAddButton", "sugarError", "sugarList",
+    "sugarTotal", "sugarStatus", "sugarLimitLabel", "sugarProgressFill", "sugarOverFlag",
+    "sugarChart", "sugarHistoryHint", "sugarHistoryList", "sugarAverageStat", "sugarOverStat",
     "arcadeCoins", "arcadeCoinBreakdown", "arcadeBoost", "arcadeBoostButton", "reactionStartButton", "reactionPad", "reactionBest",
     "reactionHistory", "memoryStartButton", "memoryStatus", "memoryGrid", "goalReminderInput", "composeDialog", "composeForm",
     "composeTitle", "editingItemIdInput", "toggleAdvancedButton", "advancedFields", "itemTitleInput", "itemKindInput",
@@ -877,6 +1060,17 @@ function wireEvents() {
     if (button) toggleRSentence(button.dataset.rId);
   });
   els.rNextSet?.addEventListener("click", nextRSet);
+  els.sugarForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    addSugarFromForm();
+  });
+  const sugarRangeToggle = document.getElementById("sugarRangeToggle");
+  sugarRangeToggle?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-sugar-range]");
+    if (!button) return;
+    sugarRangeToggle.querySelectorAll("button").forEach((item) => item.classList.toggle("active", item === button));
+    renderSugarHistory();
+  });
   document.querySelectorAll("[data-about]").forEach((field) => field.addEventListener("input", () => {
     state.aboutMe[field.dataset.about] = field.value;
     persist();
@@ -1010,6 +1204,7 @@ function render() {
   renderMemoryNotes();
   renderCalendar();
   renderSleep();
+  renderSugar();
   renderArcade();
   refreshIcons();
 }
@@ -1299,22 +1494,27 @@ function interleaveSentences(first, second) {
   return out;
 }
 
-// Build a fresh practice set for a position: half R, half S, skipping anything on
-// cooldown, mixed so the two sounds alternate.
+// Build a fresh practice set for a position: 4 R, 4 S, 1 TH and 1 SH (R_SET_MIX),
+// skipping anything on cooldown. R and S alternate as they always have, then the
+// single TH and SH slot in at spread-out positions so they never land side by side.
 function buildRSet(group) {
-  const pools = articulationPools[group] || { R: [], S: [] };
+  const pools = articulationPools[group] || {};
   const eligibleFor = (sound) => shuffle((pools[sound] || [])
     .map((text, index) => ({ id: `${group}-${sound}-${index}`, text, sound }))
     .filter((sentence) => !isSentenceOnCooldown(sentence.id)));
-  const rPool = eligibleFor("R");
-  const sPool = eligibleFor("S");
-  const half = Math.floor(R_SET_SIZE / 2);
-  const rPicks = rPool.slice(0, half);
-  const sPicks = sPool.slice(0, R_SET_SIZE - half);
-  let combined = interleaveSentences(rPicks, sPicks);
+  const eligible = Object.fromEntries(Object.keys(R_SET_MIX).map((sound) => [sound, eligibleFor(sound)]));
+  const picked = Object.fromEntries(Object.entries(R_SET_MIX).map(([sound, count]) => [sound, eligible[sound].slice(0, count)]));
+
+  let combined = interleaveSentences(picked.R, picked.S);
+  // Spread the two singles through the R/S run rather than tacking them on the end.
+  [...picked.TH, ...picked.SH].forEach((sentence, slot) => {
+    combined.splice(Math.min(3 + slot * 4, combined.length), 0, sentence);
+  });
   if (combined.length < R_SET_SIZE) {
+    // A sound whose pool is thinned by cooldown gives its slots back to the others
+    // so a set is always full rather than short.
     const used = new Set(combined.map((sentence) => sentence.id));
-    const extras = [...rPool, ...sPool].filter((sentence) => !used.has(sentence.id));
+    const extras = Object.keys(R_SET_MIX).flatMap((sound) => eligible[sound]).filter((sentence) => !used.has(sentence.id));
     combined = combined.concat(extras.slice(0, R_SET_SIZE - combined.length));
   }
   return combined.map((sentence) => sentence.id);
@@ -2066,6 +2266,119 @@ function deleteSleepEntry(id) {
   if (canSync()) void supabaseFetch(`life_flow_sleep_entries?id=eq.${id}`, { method: "DELETE" });
 }
 
+// ---------- Sugar ----------
+// "Today" is always derived from todayKey() rather than stored, so the daily
+// reset is a consequence of the date changing, not a job that has to run. The
+// only thing a rollover needs is a re-render — see scheduleMidnightRollover.
+function sugarRangeType() {
+  return document.getElementById("sugarRangeToggle")?.querySelector(".active")?.dataset.sugarRange || "days";
+}
+
+function renderSugar() {
+  if (!els.sugarList) return;
+  const today = todayKey();
+  const progress = getSugarProgress(sumSugarForDate(state.sugarEntries, today), SUGAR_DAILY_LIMIT_GRAMS);
+
+  els.sugarLimitLabel.textContent = `Daily limit: ${progress.limit}g`;
+  els.sugarTotal.textContent = `${progress.grams}g`;
+  els.sugarStatus.textContent = progress.over
+    ? `${progress.percent}% of your daily limit`
+    : `${progress.percent}% of your daily limit · ${progress.remaining}g left`;
+  els.sugarProgressFill.style.width = `${progress.fillPercent}%`;
+  els.sugarProgressFill.parentElement.classList.toggle("over", progress.over);
+  els.sugarOverFlag.hidden = !progress.over;
+  els.sugarOverFlag.textContent = progress.over ? `${progress.overBy}g over limit` : "";
+
+  const todayEntries = sugarEntriesForDate(state.sugarEntries, today);
+  els.sugarList.innerHTML = todayEntries.length
+    ? todayEntries.map((entry) => `<article class="sugar-row"><div><strong>${escapeHtml(entry.item_name)}</strong><span>${formatTime(entry.created_at)}</span></div><b>${Number(entry.grams)}g</b><button class="icon-button" data-delete-sugar="${entry.id}" title="Remove"><i data-lucide="trash-2"></i></button></article>`).join("")
+    : '<article class="empty-state compact"><strong>Nothing logged today</strong><p>Add an item above to start tracking.</p></article>';
+  els.sugarList.querySelectorAll("[data-delete-sugar]").forEach((button) => {
+    button.addEventListener("click", () => deleteSugarEntry(button.dataset.deleteSugar));
+  });
+
+  renderSugarHistory();
+  refreshIcons();
+}
+
+function renderSugarHistory() {
+  const rangeType = sugarRangeType();
+  const summary = summarizeSugar(state.sugarEntries, rangeType, SUGAR_DAILY_LIMIT_GRAMS);
+  els.sugarHistoryHint.textContent = summary.daysTracked ? `${summary.daysTracked} days tracked` : "";
+  els.sugarAverageStat.textContent = summary.daysTracked ? `${summary.averageGrams}g` : "—";
+  els.sugarOverStat.textContent = summary.daysTracked ? String(summary.daysOverLimit) : "—";
+
+  if (!summary.points.length) {
+    els.sugarChart.innerHTML = '<article class="empty-state compact"><strong>No history yet</strong><p>Days you log will show up here as a trend.</p></article>';
+    els.sugarHistoryList.innerHTML = "";
+    return;
+  }
+  els.sugarChart.innerHTML = `
+    <div class="sugar-bars" style="--limit-ratio:${(summary.limitHeight / 100).toFixed(3)}">
+      <span class="sugar-limit-line" aria-hidden="true"></span>
+      ${summary.points.map((point) => `<div class="sugar-bar ${point.over ? "over" : ""}" title="${prettyDate(point.date)}: ${point.label}"><span class="sugar-bar-slot"><i style="height:${Math.max(2, point.height)}%"></i></span><small>${new Date(`${point.date}T00:00:00`).toLocaleDateString("en", { day: "numeric" })}</small></div>`).join("")}
+    </div>`;
+
+  els.sugarHistoryList.innerHTML = [...summary.points].reverse().map((point) => `<article class="sugar-history-row ${point.over ? "over" : ""}"><div><strong>${prettyDate(point.date)}</strong><span>${point.percent}% of limit</span></div><b>${point.label}</b></article>`).join("");
+}
+
+function addSugarFromForm() {
+  const name = els.sugarNameInput.value.trim();
+  const grams = Number(els.sugarGramsInput.value);
+  if (!name || !Number.isFinite(grams) || grams < 0 || grams > 500) {
+    els.sugarError.hidden = false;
+    return;
+  }
+  els.sugarError.hidden = true;
+  const entry = {
+    id: crypto.randomUUID(),
+    owner_key: settings.ownerKey,
+    entry_date: todayKey(),
+    item_name: name,
+    grams: Math.round(grams * 10) / 10,
+    created_at: new Date().toISOString(),
+  };
+  state.sugarEntries = [entry, ...state.sugarEntries];
+  persist();
+  els.sugarForm.reset();
+  els.sugarNameInput.focus();
+  renderSugar();
+  void upsertSupabase("life_flow_sugar_entries", entry);
+}
+
+function deleteSugarEntry(id) {
+  state.sugarEntries = state.sugarEntries.filter((entry) => entry.id !== id);
+  persist();
+  renderSugar();
+  if (canSync()) void supabaseFetch(`life_flow_sugar_entries?id=eq.${id}`, { method: "DELETE" }).catch(() => {});
+}
+
+// The app is a PWA that stays open for days on a phone. Without this, a tab left
+// open overnight would keep showing yesterday's sugar total against today's date.
+let midnightTimer = null;
+function scheduleMidnightRollover() {
+  if (midnightTimer) clearTimeout(midnightTimer);
+  const now = new Date();
+  const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 2, 0);
+  // setTimeout caps at ~24.8 days, and a sleeping device can fire late; either way
+  // the guard below re-checks the real date rather than trusting the timer.
+  midnightTimer = setTimeout(() => {
+    handleDateRollover();
+    scheduleMidnightRollover();
+  }, Math.max(1000, nextMidnight.getTime() - now.getTime()));
+}
+
+let lastRenderedDay = todayKey();
+function handleDateRollover() {
+  const today = todayKey();
+  if (today === lastRenderedDay) return;
+  lastRenderedDay = today;
+  state.selectedDate = today;
+  state.monthCursor = `${today.slice(0, 7)}-01`;
+  persist();
+  render();
+}
+
 function completeDailyBoost() {
   if (state.rewards.some((reward) => reward.type === "daily_boost" && reward.date === todayKey())) return;
   const card = els.arcadeBoostButton?.closest(".arcade-card");
@@ -2249,7 +2562,7 @@ function applySettings() {
 }
 
 function resetAllData() {
-  if (!window.confirm("Are you sure? This will clear all tasks, sleep logs, focus sessions, and calendar events.")) return;
+  if (!window.confirm("Are you sure? This will clear all tasks, sleep logs, sugar logs, focus sessions, and calendar events.")) return;
   localStorage.removeItem(STORE_KEY);
   state = normalizeState(defaultState);
   persist();
@@ -2275,10 +2588,13 @@ async function syncFromSupabase() {
   }
   try {
     setSyncStatus("Syncing from Supabase...");
-    const [items, focus, sleep, cloudState] = await Promise.all([
+    const [items, focus, sleep, sugar, cloudState] = await Promise.all([
       supabaseFetch("life_flow_items?select=*&order=created_at.desc"),
       supabaseFetch("life_flow_focus_sessions?select=*&order=completed_at.desc"),
       supabaseFetch("life_flow_sleep_entries?select=*&order=sleep_date.desc"),
+      // A project that has not run the sugar migration yet must not break the
+      // rest of the pull, so this one table is allowed to come back empty.
+      supabaseFetch("life_flow_sugar_entries?select=*&order=created_at.desc").catch(() => []),
       supabaseFetch("life_flow_app_state?select=*"),
     ]);
     if (cloudState?.[0]) {
@@ -2314,6 +2630,7 @@ async function syncFromSupabase() {
     state.items = seedRecurring(mergeById(state.items, items || []).filter((item) => !deleted.has(item.id)));
     state.focusSessions = mergeById(state.focusSessions, focus || []);
     state.sleepEntries = mergeById(state.sleepEntries, sleep || []);
+    state.sugarEntries = mergeById(state.sugarEntries, sugar || []);
     persist();
     render();
     setSyncStatus("Synced with Supabase");
@@ -2336,6 +2653,8 @@ async function syncToSupabase() {
       await upsertSupabase("life_flow_focus_sessions", sessionWithMeta);
     }
     for (const entry of state.sleepEntries) await upsertSupabase("life_flow_sleep_entries", entry, "owner_key,sleep_date");
+    // Keyed by id, not by date: a day holds many items, unlike sleep.
+    for (const entry of state.sugarEntries) await upsertSupabase("life_flow_sugar_entries", entry);
     await upsertAppState();
     setSyncStatus("Synced with Supabase");
   } catch (error) {
@@ -2763,6 +3082,7 @@ function normalizeState(saved) {
     memoryNotes: { ...defaultState.memoryNotes, ...(saved.memoryNotes || {}) },
     items: seedRecurring(normalizeItemIds(Array.isArray(saved.items) ? saved.items : [])),
     sleepEntries: Array.isArray(saved.sleepEntries) ? saved.sleepEntries : [],
+    sugarEntries: Array.isArray(saved.sugarEntries) ? saved.sugarEntries : [],
     focusSessions: Array.isArray(saved.focusSessions) ? saved.focusSessions : [],
     fitnessLog: Array.isArray(saved.fitnessLog) ? saved.fitnessLog : [],
     rewards: Array.isArray(saved.rewards) ? saved.rewards : [],

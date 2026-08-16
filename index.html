@@ -27,6 +27,7 @@
           <button class="nav-item active" data-view="home" type="button" role="tab" aria-selected="true" aria-controls="homeView"><i data-lucide="home"></i><span>Home</span></button>
           <button class="nav-item" data-view="calendar" type="button" role="tab" aria-selected="false" aria-controls="calendarView"><i data-lucide="calendar-days"></i><span>Calendar</span></button>
           <button class="nav-item" data-view="sleep" type="button" role="tab" aria-selected="false" aria-controls="sleepView"><i data-lucide="moon"></i><span>Sleep</span></button>
+          <button class="nav-item" data-view="sugar" type="button" role="tab" aria-selected="false" aria-controls="sugarView"><i data-lucide="candy"></i><span>Sugar</span></button>
           <button class="nav-item" data-view="speak" type="button" role="tab" aria-selected="false" aria-controls="speakView"><i data-lucide="mic"></i><span>Speak</span></button>
           <button class="nav-item" data-view="me" type="button" role="tab" aria-selected="false" aria-controls="meView"><i data-lucide="target"></i><span>Me</span></button>
           <button class="nav-item" data-view="arcade" type="button" role="tab" aria-selected="false" aria-controls="arcadeView"><i data-lucide="gamepad-2"></i><span>Arcade</span></button>
@@ -150,6 +151,47 @@
             <article class="stat-card sleep-stat accent-gold"><span><i data-lucide="trending-up"></i></span><strong id="sleepScoreStat">&mdash;</strong><small>Sleep Score</small></article>
           </section>
           <div class="sleep-list" id="sleepList"></div>
+        </section>
+
+        <section class="view" id="sugarView" role="tabpanel" tabindex="0" aria-labelledby="sugarTitle">
+          <div class="section-heading section-heading-sugar"><div><h1 id="sugarTitle">Sugar</h1><p class="section-subtitle">Track added sugar against your daily limit.</p></div></div>
+          <section class="surface sugar-today-card">
+            <div class="card-heading"><h2>Today</h2><span id="sugarLimitLabel">Daily limit: 25g</span></div>
+            <div class="sugar-readout">
+              <strong id="sugarTotal">0g</strong>
+              <span id="sugarStatus">0% of your daily limit</span>
+            </div>
+            <div class="sugar-progress-track"><i id="sugarProgressFill"></i></div>
+            <p class="sugar-over-flag" id="sugarOverFlag" hidden></p>
+            <form class="sugar-add-form" id="sugarForm" autocomplete="off">
+              <label class="sugar-field sugar-field-name">
+                <span>Item</span>
+                <input id="sugarNameInput" type="text" maxlength="80" placeholder="e.g. Chocolate milk" required />
+              </label>
+              <label class="sugar-field sugar-field-grams">
+                <span>Sugar</span>
+                <input id="sugarGramsInput" type="number" min="0" max="500" step="0.1" placeholder="0" required />
+              </label>
+              <button class="primary-button compact" id="sugarAddButton" type="submit"><i data-lucide="plus"></i><span>Add</span></button>
+            </form>
+            <p class="sugar-error" id="sugarError" hidden>Add an item name and a sugar amount between 0 and 500g.</p>
+            <div class="sugar-list" id="sugarList"></div>
+          </section>
+          <section class="surface sugar-history-card">
+            <div class="card-heading"><h2>History</h2><span id="sugarHistoryHint"></span></div>
+            <div class="sugar-chart" id="sugarChart"></div>
+            <div class="segmented sugar-range" id="sugarRangeToggle" role="tablist" aria-label="Sugar history range">
+              <button class="active" type="button" data-sugar-range="days">Days</button>
+              <button type="button" data-sugar-range="weeks">Weeks</button>
+              <button type="button" data-sugar-range="months">Months</button>
+              <button type="button" data-sugar-range="all">All</button>
+            </div>
+          </section>
+          <section class="sugar-summary-grid">
+            <article class="stat-card sugar-stat accent-teal"><span><i data-lucide="trending-up"></i></span><strong id="sugarAverageStat">&mdash;</strong><small>Avg Per Day</small></article>
+            <article class="stat-card sugar-stat accent-gold"><span><i data-lucide="candy"></i></span><strong id="sugarOverStat">&mdash;</strong><small>Days Over Limit</small></article>
+          </section>
+          <div class="sugar-history-list" id="sugarHistoryList"></div>
         </section>
 
         <section class="view" id="meView" role="tabpanel" tabindex="0" aria-labelledby="meTitle">

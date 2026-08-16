@@ -16,7 +16,13 @@ import {
   getGreetingEmoji,
   getHomeSubtitle,
   getSleepSummary,
+  getSugarProgress,
+  SUGAR_DAILY_LIMIT_GRAMS,
+  sugarEntriesForDate,
+  sugarTotalsByDate,
   summarizeFitnessWeek,
+  summarizeSugar,
+  sumSugarForDate,
   parseIcsEvents,
   sanitizeFocusMinutes,
 } from "../src/planner-utils.mjs";
@@ -214,4 +220,101 @@ test("countSessionsForDate counts only completed focus sessions for that day", (
     ),
     2,
   );
+});
+
+// ---------- Added sugar ----------
+
+const sugarEntry = (date, name, grams, time = "12:00:00") => ({
+  id: `${date}-${name}`, entry_date: date, item_name: name, grams, created_at: `${date}T${time}Z`,
+});
+
+test("sumSugarForDate totals only the requested day and avoids float drift", () => {
+  const entries = [
+    sugarEntry("2026-08-16", "Yogurt", 0.1),
+    sugarEntry("2026-08-16", "Granola", 0.2),
+    sugarEntry("2026-08-15", "Cookie", 12),
+  ];
+  assert.equal(sumSugarForDate(entries, "2026-08-16"), 0.3);
+  assert.equal(sumSugarForDate(entries, "2026-08-15"), 12);
+  assert.equal(sumSugarForDate(entries, "2026-08-14"), 0);
+});
+
+test("getSugarProgress reports true percent while clamping only the visual fill", () => {
+  const under = getSugarProgress(20);
+  assert.equal(under.percent, 80);
+  assert.equal(under.fillPercent, 80);
+  assert.equal(under.over, false);
+  assert.equal(under.remaining, 5);
+
+  // 30g against a 25g limit: 120% on the readout, bar pinned at 100%, 5g over.
+  const over = getSugarProgress(30);
+  assert.equal(over.percent, 120);
+  assert.equal(over.fillPercent, 100);
+  assert.equal(over.over, true);
+  assert.equal(over.overBy, 5);
+  assert.equal(over.remaining, 0);
+});
+
+test("getSugarProgress treats exactly the limit as not over", () => {
+  const exact = getSugarProgress(SUGAR_DAILY_LIMIT_GRAMS);
+  assert.equal(exact.percent, 100);
+  assert.equal(exact.over, false);
+  assert.equal(exact.overBy, 0);
+});
+
+test("sugar entries reset at the local midnight boundary without touching past days", () => {
+  const entries = [
+    sugarEntry("2026-08-16", "Juice", 22, "23:58:00"),
+    sugarEntry("2026-08-16", "Candy", 6, "23:59:00"),
+    sugarEntry("2026-08-17", "Cereal", 9, "07:30:00"),
+  ];
+
+  // The minute before midnight: yesterday reads 28g and is flagged over.
+  const before = getSugarProgress(sumSugarForDate(entries, "2026-08-16"));
+  assert.equal(before.grams, 28);
+  assert.equal(before.over, true);
+  assert.equal(before.overBy, 3);
+  assert.equal(sugarEntriesForDate(entries, "2026-08-16").length, 2);
+
+  // Crossing midnight with nothing yet logged: the new day starts empty at 0%.
+  const rolledOver = getSugarProgress(sumSugarForDate([entries[0], entries[1]], "2026-08-17"));
+  assert.equal(rolledOver.grams, 0);
+  assert.equal(rolledOver.percent, 0);
+  assert.equal(rolledOver.fillPercent, 0);
+  assert.equal(rolledOver.over, false);
+  assert.deepEqual(sugarEntriesForDate([entries[0], entries[1]], "2026-08-17"), []);
+
+  // Later that morning the new day tracks on its own, and the old day is intact.
+  assert.equal(sumSugarForDate(entries, "2026-08-17"), 9);
+  assert.equal(sumSugarForDate(entries, "2026-08-16"), 28);
+  assert.deepEqual(
+    sugarTotalsByDate(entries).map((day) => [day.date, day.grams]),
+    [["2026-08-16", 28], ["2026-08-17", 9]],
+  );
+});
+
+test("summarizeSugar aggregates per day, counts days over the limit, and windows by range", () => {
+  const entries = [
+    sugarEntry("2026-08-14", "Soda", 40),
+    sugarEntry("2026-08-15", "Apple", 10),
+    sugarEntry("2026-08-15", "Bar", 8),
+    sugarEntry("2026-08-16", "Cereal", 25),
+  ];
+  const summary = summarizeSugar(entries, "all");
+  assert.deepEqual(summary.points.map((point) => point.grams), [40, 18, 25]);
+  assert.deepEqual(summary.points.map((point) => point.over), [true, false, false]);
+  assert.equal(summary.daysOverLimit, 1);
+  assert.equal(summary.daysTracked, 3);
+  assert.equal(summary.averageGrams, 27.7);
+  // Bar heights are relative to the tallest day, and the limit line to the same.
+  assert.equal(summary.maxGrams, 40);
+  assert.deepEqual(summary.points.map((point) => point.height), [100, 45, 63]);
+  assert.equal(summary.limitHeight, 63);
+});
+
+test("summarizeSugar drops days whose items were all deleted", () => {
+  const summary = summarizeSugar([sugarEntry("2026-08-16", "Nothing", 0)], "all");
+  assert.deepEqual(summary.points, []);
+  assert.equal(summary.daysTracked, 0);
+  assert.equal(summary.averageGrams, 0);
 });

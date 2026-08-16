@@ -430,3 +430,87 @@ function parseIcsDate(value) {
 function unescapeIcs(value) {
   return value.replace(/\\n/g, " ").replace(/\\,/g, ",").replace(/\\\\/g, "\\");
 }
+
+// ---------- Added sugar ----------
+// American Heart Association: no more than 25g of added sugar a day for ages
+// 2-18. The same figure applies regardless of gender.
+export const SUGAR_DAILY_LIMIT_GRAMS = 25;
+
+// Grams are entered by hand and can be fractional, so every total goes through
+// here: 0.1 + 0.2 must read as 0.3 on screen, not 0.30000000000000004.
+const roundGrams = (value) => Math.round((Number(value) || 0) * 10) / 10;
+
+const entryDateOf = (entry) => String(entry?.entry_date || "").slice(0, 10);
+
+export function sugarEntriesForDate(entries = [], dateKey = todayKey()) {
+  return entries
+    .filter((entry) => entryDateOf(entry) === dateKey)
+    .sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
+}
+
+export function sumSugarForDate(entries = [], dateKey = todayKey()) {
+  return roundGrams(sugarEntriesForDate(entries, dateKey).reduce((sum, entry) => sum + (Number(entry.grams) || 0), 0));
+}
+
+// Percent is deliberately uncapped so going over reads as "128%" rather than a
+// silent 100%. Only fillPercent — what the bar actually paints — is clamped.
+export function getSugarProgress(totalGrams, limit = SUGAR_DAILY_LIMIT_GRAMS) {
+  const grams = roundGrams(Math.max(0, Number(totalGrams) || 0));
+  const percent = limit > 0 ? Math.round((grams / limit) * 100) : 0;
+  return {
+    grams,
+    limit,
+    percent,
+    fillPercent: Math.max(0, Math.min(100, percent)),
+    over: grams > limit,
+    overBy: roundGrams(Math.max(0, grams - limit)),
+    remaining: roundGrams(Math.max(0, limit - grams)),
+  };
+}
+
+// Daily totals oldest-first, so a day whose items were all deleted disappears
+// from history rather than lingering as a zero.
+export function sugarTotalsByDate(entries = []) {
+  const totals = new Map();
+  for (const entry of entries) {
+    const date = entryDateOf(entry);
+    const grams = Number(entry.grams);
+    if (!date || !Number.isFinite(grams)) continue;
+    totals.set(date, (totals.get(date) || 0) + grams);
+  }
+  return [...totals.entries()]
+    .map(([date, grams]) => ({ date, grams: roundGrams(grams) }))
+    .filter((day) => day.grams > 0)
+    .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+// Same range windows as summarizeSleep so the two history views behave alike.
+export function summarizeSugar(entries = [], rangeType = "days", limit = SUGAR_DAILY_LIMIT_GRAMS) {
+  const days = sugarTotalsByDate(entries);
+  const windows = { days: 7, weeks: 28, months: 90 };
+  const filtered = windows[rangeType] ? days.slice(-windows[rangeType]) : days;
+
+  const total = filtered.reduce((sum, day) => sum + day.grams, 0);
+  const averageGrams = filtered.length ? roundGrams(total / filtered.length) : 0;
+  const maxGrams = Math.max(limit, ...filtered.map((day) => day.grams), 1);
+
+  return {
+    limit,
+    maxGrams,
+    // Where the limit line sits, as a percentage of the tallest bar in view.
+    limitHeight: Math.round((limit / maxGrams) * 100),
+    averageGrams,
+    totalGrams: roundGrams(total),
+    daysTracked: filtered.length,
+    daysOverLimit: filtered.filter((day) => day.grams > limit).length,
+    points: filtered.map((day) => ({
+      date: day.date,
+      grams: day.grams,
+      label: `${day.grams}g`,
+      over: day.grams > limit,
+      percent: Math.round((day.grams / limit) * 100),
+      // Height relative to the tallest bar in view, so the chart always fills.
+      height: Math.round((day.grams / maxGrams) * 100),
+    })),
+  };
+}

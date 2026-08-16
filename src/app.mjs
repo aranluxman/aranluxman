@@ -14,8 +14,13 @@ import {
   getGreetingEmoji,
   getHomeSubtitle,
   getSleepSummary,
+  getSugarProgress,
   parseIcsEvents,
+  SUGAR_DAILY_LIMIT_GRAMS,
+  sugarEntriesForDate,
   summarizeFitnessWeek,
+  summarizeSugar,
+  sumSugarForDate,
   todayKey,
 } from "./planner-utils.mjs";
 import { createIcons } from "./icons.mjs";
@@ -801,6 +806,7 @@ const memoryIconPool = [
 const defaultState = {
   items: [],
   sleepEntries: [],
+  sugarEntries: [],
   focusSessions: [],
   fitnessLog: [],
   rewards: [],
@@ -940,7 +946,16 @@ document.addEventListener("DOMContentLoaded", () => {
   renderAbout();
   indexCards(document.querySelector(".view.active"));
   const view = new URLSearchParams(location.search).get("view");
-  if (["home", "calendar", "sleep", "speak", "me", "arcade"].includes(view)) setView(view);
+  if (["home", "calendar", "sleep", "sugar", "speak", "me", "arcade"].includes(view)) setView(view);
+  scheduleMidnightRollover();
+  // A phone that was asleep at midnight fires the timer late, or not until the
+  // tab is looked at again; re-check the date whenever the app becomes visible.
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) {
+      handleDateRollover();
+      scheduleMidnightRollover();
+    }
+  });
   void initializeCloud();
   void initGoogleCalendar();
 });
@@ -962,6 +977,9 @@ function bindElements() {
     "weekGrid", "calendarViewToggle", "agendaTitle", "agendaList", "addSleepButton", "sleepGoalInput",
     "lastNightDate", "lastBedtime", "lastWake", "lastDuration", "lastMood",
     "averageSleepStat", "sleepScoreStat", "sleepHint", "sleepChart", "sleepList",
+    "sugarForm", "sugarNameInput", "sugarGramsInput", "sugarAddButton", "sugarError", "sugarList",
+    "sugarTotal", "sugarStatus", "sugarLimitLabel", "sugarProgressFill", "sugarOverFlag",
+    "sugarChart", "sugarHistoryHint", "sugarHistoryList", "sugarAverageStat", "sugarOverStat",
     "arcadeCoins", "arcadeCoinBreakdown", "arcadeBoost", "arcadeBoostButton", "reactionStartButton", "reactionPad", "reactionBest",
     "reactionHistory", "memoryStartButton", "memoryStatus", "memoryGrid", "goalReminderInput", "composeDialog", "composeForm",
     "composeTitle", "editingItemIdInput", "toggleAdvancedButton", "advancedFields", "itemTitleInput", "itemKindInput",
@@ -1042,6 +1060,17 @@ function wireEvents() {
     if (button) toggleRSentence(button.dataset.rId);
   });
   els.rNextSet?.addEventListener("click", nextRSet);
+  els.sugarForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    addSugarFromForm();
+  });
+  const sugarRangeToggle = document.getElementById("sugarRangeToggle");
+  sugarRangeToggle?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-sugar-range]");
+    if (!button) return;
+    sugarRangeToggle.querySelectorAll("button").forEach((item) => item.classList.toggle("active", item === button));
+    renderSugarHistory();
+  });
   document.querySelectorAll("[data-about]").forEach((field) => field.addEventListener("input", () => {
     state.aboutMe[field.dataset.about] = field.value;
     persist();
@@ -1175,6 +1204,7 @@ function render() {
   renderMemoryNotes();
   renderCalendar();
   renderSleep();
+  renderSugar();
   renderArcade();
   refreshIcons();
 }
@@ -2236,6 +2266,119 @@ function deleteSleepEntry(id) {
   if (canSync()) void supabaseFetch(`life_flow_sleep_entries?id=eq.${id}`, { method: "DELETE" });
 }
 
+// ---------- Sugar ----------
+// "Today" is always derived from todayKey() rather than stored, so the daily
+// reset is a consequence of the date changing, not a job that has to run. The
+// only thing a rollover needs is a re-render — see scheduleMidnightRollover.
+function sugarRangeType() {
+  return document.getElementById("sugarRangeToggle")?.querySelector(".active")?.dataset.sugarRange || "days";
+}
+
+function renderSugar() {
+  if (!els.sugarList) return;
+  const today = todayKey();
+  const progress = getSugarProgress(sumSugarForDate(state.sugarEntries, today), SUGAR_DAILY_LIMIT_GRAMS);
+
+  els.sugarLimitLabel.textContent = `Daily limit: ${progress.limit}g`;
+  els.sugarTotal.textContent = `${progress.grams}g`;
+  els.sugarStatus.textContent = progress.over
+    ? `${progress.percent}% of your daily limit`
+    : `${progress.percent}% of your daily limit · ${progress.remaining}g left`;
+  els.sugarProgressFill.style.width = `${progress.fillPercent}%`;
+  els.sugarProgressFill.parentElement.classList.toggle("over", progress.over);
+  els.sugarOverFlag.hidden = !progress.over;
+  els.sugarOverFlag.textContent = progress.over ? `${progress.overBy}g over limit` : "";
+
+  const todayEntries = sugarEntriesForDate(state.sugarEntries, today);
+  els.sugarList.innerHTML = todayEntries.length
+    ? todayEntries.map((entry) => `<article class="sugar-row"><div><strong>${escapeHtml(entry.item_name)}</strong><span>${formatTime(entry.created_at)}</span></div><b>${Number(entry.grams)}g</b><button class="icon-button" data-delete-sugar="${entry.id}" title="Remove"><i data-lucide="trash-2"></i></button></article>`).join("")
+    : '<article class="empty-state compact"><strong>Nothing logged today</strong><p>Add an item above to start tracking.</p></article>';
+  els.sugarList.querySelectorAll("[data-delete-sugar]").forEach((button) => {
+    button.addEventListener("click", () => deleteSugarEntry(button.dataset.deleteSugar));
+  });
+
+  renderSugarHistory();
+  refreshIcons();
+}
+
+function renderSugarHistory() {
+  const rangeType = sugarRangeType();
+  const summary = summarizeSugar(state.sugarEntries, rangeType, SUGAR_DAILY_LIMIT_GRAMS);
+  els.sugarHistoryHint.textContent = summary.daysTracked ? `${summary.daysTracked} days tracked` : "";
+  els.sugarAverageStat.textContent = summary.daysTracked ? `${summary.averageGrams}g` : "—";
+  els.sugarOverStat.textContent = summary.daysTracked ? String(summary.daysOverLimit) : "—";
+
+  if (!summary.points.length) {
+    els.sugarChart.innerHTML = '<article class="empty-state compact"><strong>No history yet</strong><p>Days you log will show up here as a trend.</p></article>';
+    els.sugarHistoryList.innerHTML = "";
+    return;
+  }
+  els.sugarChart.innerHTML = `
+    <div class="sugar-bars" style="--limit-ratio:${(summary.limitHeight / 100).toFixed(3)}">
+      <span class="sugar-limit-line" aria-hidden="true"></span>
+      ${summary.points.map((point) => `<div class="sugar-bar ${point.over ? "over" : ""}" title="${prettyDate(point.date)}: ${point.label}"><span class="sugar-bar-slot"><i style="height:${Math.max(2, point.height)}%"></i></span><small>${new Date(`${point.date}T00:00:00`).toLocaleDateString("en", { day: "numeric" })}</small></div>`).join("")}
+    </div>`;
+
+  els.sugarHistoryList.innerHTML = [...summary.points].reverse().map((point) => `<article class="sugar-history-row ${point.over ? "over" : ""}"><div><strong>${prettyDate(point.date)}</strong><span>${point.percent}% of limit</span></div><b>${point.label}</b></article>`).join("");
+}
+
+function addSugarFromForm() {
+  const name = els.sugarNameInput.value.trim();
+  const grams = Number(els.sugarGramsInput.value);
+  if (!name || !Number.isFinite(grams) || grams < 0 || grams > 500) {
+    els.sugarError.hidden = false;
+    return;
+  }
+  els.sugarError.hidden = true;
+  const entry = {
+    id: crypto.randomUUID(),
+    owner_key: settings.ownerKey,
+    entry_date: todayKey(),
+    item_name: name,
+    grams: Math.round(grams * 10) / 10,
+    created_at: new Date().toISOString(),
+  };
+  state.sugarEntries = [entry, ...state.sugarEntries];
+  persist();
+  els.sugarForm.reset();
+  els.sugarNameInput.focus();
+  renderSugar();
+  void upsertSupabase("life_flow_sugar_entries", entry);
+}
+
+function deleteSugarEntry(id) {
+  state.sugarEntries = state.sugarEntries.filter((entry) => entry.id !== id);
+  persist();
+  renderSugar();
+  if (canSync()) void supabaseFetch(`life_flow_sugar_entries?id=eq.${id}`, { method: "DELETE" }).catch(() => {});
+}
+
+// The app is a PWA that stays open for days on a phone. Without this, a tab left
+// open overnight would keep showing yesterday's sugar total against today's date.
+let midnightTimer = null;
+function scheduleMidnightRollover() {
+  if (midnightTimer) clearTimeout(midnightTimer);
+  const now = new Date();
+  const nextMidnight = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 2, 0);
+  // setTimeout caps at ~24.8 days, and a sleeping device can fire late; either way
+  // the guard below re-checks the real date rather than trusting the timer.
+  midnightTimer = setTimeout(() => {
+    handleDateRollover();
+    scheduleMidnightRollover();
+  }, Math.max(1000, nextMidnight.getTime() - now.getTime()));
+}
+
+let lastRenderedDay = todayKey();
+function handleDateRollover() {
+  const today = todayKey();
+  if (today === lastRenderedDay) return;
+  lastRenderedDay = today;
+  state.selectedDate = today;
+  state.monthCursor = `${today.slice(0, 7)}-01`;
+  persist();
+  render();
+}
+
 function completeDailyBoost() {
   if (state.rewards.some((reward) => reward.type === "daily_boost" && reward.date === todayKey())) return;
   const card = els.arcadeBoostButton?.closest(".arcade-card");
@@ -2419,7 +2562,7 @@ function applySettings() {
 }
 
 function resetAllData() {
-  if (!window.confirm("Are you sure? This will clear all tasks, sleep logs, focus sessions, and calendar events.")) return;
+  if (!window.confirm("Are you sure? This will clear all tasks, sleep logs, sugar logs, focus sessions, and calendar events.")) return;
   localStorage.removeItem(STORE_KEY);
   state = normalizeState(defaultState);
   persist();
@@ -2445,10 +2588,13 @@ async function syncFromSupabase() {
   }
   try {
     setSyncStatus("Syncing from Supabase...");
-    const [items, focus, sleep, cloudState] = await Promise.all([
+    const [items, focus, sleep, sugar, cloudState] = await Promise.all([
       supabaseFetch("life_flow_items?select=*&order=created_at.desc"),
       supabaseFetch("life_flow_focus_sessions?select=*&order=completed_at.desc"),
       supabaseFetch("life_flow_sleep_entries?select=*&order=sleep_date.desc"),
+      // A project that has not run the sugar migration yet must not break the
+      // rest of the pull, so this one table is allowed to come back empty.
+      supabaseFetch("life_flow_sugar_entries?select=*&order=created_at.desc").catch(() => []),
       supabaseFetch("life_flow_app_state?select=*"),
     ]);
     if (cloudState?.[0]) {
@@ -2484,6 +2630,7 @@ async function syncFromSupabase() {
     state.items = seedRecurring(mergeById(state.items, items || []).filter((item) => !deleted.has(item.id)));
     state.focusSessions = mergeById(state.focusSessions, focus || []);
     state.sleepEntries = mergeById(state.sleepEntries, sleep || []);
+    state.sugarEntries = mergeById(state.sugarEntries, sugar || []);
     persist();
     render();
     setSyncStatus("Synced with Supabase");
@@ -2506,6 +2653,8 @@ async function syncToSupabase() {
       await upsertSupabase("life_flow_focus_sessions", sessionWithMeta);
     }
     for (const entry of state.sleepEntries) await upsertSupabase("life_flow_sleep_entries", entry, "owner_key,sleep_date");
+    // Keyed by id, not by date: a day holds many items, unlike sleep.
+    for (const entry of state.sugarEntries) await upsertSupabase("life_flow_sugar_entries", entry);
     await upsertAppState();
     setSyncStatus("Synced with Supabase");
   } catch (error) {
@@ -2933,6 +3082,7 @@ function normalizeState(saved) {
     memoryNotes: { ...defaultState.memoryNotes, ...(saved.memoryNotes || {}) },
     items: seedRecurring(normalizeItemIds(Array.isArray(saved.items) ? saved.items : [])),
     sleepEntries: Array.isArray(saved.sleepEntries) ? saved.sleepEntries : [],
+    sugarEntries: Array.isArray(saved.sugarEntries) ? saved.sugarEntries : [],
     focusSessions: Array.isArray(saved.focusSessions) ? saved.focusSessions : [],
     fitnessLog: Array.isArray(saved.fitnessLog) ? saved.fitnessLog : [],
     rewards: Array.isArray(saved.rewards) ? saved.rewards : [],

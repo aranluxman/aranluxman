@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "test": "node --test test/planner.test.mjs test/calendar.test.mjs",
+    "test": "node --test test/planner.test.mjs test/calendar.test.mjs test/speak.test.mjs",
     "dev": "node scripts/preview-server.mjs"
   }
 }

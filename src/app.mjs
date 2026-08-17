@@ -23,6 +23,14 @@ import {
   sumSugarForDate,
   todayKey,
 } from "./planner-utils.mjs";
+import {
+  PURPOSE_KIND,
+  PURPOSE_LABELS,
+  PURPOSES,
+  resolveRound,
+  speakKindLabels,
+  speakTopics,
+} from "./speak-library.mjs";
 import { createIcons } from "./icons.mjs";
 import * as gcal from "./google-calendar.mjs";
 
@@ -88,59 +96,6 @@ const goalGroups = [
   ] },
 ];
 // Speak page — practice structures (name, steps, when to use)
-const speakFrameworks = [
-  { name: "PREP", steps: ["Point — state your opinion", "Reason — why you hold it", "Example — proof or a quick story", "Point — restate it"], when: "Quick opinions and debates." },
-  { name: "PAIR", steps: ["Point — your main idea", "Anecdote — a short real moment", "Insight — what it taught you", "Recommendation — what others should do"], when: "Make an idea memorable." },
-  { name: "What / So What / Now What", steps: ["What — what happened", "So What — why it matters", "Now What — your next step"], when: "Reflecting on an experience." },
-  { name: "Past / Present / Future", steps: ["Past — where you started", "Present — where you are now", "Future — where you're headed"], when: "Showing growth or a journey." },
-  { name: "5 W's", steps: ["Who is involved", "What happened", "When it happened", "Where it happened", "Why it matters"], when: "Explaining an event clearly." },
-  { name: "PIP", steps: ["Point — the big idea", "Importance — why it matters", "Preview — what you'll cover"], when: "Opening a talk strongly." },
-  { name: "STAR", steps: ["Situation — set the scene", "Task — your goal", "Action — what you did", "Result — how it turned out"], when: "Telling an achievement story." },
-  { name: "Problem / Cause / Solution", steps: ["Problem — name the issue", "Cause — why it happens", "Solution — how to fix it"], when: "Persuading toward a fix." },
-  { name: "PAS", steps: ["Problem — the pain point", "Agitate — make it feel real", "Solution — the relief"], when: "Convincing someone to act." },
-  { name: "BAB", steps: ["Before — the old situation", "After — the better outcome", "Bridge — how to get there"], when: "Pitching a change or idea." },
-  { name: "Agree / Add / Ask", steps: ["Agree — acknowledge their point", "Add — bring something new", "Ask — pose a question back"], when: "Keeping a conversation flowing." },
-];
-const reflectionPrompts = [
-  "Describe the exact moment using one non-visual sense — what did you hear, smell, or feel physically?",
-  "What was the one thought running through your head that you'd be embarrassed to say out loud?",
-  "Set the scene in one sentence — what room were you in, and what small detail do you remember?",
-  "Add a single line of real dialogue. What exact words were said, and by whom?",
-  "Show how you felt without naming the emotion — what did your hands, breathing, or posture do?",
-  "Find the status shift: who or what went up, and who or what went down by the end?",
-  "Replace an 'and then' with a 'but' or a 'therefore' — where did the story actually turn?",
-  "Slow down the single most important second. Stretch it into three sentences.",
-  "What did you want in that moment, and what was standing in your way?",
-  "Drop us into the middle of the action first, then explain how you got there.",
-  "What small physical object was present, and why does it still stick with you?",
-  "Raise the stakes in the first sentence — what could you have lost?",
-  "End on the change: how were you different walking out than walking in?",
-  "What's the line you'd cut if you only had ten seconds to tell this?",
-];
-const speakTopics = [
-  { kind: "debate", text: "Argue why guys are better than donuts.", framework: "PREP" },
-  { kind: "debate", text: "Cereal is a soup. Defend it with full confidence.", framework: "PAS" },
-  { kind: "debate", text: "A hot dog is a sandwich — convince the room.", framework: "PREP" },
-  { kind: "debate", text: "Mondays should be illegal. Make your case.", framework: "Problem / Cause / Solution" },
-  { kind: "debate", text: "Pineapple absolutely belongs on pizza.", framework: "PIP" },
-  { kind: "debate", text: "Texting is better than calling. Prove it.", framework: "BAB" },
-  { kind: "debate", text: "Cats secretly run the internet. Present the evidence.", framework: "5 W's" },
-  { kind: "debate", text: "Summer break should be twice as long.", framework: "PREP" },
-  { kind: "reflection", text: "Describe a problem you faced recently and how you overcame it.", framework: "What / So What / Now What" },
-  { kind: "reflection", text: "Talk about a time you changed your mind about something.", framework: "Past / Present / Future" },
-  { kind: "reflection", text: "What's a habit you're proud of building, and how did you do it?", framework: "PAIR" },
-  { kind: "reflection", text: "Describe a mistake that ended up teaching you something.", framework: "What / So What / Now What" },
-  { kind: "reflection", text: "Walk through a goal you're chasing and your very next step.", framework: "Past / Present / Future" },
-  { kind: "reflection", text: "What does a great day look like for you, and why?", framework: "PREP" },
-  { kind: "reflection", text: "React to: 'hard work beats talent.' Do you agree?", framework: "Agree / Add / Ask" },
-  { kind: "story", text: "Tell the story of a time you were the underdog.", framework: "STAR" },
-  { kind: "story", text: "Tell about a moment everything went wrong — then turned right.", framework: "BAB" },
-  { kind: "story", text: "Describe the first time you tried something really hard.", framework: "Past / Present / Future" },
-  { kind: "story", text: "Tell a story where one small choice changed everything.", framework: "STAR" },
-  { kind: "story", text: "Tell about a time you genuinely surprised yourself.", framework: "STAR" },
-  { kind: "story", text: "Share a story about someone who pushed you to be better.", framework: "Past / Present / Future" },
-];
-const speakKindLabels = { debate: "Debate it", reflection: "Reflect", story: "Tell a story" };
 // R-words articulation drills (curated). These are the hand-written R sentences.
 // They get combined with the S-words and hundreds of generated sentences below.
 // Grouped by where the R sound falls: initial (start), medial (middle), final (end).
@@ -928,9 +883,11 @@ let numberRush = { order: [], next: 1, startAt: 0, active: false };
 let targetGame = { active: false, score: 0, lit: -1, intervalId: null, timeoutId: null };
 let simonGame = { sequence: [], inputIndex: 0, playing: false, awaitingInput: false };
 let mathGame = { active: false, score: 0, answer: 0, timeoutId: null, intervalId: null, secondsLeft: 0 };
+// One cursor, not three. The framework and storytelling technique are derived
+// from whichever topic is showing, so they cannot drift away from it.
 let speakCursor = null;
-let speakFwCursor = null;
-let speakReflectCursor = null;
+// Set when the user types their own topic; cleared when they draw a new round.
+let speakCustomTopic = null;
 let rGroup = "initial";
 const els = {};
 
@@ -965,7 +922,9 @@ function bindElements() {
     "greeting", "homeTitle", "currentDateText", "quoteText", "nextQuoteButton", "coachText", "coachButton", "coachDots", "coachBadge", "heroCoins",
     "doneTodayStat", "openTasksStat", "streakStat", "coinsStat", "trackWeekStat", "pushupsWeekStat", "addTrackSessionButton",
     "addPushupsButton", "upcomingTodayList", "workoutList", "goalsList", "goalsProgress",
-    "speakTopicKind", "speakTopicText", "speakFrameworkName", "speakFrameworkWhen", "speakFrameworkSteps",
+    "speakTopicKind", "speakTopicText", "speakTopicSource", "speakFrameworkName", "speakFrameworkWhen", "speakFrameworkSteps",
+    "speakFrameworkDefinition", "speakFrameworkExample", "speakTopicForm", "speakTopicInput", "speakPurposeInput",
+    "speakTechniqueName", "speakTechniqueDefinition", "speakTechniqueExample",
     "speakReflectionText", "newTopicButton",
     "rTabs", "rList", "rPracticeCount", "rProgressFill", "rNextSet",
     "heroRingFill", "heroProgressPercent",
@@ -1051,6 +1010,10 @@ function wireEvents() {
     void upsertAppState();
   });
   els.newTopicButton?.addEventListener("click", newPracticeRound);
+  els.speakTopicForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    useCustomTopic();
+  });
   els.rTabs?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-r-group]");
     if (button) setRGroup(button.dataset.rGroup);
@@ -1413,24 +1376,59 @@ function renderGoals() {
   refreshIcons();
 }
 
+function hydratePurposeOptions() {
+  if (!els.speakPurposeInput || els.speakPurposeInput.options.length) return;
+  els.speakPurposeInput.innerHTML = Object.entries(PURPOSES)
+    .map(([value, label]) => `<option value="${value}">${escapeHtml(label)}</option>`).join("");
+}
+
+// The topic showing right now: whatever the user typed, else the library entry
+// the single cursor points at.
+function currentSpeakTopic() {
+  if (speakCustomTopic) return speakCustomTopic;
+  if (speakCursor === null) speakCursor = dailyIndex(speakTopics.length);
+  return speakTopics[speakCursor % speakTopics.length];
+}
+
 function renderSpeak() {
   if (!els.speakTopicText) return;
-  // Deterministic-by-date defaults so the round is stable all day across devices.
-  if (speakCursor === null) speakCursor = dailyIndex(speakTopics.length);
-  if (speakFwCursor === null) speakFwCursor = dailyIndex(speakFrameworks.length);
-  if (speakReflectCursor === null) speakReflectCursor = dailyIndex(reflectionPrompts.length);
-  const topic = speakTopics[speakCursor % speakTopics.length];
-  const framework = speakFrameworks[speakFwCursor % speakFrameworks.length];
-  const reflection = reflectionPrompts[speakReflectCursor % reflectionPrompts.length];
-  els.speakTopicKind.textContent = speakKindLabels[topic.kind] || "Topic";
-  els.speakTopicKind.dataset.kind = topic.kind;
+  hydratePurposeOptions();
+  // resolveRound derives the framework and technique from the topic itself, so
+  // the mismatch that made this section useless is now impossible by construction.
+  const round = resolveRound(currentSpeakTopic());
+  if (!round?.framework || !round?.technique) return;
+  const { topic, framework, technique } = round;
+
+  // For a typed topic the chip names the purpose the user chose; the source chip
+  // beside it is what says the topic is theirs.
+  const isCustom = topic.kind === "custom";
+  els.speakTopicKind.textContent = isCustom
+    ? (PURPOSE_LABELS[topic.purpose] || "Your topic")
+    : (speakKindLabels[topic.kind] || "Topic");
+  els.speakTopicKind.dataset.kind = isCustom ? (PURPOSE_KIND[topic.purpose] || "debate") : topic.kind;
   els.speakTopicText.textContent = topic.text;
+  if (els.speakTopicSource) {
+    els.speakTopicSource.textContent = isCustom ? "Your topic" : "From the library";
+  }
+
   els.speakFrameworkName.textContent = framework.name;
-  els.speakFrameworkWhen.textContent = framework.when;
+  els.speakFrameworkDefinition.textContent = framework.definition;
+  els.speakFrameworkWhen.textContent = framework.whenToUse;
   els.speakFrameworkSteps.innerHTML = framework.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("");
-  if (els.speakReflectionText) els.speakReflectionText.textContent = reflection;
+  els.speakFrameworkExample.querySelector("p").textContent = framework.example;
+
+  els.speakTechniqueName.textContent = technique.name;
+  els.speakTechniqueDefinition.textContent = technique.definition;
+  els.speakReflectionText.textContent = technique.prompt;
+  els.speakTechniqueExample.querySelector("p").textContent = technique.example;
+
   renderRWords();
   refreshIcons();
+}
+
+function replaySpeakCards() {
+  const cards = document.querySelectorAll("#speakView .speak-topic-card, #speakView .speak-framework-card, #speakView .speak-reflection-card");
+  cards.forEach((card) => { card.classList.remove("round-in"); void card.offsetWidth; card.classList.add("round-in"); });
 }
 
 function pickDifferent(current, length) {
@@ -1440,12 +1438,20 @@ function pickDifferent(current, length) {
   return next;
 }
 
+// Only the topic is redrawn. Everything else follows from it.
 function newPracticeRound() {
+  speakCustomTopic = null;
   speakCursor = pickDifferent(speakCursor ?? 0, speakTopics.length);
-  speakFwCursor = pickDifferent(speakFwCursor ?? 0, speakFrameworks.length);
-  speakReflectCursor = pickDifferent(speakReflectCursor ?? 0, reflectionPrompts.length);
-  const cards = document.querySelectorAll("#speakView .speak-topic-card, #speakView .speak-framework-card, #speakView .speak-reflection-card");
-  cards.forEach((card) => { card.classList.remove("round-in"); void card.offsetWidth; card.classList.add("round-in"); });
+  if (els.speakTopicInput) els.speakTopicInput.value = "";
+  replaySpeakCards();
+  renderSpeak();
+}
+
+function useCustomTopic() {
+  const text = els.speakTopicInput?.value.trim();
+  if (!text) return;
+  speakCustomTopic = { kind: "custom", text, purpose: els.speakPurposeInput?.value || "reflect" };
+  replaySpeakCards();
   renderSpeak();
 }
 

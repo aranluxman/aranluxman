@@ -222,17 +222,32 @@
         <section class="view" id="speakView" role="tabpanel" tabindex="0" aria-labelledby="speakTitle">
           <div class="section-heading section-heading-speak"><div><h1 id="speakTitle">Speak</h1><p class="section-subtitle">Practice communicating out loud.</p></div></div>
           <section class="surface speak-topic-card">
-            <div class="card-heading"><span class="speak-kind" id="speakTopicKind" data-kind="debate">Topic</span><span class="speak-tag">Your topic</span></div>
+            <div class="card-heading"><span class="speak-kind" id="speakTopicKind" data-kind="debate">Topic</span><span class="speak-tag" id="speakTopicSource">From the library</span></div>
             <p class="speak-topic-text" id="speakTopicText"></p>
+            <form class="speak-topic-form" id="speakTopicForm" autocomplete="off">
+              <label class="speak-field speak-field-topic">
+                <span>Your own topic</span>
+                <input id="speakTopicInput" type="text" maxlength="160" placeholder="e.g. Talk about losing someone you looked up to" />
+              </label>
+              <label class="speak-field speak-field-purpose">
+                <span>What it asks you to do</span>
+                <select id="speakPurposeInput"></select>
+              </label>
+              <button class="primary-button compact" id="speakTopicUseButton" type="submit"><i data-lucide="mic"></i><span>Use topic</span></button>
+            </form>
           </section>
           <section class="surface speak-framework-card">
             <div class="card-heading"><h2>Use this framework</h2><span class="speak-framework-name" id="speakFrameworkName"></span></div>
+            <p class="speak-framework-definition" id="speakFrameworkDefinition"></p>
             <p class="speak-framework-when" id="speakFrameworkWhen"></p>
             <ol class="speak-steps" id="speakFrameworkSteps"></ol>
+            <div class="speak-example" id="speakFrameworkExample"><h3>Worked example</h3><p></p></div>
           </section>
           <section class="surface speak-reflection-card">
-            <div class="card-heading"><h2>Storytelling reflection</h2><span class="speak-tag reflect">Go deeper</span></div>
+            <div class="card-heading"><h2>Storytelling technique</h2><span class="speak-technique-name" id="speakTechniqueName"></span></div>
+            <p class="speak-technique-definition" id="speakTechniqueDefinition"></p>
             <p class="speak-reflection-text" id="speakReflectionText"></p>
+            <div class="speak-example" id="speakTechniqueExample"><h3>Sounds like</h3><p></p></div>
           </section>
           <button class="primary-button speak-new-round" id="newTopicButton" type="button"><span aria-hidden="true">🎲</span> New Practice Round</button>
           <section class="surface speak-articulation" aria-labelledby="rWordsTitle">

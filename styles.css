@@ -2644,7 +2644,7 @@ small, .section-subtitle { letter-spacing: 0.008em; }
   }
   /* Full-bleed rows: headers, and anything that needs the width to read well. */
   .home-hero, .home-quote, .section-heading, .gcal-card, .calendar-topline, .calendar-toolbar,
-  #monthCalendar, .week-grid, .sleep-list, .speak-articulation,
+  #monthCalendar, .week-grid, .sleep-list, .speak-articulation, .speak-tamil,
   .speak-new-round, .sleep-goal, .goals-card, .about-card {
     grid-column: 1 / -1;
   }
@@ -3490,6 +3490,84 @@ input.has-error:focus-visible {
 .sugar-history-row.over b { color: var(--red-soft); }
 @media (hover: hover) and (pointer: fine) {
   .sugar-history-row:hover { background: rgba(255, 255, 255, 0.055); }
+}
+
+/* ============================================================
+   SPEAK — Tamil practice
+   An outbound link to a YouTube playlist. Styled as a row rather
+   than a bare hyperlink so it is a comfortable tap target and
+   reads as the same kind of object as the other practice cards.
+   ============================================================ */
+.speak-tamil-note {
+  color: var(--muted);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  margin-bottom: var(--s-3);
+}
+
+.practice-link {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--s-3);
+  min-height: 64px;
+  padding: var(--s-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  background:
+    linear-gradient(135deg, rgba(0, 229, 195, 0.08), transparent 62%),
+    rgba(255, 255, 255, 0.028);
+  color: var(--ink);
+  transition: background-color var(--t-base) var(--ease-out),
+              border-color var(--t-base) var(--ease-out),
+              transform var(--t-fast) var(--ease-out);
+}
+.practice-link + .practice-link { margin-top: var(--s-2); }
+
+.practice-link-icon {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border-radius: 13px;
+  color: var(--teal);
+  background: color-mix(in srgb, var(--teal) 12%, rgba(0, 0, 0, 0.25));
+  border: 1px solid color-mix(in srgb, var(--teal) 32%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.11),
+    0 0 20px -8px color-mix(in srgb, var(--teal) 70%, transparent);
+}
+.practice-link-icon i, .practice-link-icon svg { width: 20px; height: 20px; }
+
+.practice-link-body { display: grid; gap: 2px; min-width: 0; }
+.practice-link-body strong {
+  color: var(--ink);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: -0.008em;
+  overflow-wrap: anywhere;
+}
+.practice-link-body small { color: var(--faint); font-size: 0.75rem; }
+
+.practice-link-go {
+  width: 17px;
+  height: 17px;
+  color: var(--faint);
+  transition: color var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out);
+}
+.practice-link:active { transform: scale(0.985); }
+.practice-link:active .practice-link-go { color: var(--teal); }
+@media (hover: hover) and (pointer: fine) {
+  .practice-link:hover {
+    background:
+      linear-gradient(135deg, rgba(0, 229, 195, 0.13), transparent 62%),
+      rgba(255, 255, 255, 0.055);
+    border-color: rgba(0, 229, 195, 0.34);
+  }
+  .practice-link:hover .practice-link-go {
+    color: var(--teal);
+    transform: translate(1px, -1px);
+  }
 }
 
 /* ============================================================

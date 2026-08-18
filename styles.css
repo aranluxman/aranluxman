@@ -1038,11 +1038,9 @@ label {
   box-shadow: 0 0 10px rgba(0, 229, 195, 0.5);
   transition: width 0.4s ease, background 0.3s ease;
 }
-/* Over the limit the bar is pinned at 100%, so colour carries the signal. */
-.sugar-progress-track.over i {
-  background: linear-gradient(90deg, var(--orange), var(--red));
-  box-shadow: 0 0 12px rgba(255, 93, 108, 0.55);
-}
+/* Over the limit the bar is pinned at 100%, so colour carries the signal.
+   The teal/amber/red tiers themselves live in the design layer, driven by
+   the --bar custom property. */
 .sugar-over-flag {
   margin-top: 8px;
   color: var(--red);
@@ -1069,8 +1067,8 @@ label {
   font-size: 0.9rem;
 }
 .sugar-field input:focus-visible { outline: 2px solid var(--teal); outline-offset: 1px; }
-.sugar-add-form button { height: 40px; }
-.sugar-error { margin-top: 8px; color: var(--red); font-size: 0.8rem; }
+/* Button sizing and placement are set in the design layer, which needs the
+   whole form to follow one grid at each breakpoint. */
 .sugar-list { display: grid; gap: 9px; margin-top: 14px; }
 .sugar-row {
   display: grid;
@@ -1122,7 +1120,7 @@ label {
   background: linear-gradient(180deg, var(--teal-bright), var(--teal));
   transition: height 0.4s ease;
 }
-.sugar-bar.over i { background: linear-gradient(180deg, var(--orange), var(--red)); }
+/* Bar fills are tiered in the design layer via --bar. */
 .sugar-bar small { color: var(--faint); font-size: 0.66rem; text-align: center; height: 14px; }
 .sugar-range { display: flex; width: 100%; margin-top: 14px; }
 .sugar-range button { flex: 1; text-align: center; }
@@ -1144,10 +1142,7 @@ label {
 .sugar-history-row.over { border-color: rgba(255, 93, 108, 0.35); }
 .sugar-history-row.over b { color: var(--red); }
 
-@media (max-width: 620px) {
-  .sugar-add-form { grid-template-columns: minmax(0, 1fr) 88px; }
-  .sugar-add-form button { grid-column: 1 / -1; width: 100%; justify-content: center; }
-}
+/* The form's responsive grid is defined once, in the design layer. */
 
 /* ============================================================
    ARCADE
@@ -2165,13 +2160,15 @@ dialog form select {
    ============================================================ */
 
 :root {
-  /* Spacing scale — every gap/padding below picks from this set. */
+  /* Spacing scale — every gap/padding below picks from this set. A true
+     8px base with a 4px half-step: 4, 8, 12, 16, 24, 32. The two top
+     steps used to be 22px and 30px, which put them off the grid. */
   --s-1: 4px;
   --s-2: 8px;
   --s-3: 12px;
   --s-4: 16px;
-  --s-5: 22px;
-  --s-6: 30px;
+  --s-5: 24px;
+  --s-6: 32px;
 
   /* Elevation. Cards sit low; floating chrome sits high. */
   --e-1: 0 1px 2px rgba(0, 0, 0, 0.28);
@@ -2813,4 +2810,780 @@ small, .section-subtitle { letter-spacing: 0.008em; }
   box-shadow: none;
   opacity: 1;
   border: 1px solid var(--line);
+}
+
+/* ============================================================
+   DESIGN LAYER v2 — "quiet instrument"
+   Loaded last, so it refines everything above rather than
+   replacing it. The reference points are Apple Health (a huge
+   number, a soft label under it, generous air) and Nothing OS
+   (a dot-matrix ground, high contrast, one accent used sparingly).
+
+   Rules this layer holds the whole app to:
+     · Spacing comes from --s-1..--s-6 (a 4/8px scale). No new
+       one-off pixel values.
+     · Teal means "on track / primary action". Amber means
+       "warning". Red means "over / destructive". Nothing else
+       gets to use them.
+     · Every tap target is >= 44px.
+     · Motion is transform/opacity only, ease-out, and has a
+       reduced-motion answer at the bottom of the file.
+   ============================================================ */
+
+:root {
+  /* The warning accent. Amber was already in the palette as --gold
+     (a category colour); this names it for its semantic job so a
+     warning never has to borrow a category's colour. */
+  --amber: #f5b544;
+  --amber-dim: rgba(245, 181, 68, 0.13);
+  --amber-line: rgba(245, 181, 68, 0.34);
+
+  /* Red needs to be lighter than --red to stay legible as small
+     text on a dark ground. --red stays the fill/border colour. */
+  --red-soft: #ff97a2;
+  --red-dim: rgba(255, 93, 108, 0.12);
+  --red-line: rgba(255, 93, 108, 0.36);
+
+  /* Radii: one step per surface size, so a chip and a card never
+     share a radius by accident. */
+  --radius-sm: 10px;
+  --radius-pill: 999px;
+
+  /* Glass. Two weights only — heavy for structural chrome, light
+     for cards. Never stack light on light. */
+  --glass-heavy: rgba(13, 19, 33, 0.86);
+  --glass-card: linear-gradient(180deg, rgba(255, 255, 255, 0.045), rgba(255, 255, 255, 0.012));
+
+  /* Minimum comfortable tap target. */
+  --tap: 44px;
+}
+
+/* ---------- Ground: dot matrix + grain instead of flat navy ----------
+   Two fixed layers behind the app. The dot grid is masked so it is
+   densest at the top of the viewport and fades out before it reaches
+   the content-heavy bottom, which keeps it from fighting text. */
+.app-shell { position: relative; z-index: 1; }
+
+body::before,
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+body::before {
+  background-image: radial-gradient(circle at center, rgba(255, 255, 255, 0.055) 1px, transparent 1.4px);
+  background-size: 22px 22px;
+  -webkit-mask-image: radial-gradient(125% 85% at 50% -8%, #000 18%, transparent 72%);
+  mask-image: radial-gradient(125% 85% at 50% -8%, #000 18%, transparent 72%);
+}
+
+/* Fine grain. Breaks up the large flat gradients so a big dark panel
+   reads as a surface rather than as an empty region. */
+body::after {
+  opacity: 0.038;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='140' height='140'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='140' height='140' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/* One more gradient in the ground so scrolling reveals depth rather
+   than a constant field. */
+body {
+  background:
+    radial-gradient(1100px 620px at 88% -6%, rgba(0, 229, 195, 0.09), transparent 62%),
+    radial-gradient(820px 520px at -12% 42%, rgba(62, 156, 255, 0.055), transparent 62%),
+    radial-gradient(760px 460px at 50% 108%, rgba(145, 113, 239, 0.05), transparent 64%),
+    linear-gradient(180deg, #0b1220 0%, var(--bg) 38%, var(--bg-deep) 100%);
+  background-attachment: fixed;
+}
+
+/* ---------- Every .surface is a padded card ----------
+   The two Sugar cards were the only .surface elements without their
+   own padding rule, so their content sat flush against the border.
+   Setting it on .surface itself means a new card can never miss it. */
+.surface { padding: var(--s-4); }
+.surface > :first-child { margin-top: 0; }
+
+/* ---------- Card treatment: one recipe ---------- */
+.surface, .quote-card, .upcoming-card, .coach-card, .arcade-card,
+.sleep-card, .last-night, .day-agenda, .gcal-card, .stat-card, .stat-tile {
+  border-radius: var(--radius-lg);
+  background-image: var(--glass-card);
+  background-origin: border-box;
+}
+
+/* ---------- Type: bigger numbers, quieter labels ---------- */
+.card-heading h2 {
+  font-size: 1.02rem;
+  letter-spacing: -0.012em;
+}
+.card-heading > span {
+  color: var(--faint);
+  font-size: 0.76rem;
+  letter-spacing: 0.01em;
+  /* Long right-hand labels ("Daily limit: 25g", "7 days tracked") were
+     being pushed past the card edge on a 375px screen. */
+  flex: 0 1 auto;
+  min-width: 0;
+  text-align: right;
+}
+.card-heading h2 { min-width: 0; }
+
+/* A small bordered chip reads as a fact about the card rather than as
+   a second heading competing with it. */
+.sugar-limit-chip {
+  flex-shrink: 0;
+  padding: 4px 9px;
+  border-radius: var(--radius-pill);
+  border: 1px solid var(--line-2);
+  background: rgba(0, 0, 0, 0.28);
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+/* ---------- Section headings ---------- */
+.section-heading {
+  position: relative;
+  border-left: none;
+  padding-left: var(--s-4);
+  gap: var(--s-3);
+  margin-bottom: var(--s-5);
+}
+.section-heading::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 3px;
+  bottom: 3px;
+  width: 3px;
+  border-radius: var(--radius-pill);
+  background: linear-gradient(
+    180deg,
+    var(--heading-accent, var(--teal)),
+    color-mix(in srgb, var(--heading-accent, var(--teal)) 12%, transparent)
+  );
+}
+.section-heading h1 {
+  text-transform: none;
+  font-size: clamp(2rem, 8vw, 2.5rem);
+  letter-spacing: -0.025em;
+}
+.section-heading-calendar { --heading-accent: var(--teal); }
+.section-heading-sleep    { --heading-accent: var(--purple); }
+.section-heading-sugar    { --heading-accent: var(--teal); }
+.section-heading-speak    { --heading-accent: var(--blue); }
+.section-heading-me       { --heading-accent: var(--purple); }
+.section-heading-arcade   { --heading-accent: var(--amber); }
+
+/* A section header's action must not wrap ("+ Add / Sleep") when the heading
+   text grows. The heading is what gives way, not the button. */
+.section-heading > div { min-width: 0; }
+.section-heading .add-button,
+.section-heading .primary-button {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+/* ---------- Stat cards: glass + a ring, not a stripe and a swatch ----------
+   Applies to every page that uses .stat-card / .stat-tile, so Sleep,
+   Home and Arcade pick up the same treatment as Sugar. */
+.stat-card, .stat-tile {
+  gap: var(--s-2);
+  min-height: 128px;
+  padding: var(--s-5) var(--s-3);
+  border: 1px solid var(--line);
+  /* The 3px left stripe is what made these read as flat tiles. */
+  border-left: 1px solid var(--line);
+  background:
+    var(--glass-card),
+    radial-gradient(120% 100% at 50% -20%, color-mix(in srgb, var(--card-accent) 13%, transparent), transparent 70%),
+    var(--card-2);
+  box-shadow: var(--e-2), var(--sheen);
+  overflow: hidden;
+}
+.stat-card.accent-amber, .stat-tile.accent-amber { --card-accent: var(--amber); }
+.stat-card.accent-gold,  .stat-tile.accent-gold  { --card-accent: var(--amber); }
+.stat-card.accent-red,   .stat-tile.accent-red   { --card-accent: var(--red); }
+.stat-card.accent-purple, .stat-tile.accent-purple { --card-accent: var(--purple); }
+
+/* Icon container: a tinted well with a hairline ring and a soft bloom,
+   rather than a solid colour block. */
+.stat-card > span, .stat-tile > span {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--card-accent) 12%, rgba(0, 0, 0, 0.25));
+  border: 1px solid color-mix(in srgb, var(--card-accent) 32%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.11),
+    0 0 20px -8px color-mix(in srgb, var(--card-accent) 70%, transparent);
+}
+.stat-card > span i, .stat-card > span svg,
+.stat-tile > span i, .stat-tile > span svg { width: 19px; height: 19px; }
+
+.stat-card strong, .stat-tile strong {
+  font-size: clamp(1.85rem, 8vw, 2.15rem);
+  letter-spacing: -0.02em;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.stat-card small, .stat-tile small {
+  color: var(--faint);
+  font-size: 0.72rem;
+  font-weight: 500;
+  letter-spacing: 0.015em;
+}
+
+/* ---------- Inputs: 48px, and a focus ring that matches the accent ---------- */
+input, select, textarea { border-radius: var(--radius-sm); }
+input:not([type="checkbox"]):not([type="radio"]):not([type="hidden"]),
+select {
+  min-height: 48px;
+}
+textarea { padding: var(--s-3); }
+
+/* ---------- Inline validation ----------
+   The Sugar form carries `novalidate`; this is what replaced the
+   browser's "Please fill out this field" bubble. Reused by any field
+   that needs the same treatment. */
+.has-error,
+input.has-error {
+  border-color: var(--red-line) !important;
+  background: color-mix(in srgb, var(--red) 8%, rgba(0, 0, 0, 0.32)) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--red) 15%, transparent) !important;
+}
+.field-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 5px;
+  color: var(--red-soft);
+  font-size: 0.74rem;
+  line-height: 1.35;
+  letter-spacing: 0.005em;
+  animation: field-error-in var(--t-base) var(--ease-out);
+}
+.field-error::before {
+  content: "!";
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  margin-top: 1px;
+  border-radius: 50%;
+  background: var(--red-soft);
+  color: #2b0a10;
+  font-size: 0.6rem;
+  font-weight: 800;
+  line-height: 1;
+}
+
+/* A field that is already flagged keeps its own colour when focused —
+   a teal "you're fine" ring around a red field is a mixed signal. */
+input.has-error:focus,
+input.has-error:focus-visible {
+  outline-color: var(--red-soft);
+  border-color: var(--red) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--red) 24%, transparent) !important;
+}
+@keyframes field-error-in {
+  from { opacity: 0; transform: translateY(-3px); }
+  to   { opacity: 1; transform: none; }
+}
+/* A short, low-amplitude nudge. Enough to register as a rejection,
+   small enough not to read as an error dialog. */
+.shake { animation: field-shake 300ms cubic-bezier(0.36, 0.07, 0.19, 0.97); }
+@keyframes field-shake {
+  10%, 90% { transform: translateX(-1.5px); }
+  30%, 70% { transform: translateX(2.5px); }
+  50%      { transform: translateX(-2.5px); }
+}
+
+/* ---------- Buttons: 44px minimum ---------- */
+.primary-button, .add-button, .ghost-button {
+  min-height: var(--tap);
+  border-radius: var(--radius-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s-2);
+}
+.primary-button {
+  /* A flatter, more deliberate fill. The old 18px teal bloom made
+     every primary button the loudest thing on its card. */
+  background: linear-gradient(160deg, var(--teal-bright), var(--teal));
+  box-shadow: 0 4px 14px -4px rgba(0, 229, 195, 0.5), var(--sheen);
+  letter-spacing: -0.005em;
+}
+.icon-button {
+  width: var(--tap);
+  height: var(--tap);
+  border-radius: var(--radius-sm);
+}
+.segmented { border-radius: var(--radius-sm); }
+.segmented button { min-height: 40px; border-radius: 7px; }
+
+/* A finger needs more than a mouse does. Coarse pointers get the full 44px;
+   a trackpad does not need the extra height. */
+@media (pointer: coarse) {
+  .segmented button { min-height: var(--tap); }
+}
+
+/* "See all" was a 24px-high text link — fine to click, awkward to tap. */
+.see-all {
+  display: inline-flex;
+  align-items: center;
+  min-height: var(--tap);
+  padding-inline: var(--s-2);
+  margin-right: calc(var(--s-2) * -1);
+  border-radius: var(--radius-sm);
+}
+@media (hover: hover) and (pointer: fine) {
+  .see-all:hover { background: var(--teal-dim); }
+}
+
+/* ============================================================
+   SUGAR — the page this pass was built for
+   ============================================================ */
+
+.sugar-today-card, .sugar-history-card, .sugar-log-card { margin-bottom: 0; }
+.sugar-today-card, .sugar-side { margin-top: var(--s-4); }
+.sugar-summary-grid { gap: var(--s-3); margin: 0; }
+
+/* The read-only cards are grouped in the markup so they can become one column
+   beside the Today card on a wide screen. Here it is simply a stack, spaced by
+   the same gap the view itself uses, so a phone sees no difference. */
+.sugar-side {
+  display: grid;
+  gap: var(--s-4);
+}
+.sugar-side > * { margin: 0; }
+
+/* ---------- Today: one big number, a soft label under it ---------- */
+.sugar-readout {
+  display: grid;
+  gap: var(--s-1);
+  margin-bottom: var(--s-4);
+}
+.sugar-readout strong {
+  font-size: clamp(3.1rem, 15vw, 4rem);
+  line-height: 0.88;
+  letter-spacing: -0.035em;
+  font-variant-numeric: tabular-nums;
+  /* Slight lift out of the card so the number is the first thing read. */
+  text-shadow: 0 2px 24px rgba(0, 0, 0, 0.5);
+}
+.sugar-readout span {
+  color: var(--muted);
+  font-size: 0.85rem;
+  letter-spacing: 0.004em;
+}
+
+/* ---------- The daily limit bar ----------
+   Teal on track, amber from 80%, red over. The width comes from JS;
+   everything else about the state is carried by these classes. */
+.sugar-progress-track {
+  --bar: var(--teal);
+  height: 14px;
+  border-radius: var(--radius-pill);
+  background: rgba(0, 0, 0, 0.45);
+  border: 1px solid rgba(255, 255, 255, 0.055);
+  box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.55);
+}
+.sugar-progress-track.near { --bar: var(--amber); }
+.sugar-progress-track.over { --bar: var(--red); }
+
+.sugar-progress-track i {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(90deg, color-mix(in srgb, var(--bar) 72%, #000), var(--bar));
+  box-shadow:
+    0 0 14px -2px color-mix(in srgb, var(--bar) 65%, transparent),
+    inset 0 1px 0 rgba(255, 255, 255, 0.28);
+  transition: width 760ms var(--ease-out), background 320ms var(--ease-out), box-shadow 320ms var(--ease-out);
+  will-change: width;
+}
+/* A highlight travels the filled portion, so the bar reads as live
+   rather than as a static measurement. */
+.sugar-progress-track i::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+  transform: translateX(-100%);
+  animation: bar-sheen 2.8s var(--ease-in-out) infinite;
+}
+
+.sugar-over-flag {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  margin-top: var(--s-3);
+  padding: var(--s-2) var(--s-3);
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--red-line);
+  background: var(--red-dim);
+  color: var(--red-soft);
+  font-size: 0.79rem;
+  font-weight: 600;
+}
+.sugar-over-flag::before {
+  content: "";
+  flex: 0 0 auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--red);
+  box-shadow: 0 0 8px var(--red);
+}
+
+/* ---------- Add form ----------
+   375px: the item name takes a full row, then the amount and the
+   action share the row below. Both stay comfortably tappable. */
+.sugar-add-form {
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas:
+    "name  name"
+    "grams add";
+  gap: var(--s-3);
+  margin-top: var(--s-5);
+  padding-top: var(--s-5);
+  border-top: 1px solid var(--line);
+  align-items: start;
+}
+.sugar-field-name  { grid-area: name; }
+.sugar-field-grams { grid-area: grams; position: relative; }
+/* Bottom-aligned so the button lines up with the input beside it rather than
+   with that input's label. */
+.sugar-add-button  { grid-area: add; align-self: end; }
+
+/* The amount field's message is short enough to sit out of flow at every
+   width, which keeps it from pushing the button out of alignment. The form
+   reserves the height up front so nothing shifts when it appears. */
+.sugar-field-grams > .field-error {
+  position: absolute;
+  top: calc(100% + var(--s-1));
+  left: 0;
+}
+.sugar-add-form { padding-bottom: var(--s-5); }
+
+.sugar-field { gap: var(--s-2); }
+.sugar-field > span {
+  color: var(--faint);
+  font-size: 0.68rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+}
+.sugar-field input {
+  min-height: 48px;
+  padding: 0 var(--s-3);
+  border-radius: var(--radius-sm);
+  background: rgba(0, 0, 0, 0.3);
+  font-size: 0.95rem;
+  transition: border-color var(--t-base) var(--ease-out),
+              background-color var(--t-base) var(--ease-out),
+              box-shadow var(--t-base) var(--ease-out);
+}
+.sugar-field-grams input { font-variant-numeric: tabular-nums; }
+.sugar-field input:focus {
+  border-color: var(--teal);
+  background: rgba(0, 0, 0, 0.42);
+  box-shadow: 0 0 0 3px rgba(0, 229, 195, 0.18);
+}
+.sugar-add-button { min-height: 48px; width: 100%; }
+
+/* Above 560px all three controls fit on one line, and the name field's message
+   can come out of flow too. */
+@media (min-width: 560px) {
+  .sugar-add-form {
+    grid-template-columns: minmax(0, 1fr) 116px auto;
+    grid-template-areas: "name grams add";
+  }
+  .sugar-add-button { width: auto; padding-inline: var(--s-5); }
+  .sugar-field-name { position: relative; }
+  .sugar-field-name > .field-error {
+    position: absolute;
+    top: calc(100% + var(--s-1));
+    left: 0;
+    white-space: nowrap;
+  }
+}
+
+/* ---------- Today's items ---------- */
+.sugar-list { gap: var(--s-2); margin-top: var(--s-4); }
+.sugar-row {
+  gap: var(--s-3);
+  padding: var(--s-3);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.028);
+  border: 1px solid var(--line);
+  transition: background-color var(--t-base) var(--ease-out),
+              border-color var(--t-base) var(--ease-out),
+              transform var(--t-fast) var(--ease-out);
+}
+.sugar-row strong { font-size: 0.92rem; letter-spacing: -0.005em; }
+.sugar-row span { color: var(--faint); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+.sugar-row b {
+  font-size: 1.1rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.01em;
+}
+.sugar-row-remove {
+  width: 38px;
+  height: 38px;
+  background: transparent;
+  border-color: transparent;
+  color: var(--faint);
+}
+@media (hover: hover) and (pointer: fine) {
+  .sugar-row:hover { background: rgba(255, 255, 255, 0.055); border-color: var(--line-2); }
+  .sugar-row-remove:hover { color: var(--red-soft); background: var(--red-dim); border-color: var(--red-line); }
+}
+.sugar-row-remove:active { color: var(--red-soft); }
+
+/* Add and remove are the two things that happen most on this page, so
+   both get a frame of their own instead of the list snapping. */
+.sugar-row.is-entering { animation: sugar-row-in 380ms var(--ease-out); }
+@keyframes sugar-row-in {
+  from { opacity: 0; transform: translate3d(0, -10px, 0) scale(0.985); }
+  to   { opacity: 1; transform: none; }
+}
+.sugar-row.is-leaving {
+  animation: sugar-row-out 220ms var(--ease-in-out) forwards;
+  pointer-events: none;
+}
+@keyframes sugar-row-out {
+  to { opacity: 0; transform: translate3d(18px, 0, 0) scale(0.97); }
+}
+
+/* ---------- History chart ----------
+   Gridlines behind, a labelled limit line, rounded bars with a
+   teal-to-transparent fill, and a value on hover or press. */
+.sugar-chart { min-height: 172px; margin-top: var(--s-2); }
+.sugar-bars {
+  height: 172px;
+  gap: var(--s-1);
+  /* Headroom for the value bubble above the tallest bar. */
+  padding-top: var(--s-6);
+}
+
+.sugar-gridlines {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: var(--s-6);
+  bottom: 18px;
+  pointer-events: none;
+  background-image: repeating-linear-gradient(
+    to top,
+    rgba(255, 255, 255, 0.07) 0 1px,
+    transparent 1px 25%
+  );
+}
+
+.sugar-limit-line {
+  border-top: 1px dashed var(--amber-line);
+  opacity: 0.9;
+}
+/* The label sits above its own line and inside the plot area, so it can
+   never be clipped by the card edge however narrow the screen is. */
+.sugar-limit-line b {
+  position: absolute;
+  right: 0;
+  bottom: 3px;
+  padding: 1px 5px;
+  border-radius: 5px;
+  background: var(--amber-dim);
+  color: var(--amber);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  font-variant-numeric: tabular-nums;
+}
+
+.sugar-bar {
+  --bar: var(--teal);
+  max-width: 46px;
+  grid-template-rows: minmax(0, 1fr) 14px;
+}
+.sugar-bar.near { --bar: var(--amber); }
+.sugar-bar.over { --bar: var(--red); }
+
+/* The fill fades toward the baseline but keeps a floor of colour: taken all
+   the way to transparent, amber and red turn muddy against the navy ground. */
+.sugar-bar i {
+  position: relative;
+  min-height: 4px;
+  border-radius: 8px 8px 3px 3px;
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, var(--bar) 92%, #fff) 0%,
+    var(--bar) 20%,
+    color-mix(in srgb, var(--bar) 48%, transparent) 74%,
+    color-mix(in srgb, var(--bar) 26%, transparent) 100%
+  );
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+  transition: height 620ms var(--ease-out), filter var(--t-base) var(--ease-out);
+}
+.sugar-bar small {
+  color: var(--faint);
+  font-size: 0.65rem;
+  font-variant-numeric: tabular-nums;
+  transition: color var(--t-base) var(--ease-out);
+}
+
+/* The value bubble. Hidden until the bar is hovered or pressed, so the
+   chart stays quiet at rest. */
+.sugar-bar i em {
+  position: absolute;
+  bottom: calc(100% + 7px);
+  left: 50%;
+  padding: 3px 7px;
+  border-radius: 7px;
+  background: var(--card-3);
+  border: 1px solid var(--line-2);
+  box-shadow: var(--e-3);
+  color: var(--ink);
+  font-style: normal;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transform: translate(-50%, 4px);
+  transition: opacity var(--t-base) var(--ease-out), transform var(--t-base) var(--ease-out);
+}
+.sugar-bar:active i em { opacity: 1; transform: translate(-50%, 0); }
+.sugar-bar:active i { filter: brightness(1.16); }
+.sugar-bar:active small { color: var(--ink); }
+@media (hover: hover) and (pointer: fine) {
+  .sugar-bar:hover i em { opacity: 1; transform: translate(-50%, 0); }
+  .sugar-bar:hover i { filter: brightness(1.16); }
+  .sugar-bar:hover small { color: var(--ink); }
+}
+
+.sugar-range { margin-top: var(--s-4); }
+
+/* ---------- Daily log ---------- */
+.sugar-history-list { gap: var(--s-2); }
+.sugar-history-row {
+  --row: var(--line);
+  gap: var(--s-3);
+  padding: var(--s-3);
+  border-radius: var(--radius-sm);
+  background: rgba(255, 255, 255, 0.028);
+  border: 1px solid var(--row);
+  transition: background-color var(--t-base) var(--ease-out), border-color var(--t-base) var(--ease-out);
+}
+.sugar-history-row strong { font-size: 0.9rem; }
+.sugar-history-row span { color: var(--faint); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+.sugar-history-row b { font-size: 1.08rem; font-variant-numeric: tabular-nums; letter-spacing: -0.01em; }
+.sugar-history-row.near { --row: var(--amber-line); }
+.sugar-history-row.near b { color: var(--amber); }
+.sugar-history-row.over { --row: var(--red-line); }
+.sugar-history-row.over b { color: var(--red-soft); }
+@media (hover: hover) and (pointer: fine) {
+  .sugar-history-row:hover { background: rgba(255, 255, 255, 0.055); }
+}
+
+/* ============================================================
+   MOBILE — verified against a 375px viewport
+   ============================================================ */
+@media (max-width: 420px) {
+  .workspace { padding-inline: var(--s-3); }
+  .surface { padding: var(--s-4) var(--s-3); }
+
+  /* A wrapping heading row keeps a long right-hand label on screen
+     instead of pushing it under the card's border. */
+  .card-heading { flex-wrap: wrap; row-gap: var(--s-1); }
+  .card-heading > span { text-align: left; }
+
+  .sugar-bars { padding-right: 30px; gap: 3px; }
+  .sugar-bar { max-width: none; }
+  .stat-card, .stat-tile { min-height: 116px; padding: var(--s-4) var(--s-2); }
+  .stat-card strong, .stat-tile strong { font-size: 1.7rem; }
+}
+
+/* The floating nav has to clear the home indicator on a notched phone. */
+@media (max-width: 999px) {
+  .sidebar { bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+  .settings-fab { bottom: calc(var(--nav-h) + 10px + env(safe-area-inset-bottom, 0px)); }
+  .workspace { padding-bottom: calc(var(--nav-h) + var(--s-6) + env(safe-area-inset-bottom, 0px)); }
+  /* 0.62rem labels under 22px icons were the tightest text in the app. */
+  .nav-item { font-size: 0.64rem; padding: var(--s-2) 1px; letter-spacing: 0.01em; }
+}
+
+/* ============================================================
+   DESKTOP — Sugar was the one view still rendering as a single
+   full-width column, which left a 1200px-wide chart holding
+   seven 46px bars. It gets the same two-column grid as the rest.
+   ============================================================ */
+@media (min-width: 1000px) {
+  .view.active#sugarView {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--s-4);
+    align-items: start;
+  }
+  /* Explicit placement here, unlike the other views. The Today card is
+     reliably the tallest element on the page (readout + form + list), so it
+     owns the left column while the read-only cards stack on the right. The
+     row span is what makes the right column pack tightly — without it each
+     right-hand card lands in a row sized by the Today card and opens a gap
+     underneath the one above it. */
+  .view.active#sugarView > .section-heading { grid-column: 1 / -1; }
+  .view.active#sugarView > .sugar-today-card { grid-column: 1; }
+  /* The wrapper is what keeps the right-hand column tight: its cards are
+     spaced by its own gap rather than by grid rows the Today card also sits
+     in, which is what opened a gap above the log card. */
+  .sugar-side {
+    grid-column: 2;
+    margin-top: 0;
+    align-content: start;
+  }
+
+  /* 90 days of history should not turn the page into an endless
+     scroll on a screen that has room to show a window of it. The mask
+     fades the last row so the region reads as scrollable. */
+  .sugar-log-card .sugar-history-list {
+    max-height: 420px;
+    overflow-y: auto;
+    padding-right: var(--s-1);
+    -webkit-mask-image: linear-gradient(180deg, #000 88%, transparent 100%);
+    mask-image: linear-gradient(180deg, #000 88%, transparent 100%);
+  }
+  .sugar-bars { height: 196px; }
+  .sugar-bars { height: 196px; }
+  .sugar-chart { min-height: 196px; }
+}
+
+/* ============================================================
+   ACCESSIBILITY — the new layer's obligations
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  /* Decorative loops stop rather than run fast. */
+  .sugar-progress-track i::after { animation: none !important; }
+  .sugar-row.is-entering, .sugar-row.is-leaving, .shake { animation: none !important; }
+  .sugar-progress-track i { transition: background 160ms linear !important; }
+  .sugar-bar i { transition: none !important; }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  /* The ground texture is the first thing to go. */
+  body::before, body::after { display: none; }
+  .stat-card, .stat-tile, .surface { backdrop-filter: none; -webkit-backdrop-filter: none; }
+}
+
+@media (prefers-contrast: more) {
+  body::before, body::after { display: none; }
+  .sugar-limit-chip, .sugar-field input, .sugar-row, .sugar-history-row { border-color: var(--line-2); }
+  .sugar-readout span, .stat-card small, .stat-tile small { color: var(--muted); }
+  .field-error { color: #ffb3bb; }
+  .sugar-gridlines { background-image: repeating-linear-gradient(to top, rgba(255, 255, 255, 0.16) 0 1px, transparent 1px 25%); }
 }

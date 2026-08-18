@@ -936,9 +936,10 @@ function bindElements() {
     "weekGrid", "calendarViewToggle", "agendaTitle", "agendaList", "addSleepButton", "sleepGoalInput",
     "lastNightDate", "lastBedtime", "lastWake", "lastDuration", "lastMood",
     "averageSleepStat", "sleepScoreStat", "sleepHint", "sleepChart", "sleepList",
-    "sugarForm", "sugarNameInput", "sugarGramsInput", "sugarAddButton", "sugarError", "sugarList",
+    "sugarForm", "sugarNameInput", "sugarGramsInput", "sugarAddButton", "sugarList",
+    "sugarNameError", "sugarGramsError",
     "sugarTotal", "sugarStatus", "sugarLimitLabel", "sugarProgressFill", "sugarOverFlag",
-    "sugarChart", "sugarHistoryHint", "sugarHistoryList", "sugarAverageStat", "sugarOverStat",
+    "sugarChart", "sugarHistoryHint", "sugarHistoryList", "sugarLogCard", "sugarAverageStat", "sugarOverStat",
     "arcadeCoins", "arcadeCoinBreakdown", "arcadeBoost", "arcadeBoostButton", "reactionStartButton", "reactionPad", "reactionBest",
     "reactionHistory", "memoryStartButton", "memoryStatus", "memoryGrid", "goalReminderInput", "composeDialog", "composeForm",
     "composeTitle", "editingItemIdInput", "toggleAdvancedButton", "advancedFields", "itemTitleInput", "itemKindInput",
@@ -1026,6 +1027,18 @@ function wireEvents() {
   els.sugarForm?.addEventListener("submit", (event) => {
     event.preventDefault();
     addSugarFromForm();
+  });
+  // An error clears as soon as the field is plausible again, so the red state
+  // never outlives the mistake.
+  els.sugarNameInput?.addEventListener("input", () => {
+    if (els.sugarNameInput.value.trim()) setSugarFieldError(els.sugarNameInput, els.sugarNameError, false);
+  });
+  els.sugarGramsInput?.addEventListener("input", () => {
+    const raw = els.sugarGramsInput.value.trim();
+    const grams = Number(raw);
+    if (raw !== "" && Number.isFinite(grams) && grams >= 0 && grams <= 500) {
+      setSugarFieldError(els.sugarGramsInput, els.sugarGramsError, false);
+    }
   });
   const sugarRangeToggle = document.getElementById("sugarRangeToggle");
   sugarRangeToggle?.addEventListener("click", (event) => {
@@ -2291,17 +2304,27 @@ function renderSugar() {
     ? `${progress.percent}% of your daily limit`
     : `${progress.percent}% of your daily limit · ${progress.remaining}g left`;
   els.sugarProgressFill.style.width = `${progress.fillPercent}%`;
-  els.sugarProgressFill.parentElement.classList.toggle("over", progress.over);
+  // Three visual tiers off the same number: teal on track, amber closing in,
+  // red over. Purely presentational — the limit and the maths are unchanged.
+  const track = els.sugarProgressFill.parentElement;
+  track.classList.toggle("over", progress.over);
+  track.classList.toggle("near", !progress.over && progress.percent >= 80);
   els.sugarOverFlag.hidden = !progress.over;
   els.sugarOverFlag.textContent = progress.over ? `${progress.overBy}g over limit` : "";
 
   const todayEntries = sugarEntriesForDate(state.sugarEntries, today);
   els.sugarList.innerHTML = todayEntries.length
-    ? todayEntries.map((entry) => `<article class="sugar-row"><div><strong>${escapeHtml(entry.item_name)}</strong><span>${formatTime(entry.created_at)}</span></div><b>${Number(entry.grams)}g</b><button class="icon-button" data-delete-sugar="${entry.id}" title="Remove"><i data-lucide="trash-2"></i></button></article>`).join("")
+    ? todayEntries.map((entry) => `<article class="sugar-row" data-sugar-row="${entry.id}"><div><strong>${escapeHtml(entry.item_name)}</strong><span>${formatTime(entry.created_at)}</span></div><b>${Number(entry.grams)}g</b><button class="icon-button sugar-row-remove" data-delete-sugar="${entry.id}" aria-label="Remove ${escapeHtml(entry.item_name)}" title="Remove"><i data-lucide="trash-2"></i></button></article>`).join("")
     : '<article class="empty-state compact"><strong>Nothing logged today</strong><p>Add an item above to start tracking.</p></article>';
   els.sugarList.querySelectorAll("[data-delete-sugar]").forEach((button) => {
-    button.addEventListener("click", () => deleteSugarEntry(button.dataset.deleteSugar));
+    button.addEventListener("click", () => removeSugarRow(button.dataset.deleteSugar));
   });
+  // Only the row added by this submit animates in; a re-render for any other
+  // reason must not replay the whole list.
+  if (pendingSugarRowId) {
+    els.sugarList.querySelector(`[data-sugar-row="${pendingSugarRowId}"]`)?.classList.add("is-entering");
+    pendingSugarRowId = null;
+  }
 
   renderSugarHistory();
   refreshIcons();
@@ -2317,25 +2340,55 @@ function renderSugarHistory() {
   if (!summary.points.length) {
     els.sugarChart.innerHTML = '<article class="empty-state compact"><strong>No history yet</strong><p>Days you log will show up here as a trend.</p></article>';
     els.sugarHistoryList.innerHTML = "";
+    if (els.sugarLogCard) els.sugarLogCard.hidden = true;
     return;
   }
   els.sugarChart.innerHTML = `
     <div class="sugar-bars" style="--limit-ratio:${(summary.limitHeight / 100).toFixed(3)}">
-      <span class="sugar-limit-line" aria-hidden="true"></span>
-      ${summary.points.map((point) => `<div class="sugar-bar ${point.over ? "over" : ""}" title="${prettyDate(point.date)}: ${point.label}"><span class="sugar-bar-slot"><i style="height:${Math.max(2, point.height)}%"></i></span><small>${new Date(`${point.date}T00:00:00`).toLocaleDateString("en", { day: "numeric" })}</small></div>`).join("")}
+      <span class="sugar-gridlines" aria-hidden="true"></span>
+      <span class="sugar-limit-line" aria-hidden="true"><b>${summary.limit}g</b></span>
+      ${summary.points.map((point) => `<div class="sugar-bar ${point.over ? "over" : point.percent >= 80 ? "near" : ""}" title="${prettyDate(point.date)}: ${point.label}"><span class="sugar-bar-slot"><i style="height:${Math.max(2, point.height)}%"><em>${point.label}</em></i></span><small>${new Date(`${point.date}T00:00:00`).toLocaleDateString("en", { day: "numeric" })}</small></div>`).join("")}
     </div>`;
 
-  els.sugarHistoryList.innerHTML = [...summary.points].reverse().map((point) => `<article class="sugar-history-row ${point.over ? "over" : ""}"><div><strong>${prettyDate(point.date)}</strong><span>${point.percent}% of limit</span></div><b>${point.label}</b></article>`).join("");
+  els.sugarHistoryList.innerHTML = [...summary.points].reverse().map((point) => `<article class="sugar-history-row ${point.over ? "over" : point.percent >= 80 ? "near" : ""}"><div><strong>${prettyDate(point.date)}</strong><span>${point.percent}% of limit</span></div><b>${point.label}</b></article>`).join("");
+  if (els.sugarLogCard) els.sugarLogCard.hidden = false;
 }
+
+// The form carries `novalidate`, so the browser's grey "Please fill out this
+// field" bubble never appears. These two helpers are the replacement: the field
+// itself carries the state, and the message sits under it.
+function setSugarFieldError(input, message, show) {
+  if (!input || !message) return;
+  input.classList.toggle("has-error", show);
+  input.setAttribute("aria-invalid", show ? "true" : "false");
+  message.hidden = !show;
+  if (!show) return;
+  // Restart the nudge even if the field was already marked, so a second failed
+  // submit still reads as a rejection rather than a no-op.
+  input.classList.remove("shake");
+  void input.offsetWidth;
+  input.classList.add("shake");
+}
+
+function clearSugarFieldErrors() {
+  setSugarFieldError(els.sugarNameInput, els.sugarNameError, false);
+  setSugarFieldError(els.sugarGramsInput, els.sugarGramsError, false);
+}
+
+let pendingSugarRowId = null;
 
 function addSugarFromForm() {
   const name = els.sugarNameInput.value.trim();
-  const grams = Number(els.sugarGramsInput.value);
-  if (!name || !Number.isFinite(grams) || grams < 0 || grams > 500) {
-    els.sugarError.hidden = false;
+  const raw = els.sugarGramsInput.value.trim();
+  const grams = Number(raw);
+  const nameBad = !name;
+  const gramsBad = raw === "" || !Number.isFinite(grams) || grams < 0 || grams > 500;
+  setSugarFieldError(els.sugarNameInput, els.sugarNameError, nameBad);
+  setSugarFieldError(els.sugarGramsInput, els.sugarGramsError, gramsBad);
+  if (nameBad || gramsBad) {
+    (nameBad ? els.sugarNameInput : els.sugarGramsInput).focus();
     return;
   }
-  els.sugarError.hidden = true;
   const entry = {
     id: crypto.randomUUID(),
     owner_key: settings.ownerKey,
@@ -2347,9 +2400,26 @@ function addSugarFromForm() {
   state.sugarEntries = [entry, ...state.sugarEntries];
   persist();
   els.sugarForm.reset();
+  clearSugarFieldErrors();
   els.sugarNameInput.focus();
+  pendingSugarRowId = entry.id;
   renderSugar();
   void upsertSupabase("life_flow_sugar_entries", entry);
+}
+
+// Let the row collapse before the list re-renders, so a delete reads as the item
+// leaving rather than the list jumping. The delete itself is not conditional on
+// the animation: if the frame never lands, the timeout still fires.
+function removeSugarRow(id) {
+  const row = els.sugarList?.querySelector(`[data-sugar-row="${id}"]`);
+  const reduced = window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+  if (!row || reduced) {
+    deleteSugarEntry(id);
+    return;
+  }
+  row.classList.add("is-leaving");
+  row.querySelector("[data-delete-sugar]")?.setAttribute("disabled", "");
+  setTimeout(() => deleteSugarEntry(id), 220);
 }
 
 function deleteSugarEntry(id) {

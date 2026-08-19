@@ -13,7 +13,7 @@ A calm personal planner for daily tasks, long-term to-dos, calendar-style events
 - Goals and an About Me profile, saved automatically
 - Arcade: coins earned from real work, plus nine mini-games
 - Masked Supabase settings, dark mode, and iOS-friendly PWA metadata
-- Supabase sync for items, moods, focus sessions, and sleep logs
+- Supabase sync for items, moods, focus sessions, sugar entries, and sleep logs
 
 ## Running locally
 
@@ -46,10 +46,10 @@ Open **Settings** in the app and add:
 
 - Supabase project URL
 - Supabase publishable key
-- Owner key, any private phrase you choose
+- Private sync key, any private phrase you choose
 - Optional Google Calendar secret iCal URL
 
-The owner key is stored in the browser and sent as `x-owner-key` so row-level security can keep each owner key separate without requiring Google sign-in.
+The private sync key is stored in the browser and sent as `x-owner-key` so row-level security can keep each owner key separate without requiring Google sign-in. To pair devices, open Settings on the device with your existing data, choose **Copy pairing link**, and open that link on your other devices. Once paired, cloud changes pull when the app is reopened, brought back into view, or while it remains visible.
 
 ## Cloudflare
 

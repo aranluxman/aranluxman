@@ -14,7 +14,7 @@
     <link rel="icon" id="dynamicFavicon" href="/assets/icon-512.png" />
     <link rel="apple-touch-icon" id="dynamicTouchIcon" href="/assets/icon-512.png" />
     <link rel="stylesheet" href="/styles.css" />
-    <script type="module" src="/src/app.mjs?v=20260808-gcal"></script>
+    <script type="module" src="/src/app.mjs?v=20260819-sync"></script>
   </head>
   <body class="dark-mode">
     <div class="app-shell">
@@ -349,8 +349,9 @@
         <p class="settings-note">Local mode: use the app without cloud sync; data is stored in your browser only.</p>
         <label>Supabase URL<span class="secret-field"><input id="supabaseUrlInput" type="password" /><button type="button" data-toggle-secret="supabaseUrlInput">Show</button></span></label>
         <label>Supabase publishable key<span class="secret-field"><input id="supabaseAnonInput" type="password" /><button type="button" data-toggle-secret="supabaseAnonInput">Show</button></span></label>
-        <label>Owner key<input id="ownerKeyInput" /></label>
-        <p class="settings-note">To see the same tasks on your laptop, iPad, and phone: copy this Owner key and paste the exact same key into Settings on every device, then Save. Saving pulls the shared list first, then uploads anything only on this device.</p>
+        <label>Private sync key<input id="ownerKeyInput" autocomplete="off" spellcheck="false" /></label>
+        <div class="dialog-actions sync-pairing-actions"><button class="ghost-button compact" id="copyPairingLinkButton" type="button">Copy pairing link</button></div>
+        <p class="settings-note">To connect your laptop, iPad, and phone, copy the pairing link from the device that already has your data and open it once on each other device. The link contains your private sync key, so treat it like a password. New changes then sync automatically.</p>
         <label>Google Calendar secret iCal URL <small class="field-hint">Fallback if you'd rather not connect your account. Google refreshes these feeds every few hours, so it lags behind live changes.</small><input id="calendarUrlInput" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics" /></label>
         <label class="toggle-row"><input id="darkModeInput" type="checkbox" /> Dark mode</label>
         <div class="dialog-actions"><button class="ghost-button compact" id="syncButton" type="button">Sync now</button><button class="primary-button" type="submit">Save settings</button></div>

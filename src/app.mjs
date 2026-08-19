@@ -36,6 +36,7 @@ import * as gcal from "./google-calendar.mjs";
 
 const STORE_KEY = "aran-life-flow-state";
 const SETTINGS_KEY = "aran-life-flow-settings";
+const CLOUD_REFRESH_MS = 60_000;
 const legacySharedIds = new Set(["0b7c7939-4a28-4d4e-8e96-b4d3a78ff101", "f47ba22f-b0db-4d3d-853d-a3091caaaf20"]);
 const categoryColors = {
   School: "#3e9cff",
@@ -873,6 +874,9 @@ const CALENDAR_IMPORT_VERSION = 2;
 
 let settings = normalizeSettings(loadJson(SETTINGS_KEY, defaultSettings));
 let state = importCalendarEvents(importSleepLog(normalizeState(loadJson(STORE_KEY, defaultState))));
+let cloudSyncInFlight = null;
+let cloudSyncAgain = false;
+let cloudRefreshTimer = null;
 let reaction = { mode: "idle", goAt: 0, timeoutId: null };
 let memoryGame = null;
 let pendingSleepId = "";
@@ -948,7 +952,7 @@ function bindElements() {
     "sleepError", "sleepMoodDialog", "settingsDialog", "settingsForm",
     "brandHomeButton", "sidebarSubtitle", "syncButton", "syncStatus", "syncBanner", "syncBannerText", "displayNameInput",
     "plannerSubtitleInput", "focusGoalInput", "pushupGoalInput", "trackGoalInput", "supabaseUrlInput", "supabaseAnonInput",
-    "ownerKeyInput", "calendarUrlInput", "darkModeInput", "resetDataButton", "clearImportedButton", "openSettingsButton",
+    "ownerKeyInput", "copyPairingLinkButton", "calendarUrlInput", "darkModeInput", "resetDataButton", "clearImportedButton", "openSettingsButton",
     "gcalMark", "gcalStatus", "gcalNote", "gcalConnectButton", "gcalRefreshButton", "gcalDisconnectButton",
     "icalUrlInput", "icalSaveButton", "icalRefreshButton", "icalServerNote",
   ].forEach((id) => {
@@ -1131,6 +1135,7 @@ function wireEvents() {
   });
   document.querySelectorAll("[data-sleep-mood]").forEach((button) => button.addEventListener("click", () => saveSleepMood(button)));
   els.syncButton.addEventListener("click", () => syncAll());
+  els.copyPairingLinkButton?.addEventListener("click", () => void copyPairingLink());
   els.settingsForm.addEventListener("submit", (event) => {
     event.preventDefault();
     saveSettings();
@@ -1156,10 +1161,18 @@ function wireEvents() {
   // Calendar app back to Life Flow shows the change straight away.
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState !== "visible") return;
+    if (canSync()) void syncAll({ includeCalendar: false });
     if (!settings.googleConnected) return;
     if (Date.now() - gcalLastSync < 60_000) return;
     void syncGoogleCalendar();
   });
+
+  window.addEventListener("online", () => {
+    if (canSync()) void syncAll({ includeCalendar: false });
+  });
+  cloudRefreshTimer = window.setInterval(() => {
+    if (document.visibilityState === "visible" && canSync()) void syncAll({ includeCalendar: false });
+  }, CLOUD_REFRESH_MS);
 
   // Escape closes dialogs natively; make the backdrop click do the same.
   [els.composeDialog, els.sleepDialog, els.settingsDialog].forEach((dialog) => {
@@ -2646,10 +2659,26 @@ function resetAllData() {
   render();
 }
 
-async function syncAll() {
-  await syncFromSupabase();
-  await importCalendar();
-  await syncToSupabase();
+async function syncAll({ includeCalendar = true } = {}) {
+  if (!canSync()) return;
+  if (cloudSyncInFlight) {
+    cloudSyncAgain = true;
+    return cloudSyncInFlight;
+  }
+  cloudSyncInFlight = (async () => {
+    do {
+      cloudSyncAgain = false;
+      const loaded = await syncFromSupabase();
+      if (!loaded) return;
+      if (includeCalendar) await importCalendar();
+      await syncToSupabase();
+    } while (cloudSyncAgain);
+  })();
+  try {
+    await cloudSyncInFlight;
+  } finally {
+    cloudSyncInFlight = null;
+  }
 }
 
 async function initializeCloud() {
@@ -2710,8 +2739,10 @@ async function syncFromSupabase() {
     persist();
     render();
     setSyncStatus("Synced with Supabase");
+    return true;
   } catch (error) {
     setSyncStatus(`Loading paused: ${error.message}`);
+    return false;
   }
 }
 
@@ -3231,6 +3262,8 @@ function importCalendarEvents(target) {
 
 function normalizeSettings(saved) {
   const result = { ...defaultSettings, ...saved };
+  const pairingKey = consumePairingKey();
+  if (pairingKey) result.ownerKey = pairingKey;
   if (!result.plannerSubtitle || result.plannerSubtitle === "Personal planner") result.plannerSubtitle = defaultSettings.plannerSubtitle;
   if (saved.settingsVersion !== 2 && Number(result.sleepGoalHours) === 8) result.sleepGoalHours = 8.5;
   result.settingsVersion = 2;
@@ -3368,6 +3401,34 @@ function toggleSecret(button) {
   const input = document.getElementById(button.dataset.toggleSecret);
   input.type = input.type === "password" ? "text" : "password";
   button.textContent = input.type === "password" ? "Show" : "Hide";
+}
+
+async function copyPairingLink() {
+  if (!settings.ownerKey) {
+    setSyncStatus("Save settings first to create a pairing link.");
+    return;
+  }
+  const url = new URL(window.location.href);
+  url.hash = `sync=${encodeURIComponent(settings.ownerKey)}`;
+  try {
+    await navigator.clipboard.writeText(url.toString());
+    setSyncStatus("Pairing link copied. Open it on your other devices.");
+  } catch {
+    setSyncStatus("Copy failed. Your browser blocked clipboard access; copy the private sync key instead.");
+  }
+}
+
+function consumePairingKey() {
+  if (typeof window === "undefined" || !window.location.hash.startsWith("#sync=")) return "";
+  let key = "";
+  try {
+    key = decodeURIComponent(window.location.hash.slice("#sync=".length)).trim();
+  } catch {
+    return "";
+  }
+  if (key.length < 8 || key.length > 200) return "";
+  window.history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+  return key;
 }
 
 function refreshIcons() {

@@ -14,6 +14,8 @@ import {
   speakTopics,
   storytellingTechniques,
   techniqueById,
+  workExamples,
+  motivationalStories,
 } from "../src/speak-library.mjs";
 
 test("every framework carries the five fields the UI renders", () => {
@@ -39,6 +41,25 @@ test("the documented framework library is present and the undocumented one is no
   // — this test is what stops it being quietly invented later.
   for (const name of PENDING_FRAMEWORKS) {
     assert.equal(frameworks.some((framework) => framework.name === name), false, `${name} was added without its source steps`);
+  }
+});
+
+test("the expanded work library has 100 unique renderable examples", () => {
+  assert.ok(workExamples.length >= 100);
+  assert.equal(new Set(workExamples.map((example) => example.text)).size, workExamples.length);
+  for (const example of workExamples) {
+    assert.equal(example.kind, "explain");
+    assert.ok(example.framework && example.technique);
+    assert.ok(resolveRound(example).framework);
+  }
+});
+
+test("motivational stories carry setup, struggle, turning point, and lesson", () => {
+  assert.ok(motivationalStories.length >= 15);
+  for (const story of motivationalStories) {
+    assert.equal(story.kind, "story");
+    for (const field of ["setup", "struggle", "turningPoint", "lesson"]) assert.ok(story[field]?.length > 20, `${field} missing: ${story.text}`);
+    assert.ok(resolveRound(story).framework);
   }
 });
 

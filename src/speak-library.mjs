@@ -1,5 +1,9 @@
 // Speak section library — data only.
 //
+import { motivationalStories, workExamples } from "./speak-content.mjs";
+
+export { motivationalStories, workExamples } from "./speak-content.mjs";
+
 // This file deliberately holds no DOM code and no selection logic. The old
 // version kept frameworks in app.mjs next to a cursor that picked them at
 // random, independently of the topic, which is how a reflection topic could
@@ -234,7 +238,7 @@ export const PENDING_TECHNIQUES = ["technique 8 (unconfirmed)", "technique 9 (un
 
 // Every topic names its own framework and storytelling technique. Nothing here
 // is chosen at run time, so a pairing can only ever be one an author wrote.
-export const speakTopics = [
+const baseSpeakTopics = [
   { kind: "debate", text: "Argue why guys are better than donuts.", framework: "prep", technique: "share-your-thoughts" },
   { kind: "debate", text: "Cereal is a soup. Defend it with full confidence.", framework: "pas", technique: "use-dialogue" },
   { kind: "debate", text: "A hot dog is a sandwich — convince the room.", framework: "prep", technique: "describe-actions" },
@@ -260,7 +264,11 @@ export const speakTopics = [
   { kind: "story", text: "Share a story about someone who pushed you to be better.", framework: "ppf", technique: "use-dialogue" },
 ];
 
-export const speakKindLabels = { debate: "Debate it", reflection: "Reflect", story: "Tell a story" };
+// Keep the original practice prompts first for familiar daily rotation, then
+// add the larger work/story library so repeated sessions stay varied.
+export const speakTopics = [...baseSpeakTopics, ...workExamples, ...motivationalStories];
+
+export const speakKindLabels = { debate: "Debate it", reflection: "Reflect", story: "Tell a story", explain: "Explain it" };
 
 // Short badge labels for a topic the user typed, so the kind chip says what the
 // topic asks of you rather than repeating "Your topic" next to the source chip.
@@ -270,7 +278,7 @@ export const PURPOSE_LABELS = { reflect: "Reflect", debate: "Debate it", story: 
 export const PURPOSE_KIND = { reflect: "reflection", debate: "debate", story: "story", explain: "explain" };
 
 // Which purpose a curated topic kind maps to, for topics the user types.
-export const KIND_PURPOSE = { debate: "debate", reflection: "reflect", story: "story", custom: "reflect" };
+export const KIND_PURPOSE = { debate: "debate", reflection: "reflect", story: "story", explain: "explain", custom: "reflect" };
 
 export const frameworkById = (id) => frameworks.find((framework) => framework.id === id) || null;
 export const techniqueById = (id) => storytellingTechniques.find((technique) => technique.id === id) || null;

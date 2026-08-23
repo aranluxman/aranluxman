@@ -2,6 +2,7 @@ import {
   buildMonthDays,
   calculateCoinBreakdown,
   calculateSleepMinutes,
+  calculateSugarStreak,
   calculateSleepScore,
   calculateStats,
   countSessionsForDate,
@@ -17,6 +18,8 @@ import {
   getSugarProgress,
   parseIcsEvents,
   SUGAR_DAILY_LIMIT_GRAMS,
+  sleepTimestampsForWakeDate,
+  sugarStreakMessage,
   sugarEntriesForDate,
   summarizeFitnessWeek,
   summarizeSugar,
@@ -37,6 +40,12 @@ import * as gcal from "./google-calendar.mjs";
 const STORE_KEY = "aran-life-flow-state";
 const SETTINGS_KEY = "aran-life-flow-settings";
 const CLOUD_REFRESH_MS = 60_000;
+const SPEAK_PRACTICE_BUCKET = "speak-practice";
+const DAILY_CHECKLIST_ITEMS = [
+  { id: "drink-water", label: "Drink water" },
+  { id: "stretch", label: "Stretch" },
+  { id: "journal", label: "Journal" },
+];
 const legacySharedIds = new Set(["0b7c7939-4a28-4d4e-8e96-b4d3a78ff101", "f47ba22f-b0db-4d3d-853d-a3091caaaf20"]);
 const categoryColors = {
   School: "#3e9cff",
@@ -763,6 +772,9 @@ const defaultState = {
   items: [],
   sleepEntries: [],
   sugarEntries: [],
+  sugarStreak: { current_streak: 0, longest_streak: 0, last_updated_date: "", limit_grams: SUGAR_DAILY_LIMIT_GRAMS },
+  dailyChecklist: { date: todayKey(), completed: {} },
+  speakPracticeSessions: [],
   focusSessions: [],
   fitnessLog: [],
   rewards: [],
@@ -893,6 +905,7 @@ let speakCursor = null;
 // Set when the user types their own topic; cleared when they draw a new round.
 let speakCustomTopic = null;
 let rGroup = "initial";
+let speakRecording = { recorder: null, stream: null, chunks: [], startedAt: 0, timerId: null };
 const els = {};
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -931,6 +944,7 @@ function bindElements() {
     "speakTechniqueName", "speakTechniqueDefinition", "speakTechniqueExample",
     "speakReflectionText", "newTopicButton",
     "rTabs", "rList", "rPracticeCount", "rProgressFill", "rNextSet",
+    "speakPracticeLessonInput", "speakRecordButton", "speakRecordStatus", "speakRecordTimer", "speakPracticeSessions",
     "heroRingFill", "heroProgressPercent",
     "simonStart", "simonGrid", "simonStatus", "simonBest", "mathStart", "mathQuestion", "mathAnswers", "mathStatus", "mathBest",
     "sprintPad", "sprintStatus", "sprintBest", "stopClockPad", "stopClockStatus", "stopClockBest",
@@ -944,6 +958,7 @@ function bindElements() {
     "sugarNameError", "sugarGramsError",
     "sugarTotal", "sugarStatus", "sugarLimitLabel", "sugarProgressFill", "sugarOverFlag",
     "sugarChart", "sugarHistoryHint", "sugarHistoryList", "sugarLogCard", "sugarAverageStat", "sugarOverStat",
+    "sugarStreakMessage", "sugarCurrentStreak", "sugarLongestStreak", "sugarStreakCaption", "dailyChecklistList", "dailyChecklistCount",
     "arcadeCoins", "arcadeCoinBreakdown", "arcadeBoost", "arcadeBoostButton", "reactionStartButton", "reactionPad", "reactionBest",
     "reactionHistory", "memoryStartButton", "memoryStatus", "memoryGrid", "goalReminderInput", "composeDialog", "composeForm",
     "composeTitle", "editingItemIdInput", "toggleAdvancedButton", "advancedFields", "itemTitleInput", "itemKindInput",
@@ -1028,6 +1043,15 @@ function wireEvents() {
     if (button) toggleRSentence(button.dataset.rId);
   });
   els.rNextSet?.addEventListener("click", nextRSet);
+  els.dailyChecklistList?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-checklist-item]");
+    if (button) toggleDailyChecklist(button.dataset.checklistItem);
+  });
+  els.speakRecordButton?.addEventListener("click", toggleSpeakRecording);
+  els.speakPracticeSessions?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-practice-rating]");
+    if (button) updateSpeakPracticeRating(button.dataset.practiceRating, Number(button.dataset.rating));
+  });
   els.sugarForm?.addEventListener("submit", (event) => {
     event.preventDefault();
     addSugarFromForm();
@@ -1184,6 +1208,7 @@ function wireEvents() {
 
 function render() {
   renderHome();
+  renderDailyChecklist();
   renderStats();
   renderUpcomingToday();
   renderCoach();
@@ -1205,6 +1230,43 @@ function renderHome() {
   els.currentDateText.textContent = formatDisplayDate(date);
   els.quoteText.textContent = quotePool[dailyIndex(quotePool.length)];
   applyAvatar();
+}
+
+function normalizeDailyChecklist() {
+  if (!state.dailyChecklist || state.dailyChecklist.date !== todayKey()) {
+    state.dailyChecklist = { date: todayKey(), completed: {} };
+    persist();
+  }
+  state.dailyChecklist.completed ||= {};
+  return state.dailyChecklist;
+}
+
+function renderDailyChecklist() {
+  if (!els.dailyChecklistList) return;
+  const checklist = normalizeDailyChecklist();
+  const doneCount = DAILY_CHECKLIST_ITEMS.filter((item) => checklist.completed[item.id]).length;
+  els.dailyChecklistCount.textContent = `${doneCount} of ${DAILY_CHECKLIST_ITEMS.length} done`;
+  els.dailyChecklistList.innerHTML = DAILY_CHECKLIST_ITEMS.map((item) => {
+    const done = Boolean(checklist.completed[item.id]);
+    return `<button type="button" class="daily-checklist-item ${done ? "done" : ""}" data-checklist-item="${item.id}" aria-pressed="${done}"><span class="daily-checklist-check" aria-hidden="true"><i data-lucide="${done ? "check" : "circle"}"></i></span><span class="daily-checklist-label">${escapeHtml(item.label)}</span>${done ? '<span class="checklist-done-badge">Done for today</span>' : ""}</button>`;
+  }).join("");
+  refreshIcons();
+}
+
+function toggleDailyChecklist(itemId) {
+  if (!DAILY_CHECKLIST_ITEMS.some((item) => item.id === itemId)) return;
+  const checklist = normalizeDailyChecklist();
+  checklist.completed[itemId] = !checklist.completed[itemId];
+  if (!checklist.completed[itemId]) delete checklist.completed[itemId];
+  persist();
+  renderDailyChecklist();
+  void upsertSupabase("daily_checklist", {
+    user_id: settings.ownerKey,
+    item_id: itemId,
+    date: checklist.date,
+    completed: Boolean(checklist.completed[itemId]),
+    updated_at: new Date().toISOString(),
+  }, "user_id,item_id,date");
 }
 
 function applyAvatar() {
@@ -1449,7 +1511,100 @@ function renderSpeak() {
   els.speakTechniqueExample.querySelector("p").textContent = technique.example;
 
   renderRWords();
+  renderSpeakPracticeSessions();
   refreshIcons();
+}
+
+function renderSpeakPracticeSessions() {
+  if (!els.speakPracticeSessions) return;
+  const sessions = [...(state.speakPracticeSessions || [])].sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+  els.speakPracticeSessions.innerHTML = sessions.length ? sessions.map((session) => {
+    const rating = Number(session.rating || 0);
+    const audio = session.audio_url
+      ? `<audio controls preload="metadata" src="${escapeHtml(session.audio_url)}"></audio>`
+      : session.audio_path ? `<span class="practice-audio-pending">Audio saved in private storage</span>` : `<span class="practice-audio-pending">Metadata saved on this device</span>`;
+    return `<article class="practice-session"><div class="practice-session-meta"><strong>${escapeHtml(session.lesson || "Speak practice")}</strong><span>${formatTime(session.created_at)} · ${Math.max(0, Number(session.duration_seconds || 0))}s</span></div>${audio}<div class="practice-rating" aria-label="Rate this practice attempt">${[1, 2, 3, 4, 5].map((value) => `<button type="button" class="rating-star ${value <= rating ? "selected" : ""}" data-practice-rating="${session.id}" data-rating="${value}" aria-label="${value} out of 5">★</button>`).join("")}</div></article>`;
+  }).join("") : '<p class="empty-inline">Your recorded attempts will appear here.</p>';
+  refreshIcons();
+}
+
+function updateSpeakRecordTimer() {
+  if (!els.speakRecordTimer || !speakRecording.startedAt) return;
+  const seconds = Math.floor((Date.now() - speakRecording.startedAt) / 1000);
+  els.speakRecordTimer.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+}
+
+function toggleSpeakRecording() {
+  if (speakRecording.recorder?.state === "recording") {
+    speakRecording.recorder.stop();
+    return;
+  }
+  void startSpeakRecording();
+}
+
+async function startSpeakRecording() {
+  if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+    els.speakRecordStatus.textContent = "This browser does not support microphone recording.";
+    return;
+  }
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mimeType = typeof MediaRecorder.isTypeSupported === "function" && MediaRecorder.isTypeSupported("audio/webm;codecs=opus") ? "audio/webm;codecs=opus" : "";
+    const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : undefined);
+    speakRecording = { recorder, stream, chunks: [], startedAt: Date.now(), timerId: window.setInterval(updateSpeakRecordTimer, 250) };
+    recorder.addEventListener("dataavailable", (event) => { if (event.data.size) speakRecording.chunks.push(event.data); });
+    recorder.addEventListener("stop", () => finishSpeakRecording(recorder.mimeType || "audio/webm"));
+    recorder.start();
+    els.speakRecordButton.classList.add("recording");
+    els.speakRecordButton.innerHTML = '<i data-lucide="square"></i><span>Stop recording</span>';
+    els.speakRecordStatus.textContent = "Listening… repeat the lesson clearly.";
+    refreshIcons();
+  } catch (error) {
+    els.speakRecordStatus.textContent = error.name === "NotAllowedError" ? "Microphone permission was not granted." : "Could not start the microphone.";
+  }
+}
+
+async function finishSpeakRecording(mimeType) {
+  const duration = Math.max(0, Math.round((Date.now() - speakRecording.startedAt) / 1000));
+  const blob = new Blob(speakRecording.chunks, { type: mimeType });
+  speakRecording.stream?.getTracks().forEach((track) => track.stop());
+  if (speakRecording.timerId) clearInterval(speakRecording.timerId);
+  const session = {
+    id: crypto.randomUUID(), user_id: settings.ownerKey, lesson: els.speakPracticeLessonInput.value.trim() || "Speak practice",
+    audio_path: "", audio_url: URL.createObjectURL(blob), duration_seconds: duration, rating: null, created_at: new Date().toISOString(),
+  };
+  state.speakPracticeSessions = [session, ...(state.speakPracticeSessions || [])].slice(0, 30);
+  speakRecording = { recorder: null, stream: null, chunks: [], startedAt: 0, timerId: null };
+  els.speakRecordButton.classList.remove("recording");
+  els.speakRecordButton.innerHTML = '<i data-lucide="mic"></i><span>Start recording</span>';
+  els.speakRecordStatus.textContent = `Saved a ${duration}s attempt. Rate it when you're ready.`;
+  persist();
+  renderSpeakPracticeSessions();
+  refreshIcons();
+
+  if (!canSync()) return;
+  const extension = mimeType.includes("ogg") ? "ogg" : mimeType.includes("mp4") ? "mp4" : "webm";
+  session.audio_path = `${settings.ownerKey}/${session.id}.${extension}`;
+  try {
+    await uploadSpeakPracticeAudio(session.audio_path, blob, mimeType);
+    await upsertSupabase("speak_practice_sessions", session);
+    els.speakRecordStatus.textContent = "Saved to your private practice history.";
+  } catch (error) {
+    session.audio_path = "";
+    await upsertSupabase("speak_practice_sessions", session).catch(() => {});
+    els.speakRecordStatus.textContent = "Kept on this device; cloud upload was unavailable.";
+  }
+  persist();
+  renderSpeakPracticeSessions();
+}
+
+function updateSpeakPracticeRating(id, rating) {
+  const session = state.speakPracticeSessions.find((entry) => entry.id === id);
+  if (!session || rating < 1 || rating > 5) return;
+  session.rating = rating;
+  persist();
+  renderSpeakPracticeSessions();
+  void upsertSupabase("speak_practice_sessions", session);
 }
 
 function replaySpeakCards() {
@@ -1570,7 +1725,7 @@ function renderRWords() {
     if (els.rProgressFill) els.rProgressFill.style.width = "0%";
     return;
   }
-  els.rList.innerHTML = batch.map((sentence) => `<button type="button" class="r-sentence ${completed[sentence.id] ? "done" : ""}" data-r-id="${sentence.id}"><span class="r-check" aria-hidden="true"></span><span class="r-sound-tag r-sound-${sentence.sound.toLowerCase()}">${sentence.sound}</span><span class="r-text">${escapeHtml(sentence.text)}</span></button>`).join("");
+  els.rList.innerHTML = batch.map((sentence) => `<button type="button" class="r-sentence ${completed[sentence.id] ? "done" : ""}" data-r-id="${sentence.id}"><span class="r-check" aria-hidden="true"></span><span class="r-sound-tag r-sound-${sentence.sound.toLowerCase()}">${sentence.sound}</span><span class="r-text">${escapeHtml(sentence.text)}</span>${completed[sentence.id] ? '<span class="r-done-badge">Done for today</span>' : ""}</button>`).join("");
   const doneCount = batch.filter((sentence) => completed[sentence.id]).length;
   els.rPracticeCount.textContent = `${doneCount} of ${batch.length} practiced`;
   if (els.rProgressFill) els.rProgressFill.style.width = `${batch.length ? Math.round((doneCount / batch.length) * 100) : 0}%`;
@@ -2258,9 +2413,9 @@ function saveSleepFromForm() {
     els.sleepError.hidden = false;
     return;
   }
-  const sleptAt = `${date}T${sleptTime}`;
-  // If you woke at or before your bedtime clock value, you slept past midnight.
-  const wokeAt = `${wokeTime <= sleptTime ? addDays(date, 1) : date}T${wokeTime}`;
+  // Sleep history is attributed to the wake-up date. Convert the two local
+  // wall-clock values to UTC before sending them to timestamptz columns.
+  const { sleptAt, wokeAt } = sleepTimestampsForWakeDate(date, sleptTime, wokeTime);
   const minutes = calculateSleepMinutes(sleptAt, wokeAt);
   if (!minutes || minutes > 660) {
     els.sleepError.hidden = false;
@@ -2306,10 +2461,29 @@ function sugarRangeType() {
   return document.getElementById("sugarRangeToggle")?.querySelector(".active")?.dataset.sugarRange || "days";
 }
 
+function reconcileSugarStreak(sync = true) {
+  const calculated = calculateSugarStreak(state.sugarEntries, SUGAR_DAILY_LIMIT_GRAMS, todayKey());
+  const previous = state.sugarStreak || {};
+  const next = {
+    current_streak: calculated.currentStreak,
+    longest_streak: Math.max(Number(previous.longest_streak || 0), calculated.longestStreak),
+    last_updated_date: calculated.lastUpdatedDate,
+    limit_grams: SUGAR_DAILY_LIMIT_GRAMS,
+  };
+  const changed = ["current_streak", "longest_streak", "last_updated_date", "limit_grams"].some((key) => String(previous[key] ?? "") !== String(next[key] ?? ""));
+  state.sugarStreak = next;
+  if (changed) {
+    persist();
+    if (sync) void upsertSupabase("sugar_streaks", { ...next, user_id: settings.ownerKey, updated_at: new Date().toISOString() }, "user_id");
+  }
+  return next;
+}
+
 function renderSugar() {
   if (!els.sugarList) return;
   const today = todayKey();
   const progress = getSugarProgress(sumSugarForDate(state.sugarEntries, today), SUGAR_DAILY_LIMIT_GRAMS);
+  const streak = reconcileSugarStreak();
 
   els.sugarLimitLabel.textContent = `Daily limit: ${progress.limit}g`;
   els.sugarTotal.textContent = `${progress.grams}g`;
@@ -2324,6 +2498,10 @@ function renderSugar() {
   track.classList.toggle("near", !progress.over && progress.percent >= 80);
   els.sugarOverFlag.hidden = !progress.over;
   els.sugarOverFlag.textContent = progress.over ? `${progress.overBy}g over limit` : "";
+  els.sugarCurrentStreak.textContent = String(streak.current_streak);
+  els.sugarLongestStreak.textContent = String(streak.longest_streak);
+  els.sugarStreakMessage.textContent = sugarStreakMessage(streak.current_streak).replace("Log a day under the limit to start your streak.", "Ready when you are");
+  els.sugarStreakCaption.textContent = streak.current_streak ? `${streak.current_streak} consecutive day${streak.current_streak === 1 ? "" : "s"} under ${SUGAR_DAILY_LIMIT_GRAMS}g.` : `Finish a day under ${SUGAR_DAILY_LIMIT_GRAMS}g to start your streak.`;
 
   const todayEntries = sugarEntriesForDate(state.sugarEntries, today);
   els.sugarList.innerHTML = todayEntries.length
@@ -2693,7 +2871,7 @@ async function syncFromSupabase() {
   }
   try {
     setSyncStatus("Syncing from Supabase...");
-    const [items, focus, sleep, sugar, cloudState] = await Promise.all([
+    const [items, focus, sleep, sugar, cloudState, streakRows, checklistRows, practiceSessions] = await Promise.all([
       supabaseFetch("life_flow_items?select=*&order=created_at.desc"),
       supabaseFetch("life_flow_focus_sessions?select=*&order=completed_at.desc"),
       supabaseFetch("life_flow_sleep_entries?select=*&order=sleep_date.desc"),
@@ -2701,6 +2879,9 @@ async function syncFromSupabase() {
       // rest of the pull, so this one table is allowed to come back empty.
       supabaseFetch("life_flow_sugar_entries?select=*&order=created_at.desc").catch(() => []),
       supabaseFetch("life_flow_app_state?select=*"),
+      supabaseFetch("sugar_streaks?select=*&limit=1").catch(() => []),
+      supabaseFetch(`daily_checklist?select=*&date=eq.${todayKey()}`).catch(() => []),
+      supabaseFetch("speak_practice_sessions?select=*&order=created_at.desc&limit=30").catch(() => []),
     ]);
     if (cloudState?.[0]) {
       const saved = cloudState[0];
@@ -2736,9 +2917,14 @@ async function syncFromSupabase() {
     state.focusSessions = mergeById(state.focusSessions, focus || []);
     state.sleepEntries = mergeById(state.sleepEntries, sleep || []);
     state.sugarEntries = mergeById(state.sugarEntries, sugar || []);
+    if (streakRows?.[0]) state.sugarStreak = { ...state.sugarStreak, ...streakRows[0] };
+    const checklist = normalizeDailyChecklist();
+    for (const row of checklistRows || []) checklist.completed[row.item_id] = Boolean(row.completed);
+    state.speakPracticeSessions = mergeById(state.speakPracticeSessions, practiceSessions || []).slice(-30);
     persist();
     render();
     setSyncStatus("Synced with Supabase");
+    void hydrateSpeakPracticeAudioUrls();
     return true;
   } catch (error) {
     setSyncStatus(`Loading paused: ${error.message}`);
@@ -2762,6 +2948,17 @@ async function syncToSupabase() {
     for (const entry of state.sleepEntries) await upsertSupabase("life_flow_sleep_entries", entry, "owner_key,sleep_date");
     // Keyed by id, not by date: a day holds many items, unlike sleep.
     for (const entry of state.sugarEntries) await upsertSupabase("life_flow_sugar_entries", entry);
+    await upsertSupabase("sugar_streaks", { ...state.sugarStreak, user_id: settings.ownerKey, updated_at: new Date().toISOString() }, "user_id");
+    const checklist = normalizeDailyChecklist();
+    for (const item of DAILY_CHECKLIST_ITEMS) {
+      await upsertSupabase("daily_checklist", {
+        user_id: settings.ownerKey, item_id: item.id, date: checklist.date,
+        completed: Boolean(checklist.completed[item.id]), updated_at: new Date().toISOString(),
+      }, "user_id,item_id,date");
+    }
+    for (const session of state.speakPracticeSessions) {
+      await upsertSupabase("speak_practice_sessions", session);
+    }
     await upsertAppState();
     setSyncStatus("Synced with Supabase");
   } catch (error) {
@@ -3057,6 +3254,48 @@ async function initGoogleCalendar() {
 // PostgREST reports an unknown column as PGRST204 and names it in the message.
 const UNKNOWN_COLUMN = /Could not find the '([^']+)' column/i;
 
+async function uploadSpeakPracticeAudio(path, blob, mimeType) {
+  const response = await fetch(`${settings.supabaseUrl.replace(/\/$/, "")}/storage/v1/object/${SPEAK_PRACTICE_BUCKET}/${path}`, {
+    method: "POST",
+    headers: {
+      apikey: settings.supabaseAnonKey,
+      Authorization: `Bearer ${settings.supabaseAnonKey}`,
+      "Content-Type": mimeType,
+      "x-owner-key": settings.ownerKey,
+      "x-upsert": "false",
+    },
+    body: blob,
+  });
+  if (!response.ok) throw new Error(await response.text() || response.statusText);
+}
+
+async function signedSpeakPracticeUrl(path) {
+  const response = await fetch(`${settings.supabaseUrl.replace(/\/$/, "")}/storage/v1/object/sign/${SPEAK_PRACTICE_BUCKET}`, {
+    method: "POST",
+    headers: {
+      apikey: settings.supabaseAnonKey,
+      Authorization: `Bearer ${settings.supabaseAnonKey}`,
+      "Content-Type": "application/json",
+      "x-owner-key": settings.ownerKey,
+    },
+    body: JSON.stringify({ paths: [path], expiresIn: 3600 }),
+  });
+  if (!response.ok) throw new Error(await response.text() || response.statusText);
+  const payload = await response.json();
+  const signed = Array.isArray(payload) ? payload[0]?.signedURL : payload?.signedURL;
+  if (!signed) return "";
+  return signed.startsWith("http") ? signed : `${settings.supabaseUrl.replace(/\/$/, "")}/storage/v1${signed.startsWith("/") ? signed : `/${signed}`}`;
+}
+
+async function hydrateSpeakPracticeAudioUrls() {
+  if (!canSync()) return;
+  const pending = state.speakPracticeSessions.filter((session) => session.audio_path && !session.audio_url);
+  await Promise.all(pending.map(async (session) => {
+    try { session.audio_url = await signedSpeakPracticeUrl(session.audio_path); } catch { /* keep metadata visible if signing is unavailable */ }
+  }));
+  if (pending.length) renderSpeakPracticeSessions();
+}
+
 async function upsertSupabase(table, row, onConflict = "id") {
   if (!canSync()) return;
   const send = (body) => supabaseFetch(`${table}?on_conflict=${encodeURIComponent(onConflict)}`, {
@@ -3190,6 +3429,9 @@ function normalizeState(saved) {
     items: seedRecurring(normalizeItemIds(Array.isArray(saved.items) ? saved.items : [])),
     sleepEntries: Array.isArray(saved.sleepEntries) ? saved.sleepEntries : [],
     sugarEntries: Array.isArray(saved.sugarEntries) ? saved.sugarEntries : [],
+    sugarStreak: { ...defaultState.sugarStreak, ...(saved.sugarStreak || {}) },
+    dailyChecklist: { ...defaultState.dailyChecklist, ...(saved.dailyChecklist || {}), completed: { ...(saved.dailyChecklist?.completed || {}) } },
+    speakPracticeSessions: Array.isArray(saved.speakPracticeSessions) ? saved.speakPracticeSessions : [],
     focusSessions: Array.isArray(saved.focusSessions) ? saved.focusSessions : [],
     fitnessLog: Array.isArray(saved.fitnessLog) ? saved.fitnessLog : [],
     rewards: Array.isArray(saved.rewards) ? saved.rewards : [],
@@ -3221,8 +3463,7 @@ function importSleepLog(target) {
   const additions = sleepLogImport
     .filter(([date]) => !existing.has(date))
     .map(([date, slept, woke]) => {
-      const sleptAt = `${date}T${slept}`;
-      const wokeAt = `${woke <= slept ? addDays(date, 1) : date}T${woke}`;
+      const { sleptAt, wokeAt } = sleepTimestampsForWakeDate(date, slept, woke);
       return {
         id: crypto.randomUUID(), owner_key: settings.ownerKey, sleep_date: date,
         slept_at: sleptAt, woke_at: wokeAt, minutes: calculateSleepMinutes(sleptAt, wokeAt),

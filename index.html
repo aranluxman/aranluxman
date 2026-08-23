@@ -14,7 +14,7 @@
     <link rel="icon" id="dynamicFavicon" href="/assets/icon-512.png" />
     <link rel="apple-touch-icon" id="dynamicTouchIcon" href="/assets/icon-512.png" />
     <link rel="stylesheet" href="/styles.css" />
-    <script type="module" src="/src/app.mjs?v=20260819-sync"></script>
+    <script type="module" src="/src/app.mjs?v=20260823-life-flow-features"></script>
   </head>
   <body class="dark-mode">
     <div class="app-shell">
@@ -61,6 +61,11 @@
             <span class="quote-mark" aria-hidden="true"><i data-lucide="quote"></i></span>
             <p id="quoteText"></p>
             <button class="icon-button" id="nextQuoteButton" type="button" aria-label="New quote" title="New quote"><i data-lucide="refresh-cw"></i></button>
+          </section>
+          <section class="surface daily-checklist-card" aria-labelledby="dailyChecklistTitle">
+            <div class="card-heading"><h2 id="dailyChecklistTitle">Daily checklist</h2><span id="dailyChecklistCount">0 of 3 done</span></div>
+            <p class="checklist-note">Small actions that make today feel easier.</p>
+            <div class="daily-checklist-list" id="dailyChecklistList"></div>
           </section>
           <section class="upcoming-card surface" aria-labelledby="upcomingTitle">
             <div class="card-heading"><h2 id="upcomingTitle">Upcoming Today</h2><button class="see-all" data-view="calendar" type="button">See all <i data-lucide="chevron-right"></i></button></div>
@@ -156,7 +161,7 @@
         <section class="view" id="sugarView" role="tabpanel" tabindex="0" aria-labelledby="sugarTitle">
           <div class="section-heading section-heading-sugar"><div><h1 id="sugarTitle">Sugar</h1><p class="section-subtitle">Track added sugar against your daily limit.</p></div></div>
           <section class="surface sugar-today-card">
-            <div class="card-heading"><h2>Today</h2><span class="sugar-limit-chip" id="sugarLimitLabel">Daily limit: 25g</span></div>
+            <div class="card-heading"><h2>Today</h2><span class="sugar-limit-chip" id="sugarLimitLabel">Daily limit: 30g</span></div>
             <div class="sugar-readout">
               <strong id="sugarTotal">0g</strong>
               <span id="sugarStatus">0% of your daily limit</span>
@@ -177,6 +182,11 @@
               <button class="primary-button sugar-add-button" id="sugarAddButton" type="submit"><i data-lucide="plus"></i><span>Add</span></button>
             </form>
             <div class="sugar-list" id="sugarList"></div>
+          </section>
+          <section class="surface sugar-streak-card" aria-labelledby="sugarStreakTitle">
+            <div class="card-heading"><h2 id="sugarStreakTitle">Under 30g streak</h2><span class="sugar-streak-message" id="sugarStreakMessage">Great start!</span></div>
+            <div class="sugar-streak-readout"><strong id="sugarCurrentStreak">0</strong><span>day streak</span><strong id="sugarLongestStreak">0</strong><span>longest</span></div>
+            <p class="sugar-streak-caption" id="sugarStreakCaption">Finish a day under 30g to start your streak.</p>
           </section>
           <!-- Grouped so the read-only cards can stack as one column beside the
                Today card on a wide screen. The wrapper is display:contents on a
@@ -270,6 +280,13 @@
             <div class="r-list" id="rList"></div>
             <button class="ghost-button compact r-next" id="rNextSet" type="button"><i data-lucide="shuffle"></i><span>Next set</span></button>
           </section>
+          <section class="surface speak-judge-card" aria-labelledby="judgeTitle">
+            <div class="card-heading"><h2 id="judgeTitle">Judge your practice</h2><span class="speak-tag">Private recording</span></div>
+            <p class="speak-judge-note">Repeat the lesson out loud, then record a take. Your audio stays in your private Supabase practice folder.</p>
+            <label class="speak-field speak-field-topic"><span>Lesson</span><input id="speakPracticeLessonInput" type="text" maxlength="120" value="Tamil Practice" /></label>
+            <div class="judge-controls"><button class="primary-button" id="speakRecordButton" type="button"><i data-lucide="mic"></i><span>Start recording</span></button><span class="judge-status" id="speakRecordStatus" role="status" aria-live="polite">Ready when you are.</span><span class="judge-timer" id="speakRecordTimer">0:00</span></div>
+            <div class="speak-practice-sessions" id="speakPracticeSessions"></div>
+          </section>
           <section class="surface speak-tamil" aria-labelledby="tamilTitle">
             <div class="card-heading"><h2 id="tamilTitle">Tamil Practice</h2><span class="speak-tag">YouTube</span></div>
             <p class="speak-tamil-note">Your Tamil practice playlist. Watch a lesson, then say it back out loud.</p>
@@ -330,7 +347,7 @@
     <dialog class="compose-dialog" id="sleepDialog" aria-labelledby="sleepDialogTitle">
       <form id="sleepForm" method="dialog">
         <div class="dialog-heading"><h2 id="sleepDialogTitle">Add sleep</h2><button class="icon-button" id="closeSleepButton" type="button" aria-label="Close"><i data-lucide="x"></i></button></div>
-        <label>Date<input id="sleepDateInput" type="date" required /></label>
+        <label>Wake-up date<input id="sleepDateInput" type="date" required /></label>
         <div class="form-grid"><label>Fell asleep<input id="sleptAtInput" type="time" required /></label><label>Woke up<input id="wokeAtInput" type="time" required /></label></div>
         <p class="sleep-help">Just pick when you fell asleep and woke up &mdash; crossing midnight is handled for you.</p>
         <p class="form-error" id="sleepError" role="alert" hidden>Not valid. Sleep must be 11 hours or less.</p>

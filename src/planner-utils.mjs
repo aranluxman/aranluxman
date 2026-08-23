@@ -1,5 +1,7 @@
 export const todayKey = () => formatDateKey(new Date());
 
+export const LOCAL_TIME_ZONE = Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC";
+
 export function formatDateKey(date) {
   const year = date.getFullYear();
   const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -222,6 +224,48 @@ export function calculateSleepMinutes(sleptAt, wokeAt) {
   return Math.max(0, Math.round((woke - slept) / 60000));
 }
 
+function zonedParts(instant, timeZone) {
+  return Object.fromEntries(new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hourCycle: "h23",
+  }).formatToParts(instant).filter(({ type }) => type !== "literal").map(({ type, value }) => [type, Number(value)]));
+}
+
+// Convert a wall-clock value from the user's IANA time zone to an unambiguous
+// UTC instant. This avoids sending `2026-08-23T22:30` to a timestamptz column,
+// where Postgres may interpret the missing offset as UTC.
+export function localDateTimeToIso(dateKey, time, timeZone = LOCAL_TIME_ZONE) {
+  const [year, month, day] = String(dateKey).split("-").map(Number);
+  const [hour, minute] = String(time).split(":").map(Number);
+  if (![year, month, day, hour, minute].every(Number.isFinite)) return "";
+
+  const wallClockAsUtc = Date.UTC(year, month - 1, day, hour, minute, 0, 0);
+  let instant = wallClockAsUtc;
+  // Two passes handle the normal DST offset and the rare case where the first
+  // guess crosses a daylight-saving transition.
+  for (let pass = 0; pass < 2; pass += 1) {
+    const parts = zonedParts(new Date(instant), timeZone);
+    const representedAsUtc = Date.UTC(parts.year, parts.month - 1, parts.day, parts.hour, parts.minute, parts.second, 0);
+    instant += wallClockAsUtc - representedAsUtc;
+  }
+  return new Date(instant).toISOString();
+}
+
+export function sleepTimestampsForWakeDate(wakeDate, sleptTime, wokeTime, timeZone = LOCAL_TIME_ZONE) {
+  const sleptDate = sleptTime >= wokeTime ? addDays(wakeDate, -1) : wakeDate;
+  return {
+    sleptAt: localDateTimeToIso(sleptDate, sleptTime, timeZone),
+    wokeAt: localDateTimeToIso(wakeDate, wokeTime, timeZone),
+    sleepDate: wakeDate,
+  };
+}
+
 export function getSleepSummary(entries, goalMinutes = 480, rangeType = "days") {
   return summarizeSleep(entries, goalMinutes, rangeType);
 }
@@ -432,9 +476,10 @@ function unescapeIcs(value) {
 }
 
 // ---------- Added sugar ----------
-// American Heart Association: no more than 25g of added sugar a day for ages
-// 2-18. The same figure applies regardless of gender.
-export const SUGAR_DAILY_LIMIT_GRAMS = 25;
+// The tracker uses the requested under-30g goal. Keep this as one exported
+// config value so a future settings control can change it without rewriting
+// the streak or chart logic.
+export const SUGAR_DAILY_LIMIT_GRAMS = 30;
 
 // Grams are entered by hand and can be fractional, so every total goes through
 // here: 0.1 + 0.2 must read as 0.3 on screen, not 0.30000000000000004.
@@ -482,6 +527,57 @@ export function sugarTotalsByDate(entries = []) {
     .map(([date, grams]) => ({ date, grams: roundGrams(grams) }))
     .filter((day) => day.grams > 0)
     .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+function dateDifferenceInDays(later, earlier) {
+  const laterDate = new Date(`${later}T00:00:00`);
+  const earlierDate = new Date(`${earlier}T00:00:00`);
+  return Math.round((laterDate - earlierDate) / 86400000);
+}
+
+export const SUGAR_STREAK_MESSAGES = [
+  { minimum: 30, text: "Unstoppable!" },
+  { minimum: 7, text: "You're on fire!" },
+  { minimum: 1, text: "Great start!" },
+  { minimum: 0, text: "Log a day under the limit to start your streak." },
+];
+
+export function sugarStreakMessage(streak) {
+  return SUGAR_STREAK_MESSAGES.find(({ minimum }) => Number(streak) >= minimum)?.text || SUGAR_STREAK_MESSAGES.at(-1).text;
+}
+
+// A day is counted only when its total is strictly under the configured goal.
+// If today has no entries yet, the latest completed day is yesterday; this keeps
+// an in-progress day from falsely extending the record before midnight.
+export function calculateSugarStreak(entries = [], limit = SUGAR_DAILY_LIMIT_GRAMS, dateKey = todayKey()) {
+  const totals = sugarTotalsByDate(entries);
+  const byDate = new Map(totals.map((day) => [day.date, day.grams]));
+  const hasTodayEntries = byDate.has(dateKey);
+  let cursor = hasTodayEntries ? dateKey : addDays(dateKey, -1);
+  let current = 0;
+  let latestCountedDate = "";
+  while (byDate.has(cursor) && byDate.get(cursor) < limit) {
+    current += 1;
+    latestCountedDate ||= cursor;
+    cursor = addDays(cursor, -1);
+  }
+
+  let longest = 0;
+  let run = 0;
+  let previous = "";
+  for (const day of totals) {
+    if (day.grams < limit && (!previous || dateDifferenceInDays(day.date, previous) === 1)) run += 1;
+    else run = day.grams < limit ? 1 : 0;
+    longest = Math.max(longest, run);
+    previous = day.date;
+  }
+
+  return {
+    currentStreak: current,
+    longestStreak: Math.max(longest, current),
+    lastUpdatedDate: latestCountedDate || (hasTodayEntries ? dateKey : ""),
+    message: sugarStreakMessage(current),
+  };
 }
 
 // Same range windows as summarizeSleep so the two history views behave alike.

@@ -6,6 +6,7 @@ import {
   calculateCoinBreakdown,
   calculateStats,
   calculateSleepMinutes,
+  calculateSugarStreak,
   calculateSleepScore,
   countSessionsForDate,
   eventsForDate,
@@ -17,7 +18,10 @@ import {
   getHomeSubtitle,
   getSleepSummary,
   getSugarProgress,
+  localDateTimeToIso,
   SUGAR_DAILY_LIMIT_GRAMS,
+  sleepTimestampsForWakeDate,
+  sugarStreakMessage,
   sugarEntriesForDate,
   sugarTotalsByDate,
   summarizeFitnessWeek,
@@ -192,6 +196,19 @@ test("calculateSleepMinutes handles overnight sleep", () => {
   assert.equal(calculateSleepMinutes("2026-05-19T22:45", "2026-05-20T06:30"), 465);
 });
 
+test("sleep form values become exact UTC instants while preserving the wake date", () => {
+  const timestamps = sleepTimestampsForWakeDate("2026-08-23", "22:30", "07:00", "America/Toronto");
+  assert.equal(timestamps.sleepDate, "2026-08-23");
+  assert.equal(timestamps.sleptAt, "2026-08-23T02:30:00.000Z");
+  assert.equal(timestamps.wokeAt, "2026-08-23T11:00:00.000Z");
+  assert.equal(calculateSleepMinutes(timestamps.sleptAt, timestamps.wokeAt), 510);
+});
+
+test("timezone conversion follows daylight saving offsets", () => {
+  assert.equal(localDateTimeToIso("2026-07-01", "22:30", "America/Toronto"), "2026-07-02T02:30:00.000Z");
+  assert.equal(localDateTimeToIso("2026-01-15", "22:30", "America/Toronto"), "2026-01-16T03:30:00.000Z");
+});
+
 test("getSleepSummary calculates average and graph percentages", () => {
   const summary = getSleepSummary([
     { sleep_date: "2026-05-18", slept_at: "2026-05-18T23:00", woke_at: "2026-05-19T06:00" },
@@ -241,17 +258,17 @@ test("sumSugarForDate totals only the requested day and avoids float drift", () 
 
 test("getSugarProgress reports true percent while clamping only the visual fill", () => {
   const under = getSugarProgress(20);
-  assert.equal(under.percent, 80);
-  assert.equal(under.fillPercent, 80);
+  assert.equal(under.percent, 67);
+  assert.equal(under.fillPercent, 67);
   assert.equal(under.over, false);
-  assert.equal(under.remaining, 5);
+  assert.equal(under.remaining, 10);
 
-  // 30g against a 25g limit: 120% on the readout, bar pinned at 100%, 5g over.
-  const over = getSugarProgress(30);
-  assert.equal(over.percent, 120);
+  // 40g against the configurable 30g limit: 133% on the readout, bar pinned at 100%.
+  const over = getSugarProgress(40);
+  assert.equal(over.percent, 133);
   assert.equal(over.fillPercent, 100);
   assert.equal(over.over, true);
-  assert.equal(over.overBy, 5);
+  assert.equal(over.overBy, 10);
   assert.equal(over.remaining, 0);
 });
 
@@ -269,11 +286,11 @@ test("sugar entries reset at the local midnight boundary without touching past d
     sugarEntry("2026-08-17", "Cereal", 9, "07:30:00"),
   ];
 
-  // The minute before midnight: yesterday reads 28g and is flagged over.
+  // The minute before midnight: yesterday reads 28g and remains under the 30g goal.
   const before = getSugarProgress(sumSugarForDate(entries, "2026-08-16"));
   assert.equal(before.grams, 28);
-  assert.equal(before.over, true);
-  assert.equal(before.overBy, 3);
+  assert.equal(before.over, false);
+  assert.equal(before.overBy, 0);
   assert.equal(sugarEntriesForDate(entries, "2026-08-16").length, 2);
 
   // Crossing midnight with nothing yet logged: the new day starts empty at 0%.
@@ -293,6 +310,23 @@ test("sugar entries reset at the local midnight boundary without touching past d
   );
 });
 
+test("sugar streaks require consecutive under-limit days and keep a longest record", () => {
+  const entries = [
+    sugarEntry("2026-08-18", "Snack", 20),
+    sugarEntry("2026-08-19", "Snack", 29),
+    sugarEntry("2026-08-20", "Snack", 31),
+    sugarEntry("2026-08-22", "Snack", 10),
+    sugarEntry("2026-08-23", "Snack", 12),
+  ];
+  const streak = calculateSugarStreak(entries, SUGAR_DAILY_LIMIT_GRAMS, "2026-08-23");
+  assert.equal(streak.currentStreak, 2);
+  assert.equal(streak.longestStreak, 2);
+  assert.equal(streak.lastUpdatedDate, "2026-08-23");
+  assert.equal(sugarStreakMessage(2), "Great start!");
+  assert.equal(sugarStreakMessage(7), "You're on fire!");
+  assert.equal(sugarStreakMessage(30), "Unstoppable!");
+});
+
 test("summarizeSugar aggregates per day, counts days over the limit, and windows by range", () => {
   const entries = [
     sugarEntry("2026-08-14", "Soda", 40),
@@ -309,7 +343,7 @@ test("summarizeSugar aggregates per day, counts days over the limit, and windows
   // Bar heights are relative to the tallest day, and the limit line to the same.
   assert.equal(summary.maxGrams, 40);
   assert.deepEqual(summary.points.map((point) => point.height), [100, 45, 63]);
-  assert.equal(summary.limitHeight, 63);
+  assert.equal(summary.limitHeight, 75);
 });
 
 test("summarizeSugar drops days whose items were all deleted", () => {

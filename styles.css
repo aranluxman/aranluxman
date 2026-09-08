@@ -1826,9 +1826,9 @@ dialog form select {
    SPEAK — communication practice
    ============================================================ */
 .section-heading-speak { border-color: var(--teal); }
-.speak-topic-card, .speak-framework-card, .speak-reflection-card, .speak-articulation {
+.speak-topic-card, .speak-framework-card, .speak-reflection-card, .speak-articulation,
+.speak-example-card, .speak-secrets-card {
   padding: 16px;
-  margin-top: 14px;
 }
 .speak-kind {
   display: inline-flex;
@@ -2635,7 +2635,6 @@ small, .section-subtitle { letter-spacing: 0.008em; }
   .view.active#homeView,
   .view.active#calendarView,
   .view.active#sleepView,
-  .view.active#speakView,
   .view.active#meView {
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2644,8 +2643,8 @@ small, .section-subtitle { letter-spacing: 0.008em; }
   }
   /* Full-bleed rows: headers, and anything that needs the width to read well. */
   .home-hero, .home-quote, .section-heading, .gcal-card, .calendar-topline, .calendar-toolbar,
-  #monthCalendar, .week-grid, .sleep-list, .speak-articulation, .speak-tamil,
-  .speak-new-round, .sleep-goal, .goals-card, .about-card {
+  #monthCalendar, .week-grid, .sleep-list,
+  .sleep-goal, .goals-card, .about-card {
     grid-column: 1 / -1;
   }
   .view.active#homeView .upcoming-card,
@@ -3705,3 +3704,233 @@ input.has-error:focus-visible {
 @media (prefers-reduced-motion: reduce) {
   .daily-checklist-item { transition: none; }
 }
+
+/* ============================================================
+   SPEAK — THREE-COLUMN PRACTICE DASHBOARD
+   Left: the practice sandbox (topic + mic). Centre: whichever
+   framework the switcher is on. Right: the ten secrets, kept
+   on screen while you record instead of scrolled away.
+   Stacks to one column on phones; the sidebar only becomes
+   sticky once there is a real second axis to pin it against.
+   ============================================================ */
+.speak-col { display: grid; gap: var(--s-4); align-content: start; min-width: 0; }
+
+.speak-topic-chips { display: flex; flex-wrap: wrap; gap: var(--s-2); margin-bottom: var(--s-3); }
+.speak-field-select select { width: 100%; }
+.speak-field select:disabled { opacity: 0.55; cursor: not-allowed; }
+.speak-topic-card .speak-topic-text { margin: var(--s-3) 0 var(--s-2); }
+.speak-new-round { width: 100%; justify-content: center; margin-top: var(--s-3); }
+
+/* Framework switcher -------------------------------------- */
+/* Four tabs in one row where they fit, an even 2x2 where they do not — a
+   flex wrap left the last tab stretched across its own row. */
+.speak-mode-tabs {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 3px;
+}
+.speak-mode-tabs button { white-space: nowrap; }
+
+.speak-framework-tagline {
+  color: var(--teal-bright);
+  font-size: 0.92rem;
+  line-height: 1.5;
+  margin-bottom: var(--s-2);
+}
+.speak-framework-card .speak-framework-name {
+  /* It is an <h2> here rather than a chip, so it drops the pill treatment. */
+  background: none;
+  border: 0;
+  padding: 0;
+  font-size: 1.25rem;
+  color: var(--ink);
+}
+
+.speak-framework-split { display: grid; gap: var(--s-4); }
+.speak-example-card h3,
+.speak-reflection-card > h3 {
+  font-size: 1.02rem;
+  margin-bottom: var(--s-2);
+}
+.speak-example-card > p {
+  color: var(--muted);
+  font-size: 0.9rem;
+  line-height: 1.6;
+}
+.speak-sensory-tagline { color: var(--teal-bright); font-size: 0.88rem; line-height: 1.5; }
+.speak-reflection-card h4 {
+  color: var(--faint);
+  font-size: 0.72rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin: var(--s-4) 0 var(--s-2);
+}
+.speak-sensory-list { display: grid; gap: var(--s-2); padding-left: 18px; margin: 0; }
+.speak-sensory-list li { color: var(--muted); font-size: 0.88rem; line-height: 1.55; }
+.speak-sensory-list strong { color: var(--ink); }
+.speak-technique-block { border-top: var(--glass-border); margin-top: var(--s-4); }
+.speak-technique-block h4 { display: flex; align-items: center; gap: var(--s-2); flex-wrap: wrap; }
+
+/* The ten secrets ----------------------------------------- */
+.speak-secrets-card .card-heading h2 { font-size: 1.05rem; line-height: 1.35; }
+.speak-secrets {
+  display: grid;
+  gap: var(--s-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: secret;
+  /* Long enough to need its own scroll on a short viewport, but it never
+     steals the page's scroll on a tall one. */
+  max-height: min(62vh, 620px);
+  overflow-y: auto;
+  padding-right: var(--s-1);
+}
+.speak-secret { counter-increment: secret; }
+.speak-secret details {
+  background: var(--card-2);
+  border: var(--glass-border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.speak-secret summary {
+  display: flex;
+  align-items: center;
+  gap: var(--s-2);
+  padding: 10px 12px 10px 38px;
+  position: relative;
+  cursor: pointer;
+  list-style: none;
+  font-size: 0.88rem;
+  color: var(--ink);
+}
+.speak-secret summary::-webkit-details-marker { display: none; }
+.speak-secret summary::before {
+  content: counter(secret);
+  position: absolute;
+  left: 10px;
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 7px;
+  background: var(--teal-dim);
+  color: var(--teal);
+  font-size: 0.72rem;
+  font-weight: 700;
+}
+.speak-secret[open] summary,
+.speak-secret summary:hover { background: rgba(0, 229, 195, 0.06); }
+.speak-secret summary:focus-visible { outline: 2px solid var(--teal); outline-offset: -2px; }
+.speak-secret-title { flex: 1; font-weight: 600; }
+.speak-secret-time { color: var(--faint); font-size: 0.7rem; font-variant-numeric: tabular-nums; }
+.speak-secret details p {
+  color: var(--muted);
+  font-size: 0.84rem;
+  line-height: 1.55;
+  padding: 0 12px 12px 38px;
+  margin: 0;
+}
+
+/* Recording panel ----------------------------------------- */
+.speak-record-button { width: 100%; justify-content: center; margin-top: var(--s-3); }
+.speak-record-button.recording { color: var(--red); border-color: rgba(255, 93, 108, 0.4); }
+.speak-record-timer {
+  font-size: 2.4rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  margin: var(--s-3) 0 var(--s-1);
+}
+.speak-record-intent {
+  text-align: center;
+  color: var(--teal);
+  font-size: 0.8rem;
+  margin-bottom: var(--s-2);
+}
+.speak-judge-card .judge-status { text-align: center; color: var(--muted); font-size: 0.82rem; }
+
+/* Pre-record checklist ------------------------------------ */
+.prerecord-note { color: var(--muted); font-size: 0.86rem; line-height: 1.5; margin-bottom: var(--s-3); }
+.prerecord-countdown {
+  display: grid;
+  justify-items: center;
+  gap: var(--s-1);
+  padding: var(--s-4) 0 var(--s-2);
+}
+.prerecord-count {
+  display: grid;
+  place-items: center;
+  width: 84px;
+  height: 84px;
+  border-radius: 50%;
+  border: 2px solid var(--teal);
+  box-shadow: 0 0 26px var(--teal-glow);
+  color: var(--teal);
+  font-size: 2.4rem;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  animation: prerecord-tick 1s ease-out infinite;
+}
+.prerecord-countdown p { color: var(--muted); font-size: 0.82rem; text-align: center; }
+@keyframes prerecord-tick {
+  from { transform: scale(1); box-shadow: 0 0 26px var(--teal-glow); }
+  to { transform: scale(0.94); box-shadow: 0 0 8px rgba(0, 229, 195, 0.15); }
+}
+.prerecord-actions { display: flex; gap: var(--s-2); justify-content: flex-end; margin-top: var(--s-4); }
+
+@media (min-width: 900px) {
+  .view.active#speakView {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--s-4);
+    align-items: start;
+  }
+  .view.active#speakView > .section-heading { grid-column: 1 / -1; }
+}
+
+@media (min-width: 1180px) {
+  .view.active#speakView {
+    /* Sandbox | framework | secrets. The centre column carries the most text,
+       so it takes the extra width rather than splitting it three ways. */
+    grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.7fr) minmax(0, 0.8fr);
+  }
+  .speak-col-secrets {
+    position: sticky;
+    top: var(--s-4);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .prerecord-count { animation: none !important; }
+}
+
+/* Column headings sit in narrower space than a full-width card, so they take a
+   step down the type scale rather than wrapping onto three lines. */
+.speak-col .card-heading { flex-wrap: wrap; gap: var(--s-2); }
+.speak-col .card-heading h2 { font-size: 1.05rem; line-height: 1.3; }
+.speak-secrets-card .card-heading h2 { font-size: 0.98rem; }
+.speak-framework-card .speak-framework-name { font-size: 1.3rem; }
+.speak-mode-tabs button { padding: 7px 10px; font-size: 0.78rem; }
+.speak-secret summary { font-size: 0.83rem; }
+.speak-secret-title { line-height: 1.35; }
+/* The when-to-use line is guidance about the framework, not part of its
+   definition, so it reads as a separate note. */
+.speak-framework-when { margin-top: var(--s-2); font-style: italic; }
+
+@media (min-width: 900px) and (max-width: 1179px) {
+  .speak-framework-split { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (min-width: 1320px) {
+  .speak-framework-split { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* The worked example keeps the teal accent the old inline example block had, so
+   "here is what it sounds like" still reads as a different kind of content. */
+.speak-example-card {
+  border-color: rgba(0, 229, 195, 0.28);
+  box-shadow: 0 0 24px rgba(0, 229, 195, 0.07);
+}
+.speak-example-card h3 { color: var(--teal); }

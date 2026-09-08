@@ -76,19 +76,34 @@ export const frameworks = [
     example: "Two years ago I couldn't run a lap without stopping. Now I train five days a week and race the 800. Next year I want to break 2:20 and help coach the younger group.",
   },
   {
-    id: "five-ws",
-    name: "5 W's",
+    id: "story-showing",
+    name: "Story Showing",
     purpose: "explain",
-    whenToUse: "Explaining an event clearly.",
-    definition: "Cover every basic fact so nobody has to ask a follow-up.",
+    whenToUse: "Any story or explanation you want people to feel, not just follow.",
+    tagline: "Don't tell a story — take the listener into a time machine using sensory details.",
+    definition: "Open inside the tension, chain the events with BUT and THEREFORE, and hold the lesson until the final moments.",
     steps: [
-      "Who is involved",
-      "What happened",
-      "When it happened",
-      "Where it happened",
-      "Why it matters",
+      "Shocking Hook (first 8 seconds) — start inside the conflict, a shocking question, or a bold statement",
+      "The Body (the But / Therefore engine) — chain events with \"BUT…\" (unexpected conflict) and \"THEREFORE…\" (action taken), never \"and then…\"",
+      "Dopamine Spikes — drop an \"oh my god, I had no idea\" insight or a tease so nobody drifts",
+      "The Payoff (resolution) — deliver the core lesson only at the very end",
     ],
-    example: "Our team ran the city relay last Saturday at Centennial Park. Four of us split 4x400. We placed second — the first medal this school has taken in three years.",
+    example: "We were 12 hours from launching the robot when the motor caught fire [Hook]. We tried replacing it, BUT the store was closed; THEREFORE we had to dismantle our secondary prototype [But / Therefore]. That's when we realised our team lead had wired the voltage completely backwards [Dopamine Spike].",
+  },
+  {
+    id: "feel-know-do",
+    name: "Feel / Know / Do",
+    purpose: "explain",
+    whenToUse: "Pitching, persuading, or any talk with an outcome attached.",
+    tagline: "Decide the reaction before you decide the words.",
+    definition: "Answer three questions before you open your mouth: what should they feel, what should they know, what should they do.",
+    steps: [
+      "Feel — name the one emotion they should leave with",
+      "Know — the single fact or idea they must remember",
+      "Do — the exact action you are asking them to take",
+      "Deliver — build every line to serve those three, and cut everything else",
+    ],
+    example: "Feel: uneasy about how much practice time we lose. Know: we burn twenty minutes a session setting up gear. Do: approve a ten-minute early call so everything is up before the whistle.",
   },
   {
     id: "pip",
@@ -236,6 +251,59 @@ export const storytellingTechniques = [
 // Adding them works the same way as PENDING_FRAMEWORKS above.
 export const PENDING_TECHNIQUES = ["technique 8 (unconfirmed)", "technique 9 (unconfirmed)"];
 
+// The storytelling card's fixed half. The per-topic technique above still
+// changes every round; this is the standing instruction that sits above it —
+// what "story showing" actually asks you to do with your senses and your body.
+export const sensoryMapping = {
+  name: "Sensory & Emotion Mapping",
+  alias: "Story Showing",
+  tagline: "Light up both sides of the brain by engaging the 5 senses and mirror neurons.",
+  guidelines: [
+    {
+      title: "Show, don't tell",
+      detail: "Describe the sights, sounds, smells, textures, and tastes instead of summarising what happened.",
+    },
+    {
+      title: "Embody the emotion",
+      detail: "Feel the pain, anger, or excitement yourself while recording — mirror neurons carry it across to the listener.",
+    },
+    {
+      title: "Turn mess into message",
+      detail: "Start with what you hate, what you are against, or what you struggled through.",
+    },
+  ],
+  example: "The smell of burnt circuit board filled the room as the red warning LED flashed furiously.",
+};
+
+// Prince Ea's ten secrets of world-class communication, in the order they are
+// taught. The timestamp is where each one starts in the source talk, kept so a
+// principle can be checked against the original rather than taken on trust.
+export const communicationSecrets = [
+  { id: "pause", title: "Power of the Pause", detail: "Hold silence before you speak or answer. It buys thinking time and reads as authority.", timestamp: "00:03:47" },
+  { id: "energy", title: "Prioritize Energy over Words", detail: "55% visual, 38% tone, 7% words. Your energy carries the message; the words only label it.", timestamp: "00:09:02" },
+  { id: "tone", title: "Master Your Tone", detail: "Tone leaks your real attitude. Practise the same sentence with conviction, with warmth, with urgency.", timestamp: "00:12:01" },
+  { id: "enunciate", title: "Enunciate Clearly", detail: "Over-articulate on purpose. Crisp consonants sound confident and trustworthy; mumbling sounds unsure.", timestamp: "00:13:39" },
+  { id: "feel-know-do", title: "Feel / Know / Do", detail: "Before you speak, answer three questions: what do I want them to feel, to know, and to do?", timestamp: "00:14:21" },
+  { id: "authenticity", title: "Authenticity", detail: "Drop the stiff professional persona. Talk human to human instead of performing a role.", timestamp: "00:16:07" },
+  { id: "wiifm", title: "Make It About Them", detail: "Speak to the listener's self-interest — WIIFM: what's in it for me?", timestamp: "00:17:37" },
+  { id: "kiss", title: "Keep It Simple (KISS)", detail: "No $5 words, no jargon. Simple and universal beats clever and narrow.", timestamp: "00:22:29" },
+  { id: "skirt-rule", title: "The Skirt Rule (Length)", detail: "Long enough to cover the subject, short enough to keep attention.", timestamp: "00:26:36" },
+  { id: "big-me", title: "Big Me vs. Little Me", detail: "Beat the fear by serving the audience instead of protecting your ego.", timestamp: "00:26:59" },
+];
+
+// The centre column's tabs. "auto" is not a framework — it is the existing
+// behaviour, where the round shows whatever framework the current topic
+// declares. The next two pin the column to one framework regardless of topic,
+// and "articulation" hands the column over to the legacy sound drills.
+export const FRAMEWORK_MODES = [
+  { id: "auto", label: "Topic match", frameworkId: null },
+  { id: "story-showing", label: "Story Showing", frameworkId: "story-showing" },
+  { id: "feel-know-do", label: "Feel / Know / Do", frameworkId: "feel-know-do" },
+  { id: "articulation", label: "Articulation drills", frameworkId: null },
+];
+
+export const frameworkModeById = (id) => FRAMEWORK_MODES.find((mode) => mode.id === id) || FRAMEWORK_MODES[0];
+
 // Every topic names its own framework and storytelling technique. Nothing here
 // is chosen at run time, so a pairing can only ever be one an author wrote.
 const baseSpeakTopics = [
@@ -245,7 +313,7 @@ const baseSpeakTopics = [
   { kind: "debate", text: "Mondays should be illegal. Make your case.", framework: "pcs", technique: "show-emotions" },
   { kind: "debate", text: "Pineapple absolutely belongs on pizza.", framework: "pip", technique: "sensory-anchor" },
   { kind: "debate", text: "Texting is better than calling. Prove it.", framework: "bab", technique: "use-dialogue" },
-  { kind: "debate", text: "Cats secretly run the internet. Present the evidence.", framework: "five-ws", technique: "state-the-location" },
+  { kind: "debate", text: "Cats secretly run the internet. Present the evidence.", framework: "story-showing", technique: "state-the-location" },
   { kind: "debate", text: "Summer break should be twice as long.", framework: "prep", technique: "status-shift" },
   { kind: "reflection", text: "Describe a problem you faced recently and how you overcame it.", framework: "wsn", technique: "share-your-thoughts" },
   { kind: "reflection", text: "Talk about a time you changed your mind about something.", framework: "wsn", technique: "status-shift" },

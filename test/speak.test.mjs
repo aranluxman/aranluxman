@@ -2,7 +2,10 @@ import assert from "node:assert/strict";
 import test from "node:test";
 
 import {
+  communicationSecrets,
+  FRAMEWORK_MODES,
   frameworkById,
+  frameworkModeById,
   frameworks,
   frameworksForPurpose,
   KIND_PURPOSE,
@@ -11,6 +14,7 @@ import {
   PURPOSES,
   resolveCustomTopic,
   resolveRound,
+  sensoryMapping,
   speakTopics,
   storytellingTechniques,
   techniqueById,
@@ -36,7 +40,7 @@ test("framework ids are unique", () => {
 });
 
 test("the documented framework library is present and the undocumented one is not", () => {
-  assert.equal(frameworks.length, 11);
+  assert.equal(frameworks.length, 12);
   // "The One Important Thing" must stay absent until its real steps are supplied
   // — this test is what stops it being quietly invented later.
   for (const name of PENDING_FRAMEWORKS) {
@@ -161,4 +165,84 @@ test("techniqueById and frameworkById return null for unknown ids", () => {
   assert.equal(frameworkById("nope"), null);
   assert.equal(techniqueById("nope"), null);
   assert.equal(resolveRound(null), null);
+});
+
+// The 5 W's was retired in favour of Prince Ea's Story Showing. These guard the
+// swap: the old id must be gone everywhere, not just from the framework list,
+// or a topic would resolve to nothing and the centre column would render blank.
+test("the 5 W's framework is fully retired and nothing still points at it", () => {
+  assert.equal(frameworkById("five-ws"), null);
+  assert.equal(frameworks.some((framework) => framework.name === "5 W's"), false);
+  for (const topic of speakTopics) {
+    assert.notEqual(topic.framework, "five-ws", `topic still declares five-ws: ${topic.text}`);
+  }
+});
+
+test("Story Showing carries the hook, the but/therefore engine, and the payoff", () => {
+  const framework = frameworkById("story-showing");
+  assert.ok(framework, "story-showing is missing");
+  assert.equal(framework.purpose, "explain");
+  assert.equal(framework.steps.length, 4);
+  const steps = framework.steps.join(" ");
+  for (const beat of ["Hook", "BUT", "THEREFORE", "Dopamine", "Payoff"]) {
+    assert.ok(steps.includes(beat), `Story Showing never mentions "${beat}"`);
+  }
+  assert.ok(framework.tagline?.includes("time machine"));
+});
+
+test("Feel / Know / Do is available as its own pitch framework", () => {
+  const framework = frameworkById("feel-know-do");
+  assert.ok(framework, "feel-know-do is missing");
+  assert.equal(framework.purpose, "explain");
+  for (const beat of ["Feel", "Know", "Do"]) {
+    assert.ok(framework.steps.some((step) => step.startsWith(beat)), `no "${beat}" step`);
+  }
+});
+
+test("the ten secrets are all present, numbered in order, and sourced", () => {
+  assert.equal(communicationSecrets.length, 10);
+  const ids = communicationSecrets.map((secret) => secret.id);
+  assert.equal(new Set(ids).size, ids.length);
+  for (const secret of communicationSecrets) {
+    assert.ok(secret.title?.length > 3, `missing title: ${secret.id}`);
+    assert.ok(secret.detail?.length > 20, `missing detail: ${secret.title}`);
+    assert.match(secret.timestamp, /^\d{2}:\d{2}:\d{2}$/, `bad timestamp: ${secret.title}`);
+  }
+  // Listed in the order they are taught, so the sidebar can render them as-is.
+  const seconds = communicationSecrets.map((secret) => {
+    const [h, m, sec] = secret.timestamp.split(":").map(Number);
+    return h * 3600 + m * 60 + sec;
+  });
+  for (let i = 1; i < seconds.length; i += 1) {
+    assert.ok(seconds[i] > seconds[i - 1], `secret ${i + 1} is out of order`);
+  }
+});
+
+test("the sensory mapping card has a tagline, guidelines, and a sounds-like line", () => {
+  assert.ok(sensoryMapping.tagline?.length > 20);
+  assert.ok(sensoryMapping.guidelines.length >= 3);
+  for (const guideline of sensoryMapping.guidelines) {
+    assert.ok(guideline.title?.length > 3, "guideline is missing a title");
+    assert.ok(guideline.detail?.length > 20, `guideline is missing detail: ${guideline.title}`);
+  }
+  assert.ok(sensoryMapping.example?.length > 20);
+});
+
+test("every framework switcher tab resolves to something the UI can render", () => {
+  assert.equal(FRAMEWORK_MODES[0].id, "auto", "the topic-match tab must stay the default");
+  assert.equal(FRAMEWORK_MODES[0].frameworkId, null);
+  for (const mode of FRAMEWORK_MODES) {
+    assert.ok(mode.label?.length > 2, `mode has no label: ${mode.id}`);
+    // A tab either pins a real framework or hands the column to something else
+    // (topic match, articulation drills) — it never names a framework that is gone.
+    if (mode.frameworkId) assert.ok(frameworkById(mode.frameworkId), `tab "${mode.id}" pins a missing framework`);
+  }
+  const ids = FRAMEWORK_MODES.map((mode) => mode.id);
+  assert.equal(new Set(ids).size, ids.length);
+});
+
+test("an unknown switcher tab falls back to topic match instead of blanking the column", () => {
+  assert.equal(frameworkModeById("nope").id, "auto");
+  assert.equal(frameworkModeById(undefined).id, "auto");
+  assert.equal(frameworkModeById("story-showing").frameworkId, "story-showing");
 });

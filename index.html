@@ -240,67 +240,106 @@
 
         <section class="view" id="speakView" role="tabpanel" tabindex="0" aria-labelledby="speakTitle">
           <div class="section-heading section-heading-speak"><div><h1 id="speakTitle">Speak</h1><p class="section-subtitle">Practice communicating out loud.</p></div></div>
-          <section class="surface speak-topic-card">
-            <div class="card-heading"><span class="speak-kind" id="speakTopicKind" data-kind="debate">Topic</span><span class="speak-tag" id="speakTopicSource">From the library</span></div>
-            <p class="speak-topic-text" id="speakTopicText"></p>
-            <form class="speak-topic-form" id="speakTopicForm" autocomplete="off">
-              <label class="speak-field speak-field-topic">
-                <span>Your own topic</span>
-                <input id="speakTopicInput" type="text" maxlength="160" placeholder="e.g. Talk about losing someone you looked up to" />
+
+          <div class="speak-col speak-col-sandbox">
+            <section class="surface speak-topic-card">
+              <div class="card-heading"><h2>Practice sandbox</h2><span class="speak-tag" id="speakTopicSource">From the library</span></div>
+              <label class="speak-field speak-field-select">
+                <span>Topic selector</span>
+                <select id="speakTopicSelect"></select>
               </label>
-              <label class="speak-field speak-field-purpose">
-                <span>What it asks you to do</span>
-                <select id="speakPurposeInput"></select>
-              </label>
-              <button class="primary-button compact" id="speakTopicUseButton" type="submit"><i data-lucide="mic"></i><span>Use topic</span></button>
-            </form>
-          </section>
-          <section class="surface speak-framework-card">
-            <div class="card-heading"><h2>Use this framework</h2><span class="speak-framework-name" id="speakFrameworkName"></span></div>
-            <p class="speak-framework-definition" id="speakFrameworkDefinition"></p>
-            <p class="speak-framework-when" id="speakFrameworkWhen"></p>
-            <ol class="speak-steps" id="speakFrameworkSteps"></ol>
-            <div class="speak-example" id="speakFrameworkExample"><h3>Worked example</h3><p></p></div>
-          </section>
-          <section class="surface speak-reflection-card">
-            <div class="card-heading"><h2>Storytelling technique</h2><span class="speak-technique-name" id="speakTechniqueName"></span></div>
-            <p class="speak-technique-definition" id="speakTechniqueDefinition"></p>
-            <p class="speak-reflection-text" id="speakReflectionText"></p>
-            <div class="speak-example" id="speakTechniqueExample"><h3>Sounds like</h3><p></p></div>
-          </section>
-          <button class="primary-button speak-new-round" id="newTopicButton" type="button"><span aria-hidden="true">🎲</span> New Practice Round</button>
-          <section class="surface speak-articulation" aria-labelledby="rWordsTitle">
-            <div class="card-heading"><h2 id="rWordsTitle">R, S, TH &amp; SH Articulation</h2><span id="rPracticeCount">0 of 0 practiced</span></div>
-            <div class="segmented r-tabs" id="rTabs" role="tablist" aria-label="Sound position">
-              <button class="active" type="button" data-r-group="initial">Initial</button>
-              <button type="button" data-r-group="medial">Medial</button>
-              <button type="button" data-r-group="final">Final</button>
+              <p class="speak-topic-text" id="speakTopicText"></p>
+              <div class="speak-topic-chips"><span class="speak-kind" id="speakTopicKind" data-kind="debate">Topic</span></div>
+              <form class="speak-topic-form" id="speakTopicForm" autocomplete="off">
+                <label class="speak-field speak-field-topic">
+                  <span>Your own topic</span>
+                  <input id="speakTopicInput" type="text" maxlength="160" placeholder="e.g. Talk about a moment you faced failure" />
+                </label>
+                <label class="speak-field speak-field-purpose">
+                  <span>What it asks you to do</span>
+                  <select id="speakPurposeInput"></select>
+                </label>
+                <button class="primary-button compact" id="speakTopicUseButton" type="submit"><i data-lucide="mic"></i><span>Use topic</span></button>
+              </form>
+              <button class="ghost-button compact speak-new-round" id="newTopicButton" type="button"><i data-lucide="dices"></i><span>New practice round</span></button>
+            </section>
+
+            <section class="surface speak-judge-card" aria-labelledby="judgeTitle">
+              <div class="card-heading"><h2 id="judgeTitle">Record a take</h2><span class="speak-tag">Private recording</span></div>
+              <label class="speak-field speak-field-topic"><span>Lesson</span><input id="speakPracticeLessonInput" type="text" maxlength="120" value="Tamil Practice" /></label>
+              <button class="ghost-button speak-record-button" id="speakRecordButton" type="button"><i data-lucide="mic"></i><span>Start recording</span></button>
+              <p class="speak-record-timer" id="speakRecordTimer">00:00:00</p>
+              <p class="speak-record-intent" id="speakRecordIntent" hidden></p>
+              <p class="judge-status" id="speakRecordStatus" role="status" aria-live="polite">Ready when you are.</p>
+              <div class="speak-practice-sessions" id="speakPracticeSessions"></div>
+            </section>
+
+            <section class="surface speak-tamil" aria-labelledby="tamilTitle">
+              <div class="card-heading"><h2 id="tamilTitle">Tamil Practice</h2><span class="speak-tag">YouTube</span></div>
+              <p class="speak-tamil-note">Your Tamil practice playlist. Watch a lesson, then say it back out loud.</p>
+              <a class="practice-link"
+                 href="https://www.youtube.com/watch?v=sQFi1yDbL6c&amp;list=PLsSkGS61OiiVHpW-O2qgl_nxpNGc8wHGn"
+                 target="_blank" rel="noopener noreferrer">
+                <span class="practice-link-icon" aria-hidden="true"><i data-lucide="graduation-cap"></i></span>
+                <span class="practice-link-body">
+                  <strong>Tamil lessons playlist</strong>
+                  <small>Opens in YouTube</small>
+                </span>
+                <i data-lucide="external-link" class="practice-link-go" aria-hidden="true"></i>
+              </a>
+            </section>
+          </div>
+
+          <div class="speak-col speak-col-framework">
+            <div class="segmented speak-mode-tabs" id="speakModeTabs" role="tablist" aria-label="Active practice framework"></div>
+
+            <section class="surface speak-framework-card" id="speakFrameworkCard">
+              <div class="card-heading"><h2 class="speak-framework-name" id="speakFrameworkName"></h2></div>
+              <p class="speak-framework-tagline" id="speakFrameworkTagline"></p>
+              <p class="speak-framework-definition" id="speakFrameworkDefinition"></p>
+              <p class="speak-framework-when" id="speakFrameworkWhen"></p>
+              <ol class="speak-steps" id="speakFrameworkSteps"></ol>
+            </section>
+
+            <div class="speak-framework-split" id="speakFrameworkSplit">
+              <section class="surface speak-example-card" id="speakFrameworkExample">
+                <h3>Worked example</h3>
+                <p></p>
+              </section>
+              <section class="surface speak-reflection-card">
+                <h3 id="speakSensoryName"></h3>
+                <p class="speak-sensory-tagline" id="speakSensoryTagline"></p>
+                <h4>Guidelines</h4>
+                <ul class="speak-sensory-list" id="speakSensoryList"></ul>
+                <div class="speak-example" id="speakSensoryExample"><h3>Sounds like</h3><p></p></div>
+                <div class="speak-technique-block">
+                  <h4>This round&rsquo;s technique <span class="speak-technique-name" id="speakTechniqueName"></span></h4>
+                  <p class="speak-technique-definition" id="speakTechniqueDefinition"></p>
+                  <p class="speak-reflection-text" id="speakReflectionText"></p>
+                  <div class="speak-example" id="speakTechniqueExample"><h3>Sounds like</h3><p></p></div>
+                </div>
+              </section>
             </div>
-            <div class="r-progress-track"><i id="rProgressFill"></i></div>
-            <div class="r-list" id="rList"></div>
-            <button class="ghost-button compact r-next" id="rNextSet" type="button"><i data-lucide="shuffle"></i><span>Next set</span></button>
-          </section>
-          <section class="surface speak-judge-card" aria-labelledby="judgeTitle">
-            <div class="card-heading"><h2 id="judgeTitle">Judge your practice</h2><span class="speak-tag">Private recording</span></div>
-            <p class="speak-judge-note">Repeat the lesson out loud, then record a take. Your audio stays in your private Supabase practice folder.</p>
-            <label class="speak-field speak-field-topic"><span>Lesson</span><input id="speakPracticeLessonInput" type="text" maxlength="120" value="Tamil Practice" /></label>
-            <div class="judge-controls"><button class="primary-button" id="speakRecordButton" type="button"><i data-lucide="mic"></i><span>Start recording</span></button><span class="judge-status" id="speakRecordStatus" role="status" aria-live="polite">Ready when you are.</span><span class="judge-timer" id="speakRecordTimer">0:00</span></div>
-            <div class="speak-practice-sessions" id="speakPracticeSessions"></div>
-          </section>
-          <section class="surface speak-tamil" aria-labelledby="tamilTitle">
-            <div class="card-heading"><h2 id="tamilTitle">Tamil Practice</h2><span class="speak-tag">YouTube</span></div>
-            <p class="speak-tamil-note">Your Tamil practice playlist. Watch a lesson, then say it back out loud.</p>
-            <a class="practice-link"
-               href="https://www.youtube.com/watch?v=sQFi1yDbL6c&amp;list=PLsSkGS61OiiVHpW-O2qgl_nxpNGc8wHGn"
-               target="_blank" rel="noopener noreferrer">
-              <span class="practice-link-icon" aria-hidden="true"><i data-lucide="graduation-cap"></i></span>
-              <span class="practice-link-body">
-                <strong>Tamil lessons playlist</strong>
-                <small>Opens in YouTube</small>
-              </span>
-              <i data-lucide="external-link" class="practice-link-go" aria-hidden="true"></i>
-            </a>
-          </section>
+
+            <section class="surface speak-articulation" id="speakArticulationCard" aria-labelledby="rWordsTitle" hidden>
+              <div class="card-heading"><h2 id="rWordsTitle">R, S, TH &amp; SH Articulation</h2><span id="rPracticeCount">0 of 0 practiced</span></div>
+              <div class="segmented r-tabs" id="rTabs" role="tablist" aria-label="Sound position">
+                <button class="active" type="button" data-r-group="initial">Initial</button>
+                <button type="button" data-r-group="medial">Medial</button>
+                <button type="button" data-r-group="final">Final</button>
+              </div>
+              <div class="r-progress-track"><i id="rProgressFill"></i></div>
+              <div class="r-list" id="rList"></div>
+              <button class="ghost-button compact r-next" id="rNextSet" type="button"><i data-lucide="shuffle"></i><span>Next set</span></button>
+            </section>
+          </div>
+
+          <aside class="speak-col speak-col-secrets" aria-labelledby="secretsTitle">
+            <section class="surface speak-secrets-card">
+              <div class="card-heading"><h2 id="secretsTitle">Prince Ea&rsquo;s 10 Secrets of World-Class Communication</h2></div>
+              <ol class="speak-secrets" id="speakSecretsList"></ol>
+            </section>
+          </aside>
         </section>
 
         <section class="view" id="arcadeView" role="tabpanel" tabindex="0" aria-labelledby="arcadeTitle">
@@ -356,6 +395,30 @@
     </dialog>
     <dialog class="compose-dialog" id="sleepMoodDialog" aria-labelledby="sleepMoodTitle">
       <form method="dialog"><h2 id="sleepMoodTitle">How do you feel this morning?</h2><div class="mood-options"><button data-sleep-mood="Exhausted" data-mood-emoji="&#128564;" type="button">&#128564; Exhausted</button><button data-sleep-mood="Okay" data-mood-emoji="&#128528;" type="button">&#128528; Okay</button><button data-sleep-mood="Good" data-mood-emoji="&#128578;" type="button">&#128578; Good</button><button data-sleep-mood="Great" data-mood-emoji="&#128515;" type="button">&#128515; Great</button><button data-sleep-mood="Energized" data-mood-emoji="&#9889;" type="button">&#9889; Energized</button></div></form>
+    </dialog>
+    <dialog class="compose-dialog prerecord-dialog" id="preRecordDialog" aria-labelledby="preRecordTitle">
+      <form id="preRecordForm">
+        <div class="dialog-heading"><h2 id="preRecordTitle">Before you record</h2><button class="icon-button" id="closePreRecordButton" type="button" aria-label="Close"><i data-lucide="x"></i></button></div>
+        <p class="prerecord-note">Feel / Know / Do &mdash; decide the reaction before you decide the words.</p>
+        <label>Target feeling<input id="preRecordFeelingInput" list="preRecordFeelings" maxlength="40" placeholder="e.g. Urgency" autocomplete="off" /></label>
+        <datalist id="preRecordFeelings">
+          <option value="Urgency"></option><option value="Curiosity"></option><option value="Confidence"></option>
+          <option value="Calm"></option><option value="Excitement"></option><option value="Discomfort"></option>
+        </datalist>
+        <label>Target outcome<input id="preRecordOutcomeInput" list="preRecordOutcomes" maxlength="40" placeholder="e.g. Action" autocomplete="off" /></label>
+        <datalist id="preRecordOutcomes">
+          <option value="Action"></option><option value="Agreement"></option><option value="A decision"></option>
+          <option value="Understanding"></option><option value="A follow-up question"></option>
+        </datalist>
+        <div class="prerecord-countdown" id="preRecordCountdown" hidden aria-live="assertive">
+          <span class="prerecord-count" id="preRecordCount">3</span>
+          <p>Power pause. Breathe, hold the silence, then speak.</p>
+        </div>
+        <div class="prerecord-actions">
+          <button class="ghost-button compact" id="preRecordCancelButton" type="button">Cancel</button>
+          <button class="primary-button compact" id="preRecordStartButton" type="submit"><i data-lucide="mic"></i><span>Power pause &amp; record</span></button>
+        </div>
+      </form>
     </dialog>
     <dialog class="compose-dialog settings-dialog" id="settingsDialog" aria-labelledby="settingsDialogTitle">
       <form id="settingsForm" method="dialog">

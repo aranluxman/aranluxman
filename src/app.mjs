@@ -27,10 +27,15 @@ import {
   todayKey,
 } from "./planner-utils.mjs";
 import {
+  communicationSecrets,
+  FRAMEWORK_MODES,
+  frameworkById,
+  frameworkModeById,
   PURPOSE_KIND,
   PURPOSE_LABELS,
   PURPOSES,
   resolveRound,
+  sensoryMapping,
   speakKindLabels,
   speakTopics,
 } from "./speak-library.mjs";
@@ -905,6 +910,13 @@ let speakCursor = null;
 // Set when the user types their own topic; cleared when they draw a new round.
 let speakCustomTopic = null;
 let rGroup = "initial";
+// Which tab the centre column is on. "auto" keeps the original behaviour, where
+// the framework shown is whichever one the current topic declares.
+let speakMode = "auto";
+// What the pre-record checklist last captured, so the take is labelled with the
+// reaction it was aiming for instead of just a lesson name.
+let speakIntent = { feeling: "", outcome: "" };
+let preRecordCountdownId = null;
 let speakRecording = { recorder: null, stream: null, chunks: [], startedAt: 0, timerId: null };
 const els = {};
 
@@ -942,9 +954,13 @@ function bindElements() {
     "speakTopicKind", "speakTopicText", "speakTopicSource", "speakFrameworkName", "speakFrameworkWhen", "speakFrameworkSteps",
     "speakFrameworkDefinition", "speakFrameworkExample", "speakTopicForm", "speakTopicInput", "speakPurposeInput",
     "speakTechniqueName", "speakTechniqueDefinition", "speakTechniqueExample",
-    "speakReflectionText", "newTopicButton",
+    "speakReflectionText", "newTopicButton", "speakTopicSelect", "speakModeTabs", "speakFrameworkCard",
+    "speakFrameworkSplit", "speakFrameworkTagline", "speakArticulationCard",
+    "speakSensoryName", "speakSensoryTagline", "speakSensoryList", "speakSensoryExample", "speakSecretsList",
     "rTabs", "rList", "rPracticeCount", "rProgressFill", "rNextSet",
     "speakPracticeLessonInput", "speakRecordButton", "speakRecordStatus", "speakRecordTimer", "speakPracticeSessions",
+    "speakRecordIntent", "preRecordDialog", "preRecordForm", "preRecordFeelingInput", "preRecordOutcomeInput",
+    "preRecordCountdown", "preRecordCount", "preRecordStartButton", "preRecordCancelButton",
     "heroRingFill", "heroProgressPercent",
     "simonStart", "simonGrid", "simonStatus", "simonBest", "mathStart", "mathQuestion", "mathAnswers", "mathStatus", "mathBest",
     "sprintPad", "sprintStatus", "sprintBest", "stopClockPad", "stopClockStatus", "stopClockBest",
@@ -1047,7 +1063,19 @@ function wireEvents() {
     const button = event.target.closest("[data-checklist-item]");
     if (button) toggleDailyChecklist(button.dataset.checklistItem);
   });
+  els.speakTopicSelect?.addEventListener("change", () => selectLibraryTopic(Number(els.speakTopicSelect.value)));
+  els.speakModeTabs?.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-speak-mode]");
+    if (button) setSpeakMode(button.dataset.speakMode);
+  });
   els.speakRecordButton?.addEventListener("click", toggleSpeakRecording);
+  els.preRecordForm?.addEventListener("submit", (event) => {
+    event.preventDefault();
+    beginPowerPause();
+  });
+  els.preRecordCancelButton?.addEventListener("click", closePreRecord);
+  document.getElementById("closePreRecordButton")?.addEventListener("click", closePreRecord);
+  els.preRecordDialog?.addEventListener("close", cancelPowerPause);
   els.speakPracticeSessions?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-practice-rating]");
     if (button) updateSpeakPracticeRating(button.dataset.practiceRating, Number(button.dataset.rating));
@@ -1478,14 +1506,82 @@ function currentSpeakTopic() {
   return speakTopics[speakCursor % speakTopics.length];
 }
 
+// The library dropdown is long and never changes, so it is filled once and
+// then only has its selection moved.
+function hydrateTopicOptions() {
+  if (!els.speakTopicSelect || els.speakTopicSelect.options.length) return;
+  els.speakTopicSelect.innerHTML = speakTopics
+    .map((topic, index) => `<option value="${index}">${escapeHtml(topic.text)}</option>`)
+    .join("");
+}
+
+function hydrateModeTabs() {
+  if (!els.speakModeTabs || els.speakModeTabs.children.length) return;
+  els.speakModeTabs.innerHTML = FRAMEWORK_MODES
+    .map((mode) => `<button type="button" role="tab" data-speak-mode="${mode.id}">${escapeHtml(mode.label)}</button>`)
+    .join("");
+}
+
+// The right sidebar is a fixed reference list, so it is rendered once.
+function renderCommunicationSecrets() {
+  if (!els.speakSecretsList || els.speakSecretsList.children.length) return;
+  els.speakSecretsList.innerHTML = communicationSecrets.map((secret) => `<li class="speak-secret">
+      <details>
+        <summary><span class="speak-secret-title">${escapeHtml(secret.title)}</span><span class="speak-secret-time">${escapeHtml(secret.timestamp)}</span></summary>
+        <p>${escapeHtml(secret.detail)}</p>
+      </details>
+    </li>`).join("");
+}
+
+// The standing "story showing" instruction above the per-round technique. Also
+// fixed content, so it only needs writing once.
+function renderSensoryMapping() {
+  if (!els.speakSensoryList || els.speakSensoryList.children.length) return;
+  els.speakSensoryName.textContent = `${sensoryMapping.name} ("${sensoryMapping.alias}")`;
+  els.speakSensoryTagline.textContent = sensoryMapping.tagline;
+  els.speakSensoryList.innerHTML = sensoryMapping.guidelines
+    .map((line) => `<li><strong>${escapeHtml(line.title)}:</strong> ${escapeHtml(line.detail)}</li>`)
+    .join("");
+  els.speakSensoryExample.querySelector("p").textContent = sensoryMapping.example;
+}
+
+function setSpeakMode(mode) {
+  const next = frameworkModeById(mode).id;
+  if (next === speakMode) return;
+  speakMode = next;
+  replaySpeakCards();
+  renderSpeak();
+}
+
+function selectLibraryTopic(index) {
+  if (!Number.isInteger(index) || index < 0 || index >= speakTopics.length) return;
+  speakCustomTopic = null;
+  speakCursor = index;
+  if (els.speakTopicInput) els.speakTopicInput.value = "";
+  replaySpeakCards();
+  renderSpeak();
+}
+
+// Which framework the centre column shows: the topic's own on "auto", the tab's
+// own otherwise. Articulation has no framework — it swaps the column's contents.
+function activeFramework(topicFramework) {
+  const mode = frameworkModeById(speakMode);
+  if (!mode.frameworkId) return topicFramework;
+  return frameworkById(mode.frameworkId) || topicFramework;
+}
+
 function renderSpeak() {
   if (!els.speakTopicText) return;
   hydratePurposeOptions();
+  hydrateTopicOptions();
+  hydrateModeTabs();
+  renderCommunicationSecrets();
+  renderSensoryMapping();
   // resolveRound derives the framework and technique from the topic itself, so
   // the mismatch that made this section useless is now impossible by construction.
   const round = resolveRound(currentSpeakTopic());
   if (!round?.framework || !round?.technique) return;
-  const { topic, framework, technique } = round;
+  const { topic, technique } = round;
 
   // For a typed topic the chip names the purpose the user chose; the source chip
   // beside it is what says the topic is theirs.
@@ -1498,17 +1594,40 @@ function renderSpeak() {
   if (els.speakTopicSource) {
     els.speakTopicSource.textContent = isCustom ? "Your topic" : "From the library";
   }
+  // A typed topic is not in the dropdown, so the select is disabled rather than
+  // left pointing at a library entry that is not the one on screen.
+  if (els.speakTopicSelect) {
+    els.speakTopicSelect.disabled = isCustom;
+    if (!isCustom) els.speakTopicSelect.value = String(speakCursor % speakTopics.length);
+  }
 
-  els.speakFrameworkName.textContent = framework.name;
-  els.speakFrameworkDefinition.textContent = framework.definition;
-  els.speakFrameworkWhen.textContent = framework.whenToUse;
-  els.speakFrameworkSteps.innerHTML = framework.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("");
-  els.speakFrameworkExample.querySelector("p").textContent = framework.example;
+  const mode = frameworkModeById(speakMode);
+  const isArticulation = mode.id === "articulation";
+  els.speakModeTabs?.querySelectorAll("[data-speak-mode]").forEach((button) => {
+    const on = button.dataset.speakMode === mode.id;
+    button.classList.toggle("active", on);
+    button.setAttribute("aria-selected", String(on));
+  });
+  if (els.speakFrameworkCard) els.speakFrameworkCard.hidden = isArticulation;
+  if (els.speakFrameworkSplit) els.speakFrameworkSplit.hidden = isArticulation;
+  if (els.speakArticulationCard) els.speakArticulationCard.hidden = !isArticulation;
 
-  els.speakTechniqueName.textContent = technique.name;
-  els.speakTechniqueDefinition.textContent = technique.definition;
-  els.speakReflectionText.textContent = technique.prompt;
-  els.speakTechniqueExample.querySelector("p").textContent = technique.example;
+  if (!isArticulation) {
+    const framework = activeFramework(round.framework);
+    els.speakFrameworkName.textContent = framework.name;
+    els.speakFrameworkWhen.textContent = framework.whenToUse;
+    els.speakFrameworkDefinition.textContent = framework.definition;
+    // Only the new frameworks carry a tagline; the older ones hide the line.
+    els.speakFrameworkTagline.textContent = framework.tagline || "";
+    els.speakFrameworkTagline.hidden = !framework.tagline;
+    els.speakFrameworkSteps.innerHTML = framework.steps.map((step) => `<li>${escapeHtml(step)}</li>`).join("");
+    els.speakFrameworkExample.querySelector("p").textContent = framework.example;
+
+    els.speakTechniqueName.textContent = technique.name;
+    els.speakTechniqueDefinition.textContent = technique.definition;
+    els.speakReflectionText.textContent = technique.prompt;
+    els.speakTechniqueExample.querySelector("p").textContent = technique.example;
+  }
 
   renderRWords();
   renderSpeakPracticeSessions();
@@ -1528,10 +1647,15 @@ function renderSpeakPracticeSessions() {
   refreshIcons();
 }
 
+function formatClock(totalSeconds) {
+  const seconds = Math.max(0, Math.floor(totalSeconds));
+  const pad = (value) => String(value).padStart(2, "0");
+  return `${pad(Math.floor(seconds / 3600))}:${pad(Math.floor(seconds / 60) % 60)}:${pad(seconds % 60)}`;
+}
+
 function updateSpeakRecordTimer() {
   if (!els.speakRecordTimer || !speakRecording.startedAt) return;
-  const seconds = Math.floor((Date.now() - speakRecording.startedAt) / 1000);
-  els.speakRecordTimer.textContent = `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, "0")}`;
+  els.speakRecordTimer.textContent = formatClock((Date.now() - speakRecording.startedAt) / 1000);
 }
 
 function toggleSpeakRecording() {
@@ -1539,7 +1663,75 @@ function toggleSpeakRecording() {
     speakRecording.recorder.stop();
     return;
   }
-  void startSpeakRecording();
+  openPreRecord();
+}
+
+// The checklist is the whole point of the pause: you name the reaction you are
+// going for before the mic is live, not while you are already talking.
+function openPreRecord() {
+  if (!els.preRecordDialog) {
+    void startSpeakRecording();
+    return;
+  }
+  cancelPowerPause();
+  els.preRecordDialog.showModal();
+  els.preRecordFeelingInput?.focus();
+  refreshIcons();
+}
+
+function closePreRecord() {
+  cancelPowerPause();
+  if (els.preRecordDialog?.open) els.preRecordDialog.close();
+}
+
+// Clears a countdown in flight. This also runs on the dialog's close event, so
+// dismissing the dialog mid-count can never leave a timer that opens the mic
+// three seconds later.
+function cancelPowerPause() {
+  if (preRecordCountdownId) clearInterval(preRecordCountdownId);
+  preRecordCountdownId = null;
+  if (els.preRecordCountdown) els.preRecordCountdown.hidden = true;
+  if (els.preRecordStartButton) els.preRecordStartButton.disabled = false;
+}
+
+// Three seconds of held silence, then the mic opens. Secret #1, enforced by the
+// UI rather than left to willpower.
+function beginPowerPause() {
+  if (preRecordCountdownId) return;
+  speakIntent = {
+    feeling: els.preRecordFeelingInput?.value.trim() || "",
+    outcome: els.preRecordOutcomeInput?.value.trim() || "",
+  };
+  renderSpeakIntent();
+  els.preRecordStartButton.disabled = true;
+  els.preRecordCountdown.hidden = false;
+  let remaining = 3;
+  els.preRecordCount.textContent = String(remaining);
+  preRecordCountdownId = window.setInterval(() => {
+    remaining -= 1;
+    if (remaining > 0) {
+      els.preRecordCount.textContent = String(remaining);
+      return;
+    }
+    cancelPowerPause();
+    if (els.preRecordDialog?.open) els.preRecordDialog.close();
+    void startSpeakRecording();
+  }, 1000);
+}
+
+// The intent line under the timer, so the target stays visible while you talk.
+function speakIntentLabel() {
+  const parts = [];
+  if (speakIntent.feeling) parts.push(`Feel: ${speakIntent.feeling}`);
+  if (speakIntent.outcome) parts.push(`Do: ${speakIntent.outcome}`);
+  return parts.join("  ·  ");
+}
+
+function renderSpeakIntent() {
+  if (!els.speakRecordIntent) return;
+  const label = speakIntentLabel();
+  els.speakRecordIntent.textContent = label;
+  els.speakRecordIntent.hidden = !label;
 }
 
 async function startSpeakRecording() {
@@ -1558,6 +1750,7 @@ async function startSpeakRecording() {
     els.speakRecordButton.classList.add("recording");
     els.speakRecordButton.innerHTML = '<i data-lucide="square"></i><span>Stop recording</span>';
     els.speakRecordStatus.textContent = "Listening… repeat the lesson clearly.";
+    renderSpeakIntent();
     refreshIcons();
   } catch (error) {
     els.speakRecordStatus.textContent = error.name === "NotAllowedError" ? "Microphone permission was not granted." : "Could not start the microphone.";
@@ -1569,14 +1762,19 @@ async function finishSpeakRecording(mimeType) {
   const blob = new Blob(speakRecording.chunks, { type: mimeType });
   speakRecording.stream?.getTracks().forEach((track) => track.stop());
   if (speakRecording.timerId) clearInterval(speakRecording.timerId);
+  // speak_practice_sessions has no column for the checklist, so the intent rides
+  // along in the lesson label rather than being dropped on the way to Supabase.
+  const intent = speakIntentLabel();
+  const lesson = els.speakPracticeLessonInput.value.trim() || "Speak practice";
   const session = {
-    id: crypto.randomUUID(), user_id: settings.ownerKey, lesson: els.speakPracticeLessonInput.value.trim() || "Speak practice",
+    id: crypto.randomUUID(), user_id: settings.ownerKey, lesson: intent ? `${lesson} — ${intent}` : lesson,
     audio_path: "", audio_url: URL.createObjectURL(blob), duration_seconds: duration, rating: null, created_at: new Date().toISOString(),
   };
   state.speakPracticeSessions = [session, ...(state.speakPracticeSessions || [])].slice(0, 30);
   speakRecording = { recorder: null, stream: null, chunks: [], startedAt: 0, timerId: null };
   els.speakRecordButton.classList.remove("recording");
   els.speakRecordButton.innerHTML = '<i data-lucide="mic"></i><span>Start recording</span>';
+  els.speakRecordTimer.textContent = formatClock(duration);
   els.speakRecordStatus.textContent = `Saved a ${duration}s attempt. Rate it when you're ready.`;
   persist();
   renderSpeakPracticeSessions();

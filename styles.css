@@ -3934,3 +3934,19 @@ input.has-error:focus-visible {
   box-shadow: 0 0 24px rgba(0, 229, 195, 0.07);
 }
 .speak-example-card h3 { color: var(--teal); }
+
+/* ---------------------------------------------------------------
+   Temporarily hidden features
+   Sleep, Sugar, and the "About Me" card are switched off for now.
+   The markup and all the logic behind them are untouched, so saved
+   data survives. To bring a feature back, delete its selector from
+   the rule below (and re-add its view name to the deep-link
+   allowlist in src/app.mjs, plus the sleep coin rule in index.html).
+   --------------------------------------------------------------- */
+.nav-item[data-view="sleep"],
+.nav-item[data-view="sugar"],
+#sleepView,
+#sugarView,
+.about-card {
+  display: none !important;
+}

@@ -932,7 +932,7 @@ document.addEventListener("DOMContentLoaded", () => {
   renderAbout();
   indexCards(document.querySelector(".view.active"));
   const view = new URLSearchParams(location.search).get("view");
-  if (["home", "calendar", "sleep", "sugar", "speak", "me", "arcade"].includes(view)) setView(view);
+  if (["home", "calendar", "speak", "me", "arcade"].includes(view)) setView(view);
   scheduleMidnightRollover();
   // A phone that was asleep at midnight fires the timer late, or not until the
   // tab is looked at again; re-check the date whenever the app becomes visible.

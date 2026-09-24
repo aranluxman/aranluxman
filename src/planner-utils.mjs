@@ -610,3 +610,15 @@ export function summarizeSugar(entries = [], rangeType = "days", limit = SUGAR_D
     })),
   };
 }
+
+// Finance sub-pages live at real paths (/finance, /finance/<slug>) so they can
+// be linked and bookmarked. Returns null for any non-finance path, "" for the
+// Finance index, or the slug of a known sub-page. Unknown slugs fall back to
+// the index rather than a blank panel.
+export const FINANCE_PAGES = ["4s-spending-framework"];
+
+export function parseFinancePath(pathname = "") {
+  const match = /^\/finance(?:\/([^/]+))?\/?$/.exec(pathname);
+  if (!match) return null;
+  return FINANCE_PAGES.includes(match[1]) ? match[1] : "";
+}

@@ -29,6 +29,7 @@ import {
   sumSugarForDate,
   parseIcsEvents,
   sanitizeFocusMinutes,
+  parseFinancePath,
 } from "../src/planner-utils.mjs";
 
 test("buildMonthDays includes leading and trailing days for a stable calendar grid", () => {
@@ -351,4 +352,15 @@ test("summarizeSugar drops days whose items were all deleted", () => {
   assert.deepEqual(summary.points, []);
   assert.equal(summary.daysTracked, 0);
   assert.equal(summary.averageGrams, 0);
+});
+
+test("parseFinancePath maps finance URLs to sub-pages", () => {
+  assert.equal(parseFinancePath("/"), null);
+  assert.equal(parseFinancePath("/financial"), null);
+  assert.equal(parseFinancePath("/finance"), "");
+  assert.equal(parseFinancePath("/finance/"), "");
+  assert.equal(parseFinancePath("/finance/4s-spending-framework"), "4s-spending-framework");
+  assert.equal(parseFinancePath("/finance/4s-spending-framework/"), "4s-spending-framework");
+  assert.equal(parseFinancePath("/finance/unknown-page"), "");
+  assert.equal(parseFinancePath("/finance/4s-spending-framework/extra"), null);
 });

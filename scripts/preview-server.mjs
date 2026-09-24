@@ -72,7 +72,10 @@ createServer((request, response) => {
     void route(url, response);
     return;
   }
-  const requested = url.pathname === "/" ? "/index.html" : url.pathname;
+  // Cloudflare Pages serves index.html for unknown extensionless paths when the
+  // site has no 404.html (SPA mode); mirror that so /finance/... deep links work.
+  const isAppRoute = url.pathname === "/" || (!extname(url.pathname) && !existsSync(join(root, url.pathname)));
+  const requested = isAppRoute ? "/index.html" : url.pathname;
   const filePath = normalize(join(root, requested));
 
   if (!filePath.startsWith(root) || !existsSync(filePath)) {

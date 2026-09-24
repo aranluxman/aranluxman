@@ -14,7 +14,7 @@
     <link rel="icon" id="dynamicFavicon" href="/assets/icon-512.png" />
     <link rel="apple-touch-icon" id="dynamicTouchIcon" href="/assets/icon-512.png" />
     <link rel="stylesheet" href="/styles.css" />
-    <script type="module" src="/src/app.mjs?v=20260823-life-flow-features"></script>
+    <script type="module" src="/src/app.mjs?v=20260924-finance-4s"></script>
   </head>
   <body class="dark-mode">
     <div class="app-shell">
@@ -29,6 +29,7 @@
           <button class="nav-item" data-view="sleep" type="button" role="tab" aria-selected="false" aria-controls="sleepView"><i data-lucide="moon"></i><span>Sleep</span></button>
           <button class="nav-item" data-view="sugar" type="button" role="tab" aria-selected="false" aria-controls="sugarView"><i data-lucide="candy"></i><span>Sugar</span></button>
           <button class="nav-item" data-view="speak" type="button" role="tab" aria-selected="false" aria-controls="speakView"><i data-lucide="mic"></i><span>Speak</span></button>
+          <button class="nav-item" data-view="finance" type="button" role="tab" aria-selected="false" aria-controls="financeView"><i data-lucide="wallet"></i><span>Finance</span></button>
           <button class="nav-item" data-view="me" type="button" role="tab" aria-selected="false" aria-controls="meView"><i data-lucide="target"></i><span>Me</span></button>
           <button class="nav-item" data-view="arcade" type="button" role="tab" aria-selected="false" aria-controls="arcadeView"><i data-lucide="gamepad-2"></i><span>Arcade</span></button>
         </nav>
@@ -340,6 +341,75 @@
               <ol class="speak-secrets" id="speakSecretsList"></ol>
             </section>
           </aside>
+        </section>
+
+        <section class="view" id="financeView" role="tabpanel" tabindex="0" aria-labelledby="financeTitle">
+          <div class="finance-page" data-finance-page="index">
+            <div class="section-heading section-heading-finance"><div><h1 id="financeTitle">Finance</h1><p class="section-subtitle">Frameworks for spending, saving, and earning with intent.</p></div></div>
+            <section class="surface finance-index-card" aria-labelledby="financeGuidesTitle">
+              <div class="card-heading"><h2 id="financeGuidesTitle">Frameworks</h2><span>1 guide</span></div>
+              <a class="finance-guide-link" href="/finance/4s-spending-framework" data-finance-link="4s-spending-framework">
+                <span class="finance-guide-icon" aria-hidden="true"><i data-lucide="wallet"></i></span>
+                <span class="finance-guide-text"><b>The 4 S's of Spending</b><small>Stamina, Skills, Security, Soul: upgrade your systems, not your lifestyle.</small></span>
+                <i data-lucide="chevron-right" aria-hidden="true"></i>
+              </a>
+            </section>
+          </div>
+
+          <article class="finance-page four-s-page" data-finance-page="4s-spending-framework" aria-labelledby="fourSTitle" hidden>
+            <a class="see-all finance-back" href="/finance" data-finance-link=""><i data-lucide="chevron-left"></i> Finance</a>
+            <div class="section-heading section-heading-finance"><div><h1 id="fourSTitle">The 4 S's of Spending Framework</h1><p class="section-subtitle">Where extra money should go once the basics are covered.</p></div></div>
+
+            <section class="surface four-s-overview" aria-labelledby="fourSOverviewTitle">
+              <div class="card-heading"><h2 id="fourSOverviewTitle">Overview</h2></div>
+              <p>When income goes up, the default is lifestyle inflation: a bigger house, a flashier car, more stuff that costs more to keep. This framework points extra money somewhere better. Use it to upgrade the <strong>systems</strong> that raise your energy, your earning power, your protection from risk, and the meaning in your life.</p>
+              <div class="four-s-contrast">
+                <div class="four-s-contrast-col is-avoid"><small>Instead of</small><span>Bigger house</span><span>Flashier car</span><span>Status upgrades</span></div>
+                <div class="four-s-contrast-col is-invest"><small>Upgrade</small><span>Stamina &middot; energy</span><span>Skills &middot; earning power</span><span>Security &middot; risk</span><span>Soul &middot; meaning</span></div>
+              </div>
+            </section>
+
+            <section class="surface four-s-card" style="--accent: var(--orange)" aria-labelledby="fourSStaminaTitle">
+              <div class="four-s-head"><span class="four-s-icon" aria-hidden="true"><i data-lucide="zap"></i></span><div><small>1 &middot; Stamina</small><h2 id="fourSStaminaTitle">Upgrade Your Performance Machine</h2></div></div>
+              <ul class="four-s-points">
+                <li><b>Optimize sleep.</b> Don't skimp on mattresses or pillows. Sleep directly affects decision quality and how well your brain works.</li>
+                <li><b>Remove daily bottlenecks.</b> Buy tools or services that cut friction and distractions, like noise-canceling headphones, a trainer, or a better gym, so healthy habits become effortless.</li>
+              </ul>
+              <label class="four-s-check">Self-check: what's the biggest friction in my routine, and what would remove it?<textarea data-finance-note="stamina" rows="2" placeholder="e.g. My phone kills my focus while I study..."></textarea></label>
+            </section>
+
+            <section class="surface four-s-card" style="--accent: var(--blue)" aria-labelledby="fourSSkillsTitle">
+              <div class="four-s-head"><span class="four-s-icon" aria-hidden="true"><i data-lucide="graduation-cap"></i></span><div><small>2 &middot; Skills</small><h2 id="fourSSkillsTitle">Invest in Recurring Earning Power</h2></div></div>
+              <ul class="four-s-points">
+                <li><b>Focus on high-value capabilities.</b> Build durable skills like finance, negotiation, and communication, especially as AI takes over routine tasks.</li>
+              </ul>
+              <div class="four-s-habits">
+                <div class="four-s-habit"><span><i data-lucide="calendar-days"></i> Monthly</span><p>Ask yourself: <em>"What skill gap is currently costing me the most?"</em></p></div>
+                <div class="four-s-habit"><span><i data-lucide="clock"></i> Every 6 months</span><p>Set a dedicated learning budget of both time and money.</p></div>
+              </div>
+              <label class="four-s-check">Self-check: what skill gap is currently costing me the most?<textarea data-finance-note="skills" rows="2" placeholder="e.g. Sales calls. I lose leads at the pitch..."></textarea></label>
+            </section>
+
+            <section class="surface four-s-card" style="--accent: var(--green)" aria-labelledby="fourSSecurityTitle">
+              <div class="four-s-head"><span class="four-s-icon" aria-hidden="true"><i data-lucide="shield"></i></span><div><small>3 &middot; Security</small><h2 id="fourSSecurityTitle">Protect Capital &amp; Maintain Options</h2></div></div>
+              <ul class="four-s-points">
+                <li><b>Build a strong BATNA</b> (Best Alternative to a Negotiated Agreement). Keep 6&ndash;9 months of living expenses in cash so you're never forced into a bad deal or stuck in a toxic job out of desperation.</li>
+                <li><b>Hedge against risk.</b> Avoid over-concentrating in single stocks or leaning heavily on debt and leverage.</li>
+                <li><b>Get professional guidance.</b> As your wealth and complexity grow, bring in tax accountants, financial planners, and estate lawyers.</li>
+              </ul>
+              <label class="four-s-check">Self-check: how many months of expenses could I cover right now, and what's my next step?<textarea data-finance-note="security" rows="2" placeholder="e.g. About 2 months. Next: auto-save 30% of every payment..."></textarea></label>
+            </section>
+
+            <section class="surface four-s-card" style="--accent: var(--purple)" aria-labelledby="fourSSoulTitle">
+              <div class="four-s-head"><span class="four-s-icon" aria-hidden="true"><i data-lucide="heart"></i></span><div><small>4 &middot; Soul</small><h2 id="fourSSoulTitle">Spend for Emotional Value &amp; Connection</h2></div></div>
+              <ul class="four-s-points">
+                <li><b>Invest in relationships.</b> Spend on shared experiences like dinners, trips, and events with the people you love. Long-term health and happiness track closely with relationship quality.</li>
+                <li><b>Fund passions &amp; generosity.</b> Spend on creative hobbies (music, art, sports) and on helping others, even when they bring zero financial return.</li>
+              </ul>
+              <label class="four-s-check">Self-check: who will I share an experience with this month, and what passion am I funding?<textarea data-finance-note="soul" rows="2" placeholder="e.g. Dinner with family on Friday; new spikes for track..."></textarea></label>
+            </section>
+            <p class="four-s-saved"><span class="saved-pill"><i data-lucide="check"></i> Self-checks auto-save</span></p>
+          </article>
         </section>
 
         <section class="view" id="arcadeView" role="tabpanel" tabindex="0" aria-labelledby="arcadeTitle">

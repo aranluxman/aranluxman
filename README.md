@@ -11,6 +11,9 @@ A calm personal planner for daily tasks, long-term to-dos, calendar-style events
 - Sleep tracker with calculated duration, a scrubable graph, and sleep scores
 - Speaking practice: rotating topics, frameworks, and R/S/TH/SH articulation drills
 - Goals and an About Me profile, saved automatically
+- Finance: guides with their own URLs (`/finance`, `/finance/4s-spending-framework`)
+  and auto-saved self-check notes. Deep links rely on Cloudflare Pages' SPA
+  fallback, so keep the site free of a top-level `404.html`.
 - Arcade: coins earned from real work, plus nine mini-games
 - Masked Supabase settings, dark mode, and iOS-friendly PWA metadata
 - Supabase sync for items, moods, focus sessions, sugar entries, and sleep logs

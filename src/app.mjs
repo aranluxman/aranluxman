@@ -16,6 +16,7 @@ import {
   getHomeSubtitle,
   getSleepSummary,
   getSugarProgress,
+  parseFinancePath,
   parseIcsEvents,
   SUGAR_DAILY_LIMIT_GRAMS,
   sleepTimestampsForWakeDate,
@@ -789,6 +790,7 @@ const defaultState = {
   gameBests: { sprint: 0, stopClock: null, numberRush: null, target: 0, simon: 0, math: 0 },
   goalDone: {},
   aboutMe: {},
+  financeNotes: {},
   deletedIds: [],
   rPractice: { completed: {}, sets: {} },
   goalReminder: "Train hard. Give back. Build something.",
@@ -930,9 +932,14 @@ document.addEventListener("DOMContentLoaded", () => {
   persist();
   render();
   renderAbout();
+  renderFinanceNotes();
   indexCards(document.querySelector(".view.active"));
+  const financePage = parseFinancePath(location.pathname);
   const view = new URLSearchParams(location.search).get("view");
-  if (["home", "calendar", "speak", "me", "arcade"].includes(view)) setView(view);
+  if (financePage !== null) {
+    showFinancePage(financePage, { updateUrl: false });
+    setView("finance");
+  } else if (["home", "calendar", "speak", "finance", "me", "arcade"].includes(view)) setView(view);
   scheduleMidnightRollover();
   // A phone that was asleep at midnight fires the timer late, or not until the
   // tab is looked at again; re-check the date whenever the app becomes visible.
@@ -981,7 +988,7 @@ function bindElements() {
     "itemDateInput", "itemCategoryInput", "itemPriorityInput", "itemNotesInput", "itemStartTimeInput", "itemEndTimeInput",
     "itemRepeatInput", "repeatDays", "sleepDialog", "sleepForm", "sleepDateInput", "sleptAtInput", "wokeAtInput",
     "sleepError", "sleepMoodDialog", "settingsDialog", "settingsForm",
-    "brandHomeButton", "sidebarSubtitle", "syncButton", "syncStatus", "syncBanner", "syncBannerText", "displayNameInput",
+    "financeView", "brandHomeButton", "sidebarSubtitle", "syncButton", "syncStatus", "syncBanner", "syncBannerText", "displayNameInput",
     "plannerSubtitleInput", "focusGoalInput", "pushupGoalInput", "trackGoalInput", "supabaseUrlInput", "supabaseAnonInput",
     "ownerKeyInput", "copyPairingLinkButton", "calendarUrlInput", "darkModeInput", "resetDataButton", "clearImportedButton", "openSettingsButton",
     "gcalMark", "gcalStatus", "gcalNote", "gcalConnectButton", "gcalRefreshButton", "gcalDisconnectButton",
@@ -1108,6 +1115,26 @@ function wireEvents() {
     persist();
     void upsertAppState();
   }));
+  document.querySelectorAll("[data-finance-note]").forEach((field) => field.addEventListener("input", () => {
+    state.financeNotes[field.dataset.financeNote] = field.value;
+    persist();
+    void upsertAppState();
+  }));
+  document.querySelectorAll("[data-finance-link]").forEach((link) => link.addEventListener("click", (event) => {
+    // Let modified clicks (new tab, etc.) follow the real href.
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    event.preventDefault();
+    showFinancePage(link.dataset.financeLink);
+  }));
+  window.addEventListener("popstate", () => {
+    const page = parseFinancePath(location.pathname);
+    if (page !== null) {
+      showFinancePage(page, { updateUrl: false });
+      if (!els.financeView.classList.contains("active")) setView("finance");
+    } else if (els.financeView.classList.contains("active")) {
+      setView("home");
+    }
+  });
   els.sprintPad.addEventListener("click", tapSprint);
   els.stopClockPad.addEventListener("click", tapStopClock);
   els.numberRushStart.addEventListener("click", startNumberRush);
@@ -1949,6 +1976,32 @@ function nextRSet() {
   persist();
   renderRWords();
   void upsertAppState();
+}
+
+function renderFinanceNotes() {
+  document.querySelectorAll("[data-finance-note]").forEach((field) => {
+    const value = state.financeNotes[field.dataset.financeNote] || "";
+    if (field.value !== value) field.value = value;
+  });
+}
+
+// Finance has an index plus sub-pages, each with its own URL. The rest of the
+// app has no URL routing, so leaving Finance resets the path to "/".
+const DEFAULT_TITLE = typeof document === "undefined" ? "" : document.title;
+const FINANCE_TITLES = { "": "Finance", "4s-spending-framework": "The 4 S's of Spending" };
+
+function showFinancePage(page, { updateUrl = true } = {}) {
+  const slug = page in FINANCE_TITLES ? page : "";
+  document.querySelectorAll("[data-finance-page]").forEach((panel) => {
+    panel.hidden = panel.dataset.financePage !== (slug || "index");
+  });
+  document.title = `${FINANCE_TITLES[slug]} | Life Flow`;
+  const path = slug ? `/finance/${slug}` : "/finance";
+  if (updateUrl && location.pathname !== path) history.pushState(null, "", path);
+  if (els.financeView.classList.contains("active")) {
+    indexCards(els.financeView);
+    window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
+  }
 }
 
 function renderAbout() {
@@ -3093,6 +3146,7 @@ async function syncFromSupabase() {
       if (appData) {
         state.goalDone = { ...(appData.goalDone || {}), ...state.goalDone };
         state.aboutMe = { ...(appData.aboutMe || {}), ...state.aboutMe };
+        state.financeNotes = { ...(appData.financeNotes || {}), ...state.financeNotes };
         state.gameBests = { ...state.gameBests, ...(appData.gameBests || {}) };
         state.deletedIds = [...new Set([...(appData.deletedIds || []), ...state.deletedIds])].slice(-300);
         // normalizeRPractice migrates the legacy {date, done[]} shape into the
@@ -3109,6 +3163,7 @@ async function syncFromSupabase() {
       hydrateSettingsForm();
       applySettings();
       renderAbout();
+      renderFinanceNotes();
     }
     const deleted = new Set(state.deletedIds);
     state.items = seedRecurring(mergeById(state.items, items || []).filter((item) => !deleted.has(item.id)));
@@ -3555,6 +3610,7 @@ async function upsertAppState() {
       appData: {
         goalDone: state.goalDone,
         aboutMe: state.aboutMe,
+        financeNotes: state.financeNotes,
         gameBests: state.gameBests,
         deletedIds: state.deletedIds,
         rPractice: state.rPractice,
@@ -3602,6 +3658,12 @@ function indexCards(panel) {
 }
 
 function setView(view) {
+  if (view === "finance") {
+    if (parseFinancePath(location.pathname) === null) showFinancePage("");
+  } else if (parseFinancePath(location.pathname) !== null) {
+    history.replaceState(null, "", "/");
+    document.title = DEFAULT_TITLE;
+  }
   const change = () => {
     document.querySelectorAll(".nav-item").forEach((button) => {
       const selected = button.dataset.view === view;
@@ -3637,6 +3699,7 @@ function normalizeState(saved) {
     gameBests: { ...defaultState.gameBests, ...(saved.gameBests || {}) },
     goalDone: { ...(saved.goalDone || {}) },
     aboutMe: { ...(saved.aboutMe || {}) },
+    financeNotes: { ...(saved.financeNotes || {}) },
     deletedIds: Array.isArray(saved.deletedIds) ? saved.deletedIds : [],
     rPractice: normalizeRPractice(saved.rPractice),
   };

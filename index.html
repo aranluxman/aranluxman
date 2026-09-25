@@ -14,7 +14,7 @@
     <link rel="icon" id="dynamicFavicon" href="/assets/icon-512.png" />
     <link rel="apple-touch-icon" id="dynamicTouchIcon" href="/assets/icon-512.png" />
     <link rel="stylesheet" href="/styles.css" />
-    <script type="module" src="/src/app.mjs?v=20260924-finance-4s"></script>
+    <script type="module" src="/src/app.mjs?v=20260925-motivation"></script>
   </head>
   <body class="dark-mode">
     <div class="app-shell">
@@ -58,6 +58,23 @@
               <span class="hero-progress-text"><strong id="heroProgressPercent">0%</strong><small>today</small></span>
             </div>
           </header>
+          <section class="surface motivation-card" aria-label="Motivation">
+            <button class="motivation-toggle" id="motivationToggle" type="button" aria-expanded="false" aria-controls="motivationVideos">
+              <span class="motivation-icon" aria-hidden="true"><i data-lucide="flame"></i></span>
+              <span class="motivation-text"><b>Motivation</b><small>2 videos &middot; tap to watch</small></span>
+              <i data-lucide="chevron-right" class="motivation-chevron" aria-hidden="true"></i>
+            </button>
+            <div class="motivation-videos" id="motivationVideos" hidden>
+                <button class="motivation-video" type="button" data-yt="qSZWnmCwlyo" aria-label="Play motivation video 1">
+                  <img src="https://i.ytimg.com/vi/qSZWnmCwlyo/hqdefault.jpg" alt="" loading="lazy" />
+                  <span class="motivation-play" aria-hidden="true"></span>
+                </button>
+                <button class="motivation-video" type="button" data-yt="CnTnVrfO348" aria-label="Play motivation video 2">
+                  <img src="https://i.ytimg.com/vi/CnTnVrfO348/hqdefault.jpg" alt="" loading="lazy" />
+                  <span class="motivation-play" aria-hidden="true"></span>
+                </button>
+            </div>
+          </section>
           <section class="quote-card home-quote">
             <span class="quote-mark" aria-hidden="true"><i data-lucide="quote"></i></span>
             <p id="quoteText"></p>

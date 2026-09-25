@@ -1115,6 +1115,28 @@ function wireEvents() {
     persist();
     void upsertAppState();
   }));
+  const motivationToggle = document.getElementById("motivationToggle");
+  const motivationVideos = document.getElementById("motivationVideos");
+  motivationToggle?.addEventListener("click", () => {
+    const open = motivationToggle.getAttribute("aria-expanded") !== "true";
+    motivationToggle.setAttribute("aria-expanded", String(open));
+    motivationVideos.hidden = !open;
+    // Collapsing stops playback: swap any playing embed back to its thumbnail.
+    if (!open) motivationVideos.querySelectorAll("iframe").forEach((frame) => frame.replaceWith(frame.motivationTile));
+  });
+  // Thumbnails load instantly; the YouTube player only loads once tapped.
+  motivationVideos?.addEventListener("click", (event) => {
+    const tile = event.target.closest("[data-yt]");
+    if (!tile) return;
+    const frame = document.createElement("iframe");
+    frame.className = "motivation-frame";
+    frame.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(tile.dataset.yt)}?autoplay=1&playsinline=1&rel=0`;
+    frame.title = tile.getAttribute("aria-label");
+    frame.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+    frame.allowFullscreen = true;
+    frame.motivationTile = tile;
+    tile.replaceWith(frame);
+  });
   document.querySelectorAll("[data-finance-note]").forEach((field) => field.addEventListener("input", () => {
     state.financeNotes[field.dataset.financeNote] = field.value;
     persist();

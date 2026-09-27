@@ -11,6 +11,8 @@ A calm personal planner for daily tasks, long-term to-dos, calendar-style events
 - Sleep tracker with calculated duration, a scrubable graph, and sleep scores
 - Speaking practice: rotating topics, frameworks, and R/S/TH/SH articulation drills
 - Goals and an About Me profile, saved automatically
+- Law of the Day on Home (one of the 48 Laws of Power, in order, one per day) that
+  opens the full list at `/laws`, with how-to-use or how-to-defend tips
 - Finance: guides with their own URLs (`/finance`, `/finance/4s-spending-framework`)
   and auto-saved self-check notes. Deep links rely on Cloudflare Pages' SPA
   fallback, so keep the site free of a top-level `404.html`.

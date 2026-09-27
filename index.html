@@ -14,7 +14,7 @@
     <link rel="icon" id="dynamicFavicon" href="/assets/icon-512.png" />
     <link rel="apple-touch-icon" id="dynamicTouchIcon" href="/assets/icon-512.png" />
     <link rel="stylesheet" href="/styles.css" />
-    <script type="module" src="/src/app.mjs?v=20260925-motivation"></script>
+    <script type="module" src="/src/app.mjs?v=20260927-48-laws"></script>
   </head>
   <body class="dark-mode">
     <div class="app-shell">
@@ -75,6 +75,13 @@
                 </button>
             </div>
           </section>
+          <a class="surface law-day-card" id="lawDayCard" href="/laws" aria-labelledby="lawDayTitle">
+            <div class="law-day-top"><span class="law-day-label"><i data-lucide="crown"></i> Law of the day</span><span class="law-day-number" id="lawDayNumber"></span></div>
+            <h2 id="lawDayTitle"></h2>
+            <p class="law-day-idea" id="lawDayIdea"></p>
+            <p class="law-day-tip"><b id="lawDayTipLabel"></b> <span id="lawDayTip"></span></p>
+            <span class="law-day-more">See all 48 laws <i data-lucide="chevron-right"></i></span>
+          </a>
           <section class="quote-card home-quote">
             <span class="quote-mark" aria-hidden="true"><i data-lucide="quote"></i></span>
             <p id="quoteText"></p>
@@ -427,6 +434,21 @@
             </section>
             <p class="four-s-saved"><span class="saved-pill"><i data-lucide="check"></i> Self-checks auto-save</span></p>
           </article>
+        </section>
+
+        <section class="view" id="lawsView" role="tabpanel" tabindex="0" aria-labelledby="lawsTitle">
+          <button class="see-all laws-back" type="button" data-view="home"><i data-lucide="chevron-left"></i> Home</button>
+          <div class="section-heading section-heading-laws"><div><h1 id="lawsTitle">The 48 Laws of Power</h1><p class="section-subtitle">From Robert Greene's book. Use the healthy ones; learn to spot the dark ones.</p></div></div>
+          <div class="laws-filters" id="lawsFilters" role="group" aria-label="Filter laws">
+            <button type="button" class="active" data-law-filter="all" aria-pressed="true">All 48</button>
+            <button type="button" data-law-filter="use" aria-pressed="false">Use it</button>
+            <button type="button" data-law-filter="defend" aria-pressed="false">Defend</button>
+            <button type="button" data-law-filter="business" aria-pressed="false">Business</button>
+            <button type="button" data-law-filter="school" aria-pressed="false">School</button>
+            <button type="button" data-law-filter="sports" aria-pressed="false">Sports &amp; cadets</button>
+            <button type="button" data-law-filter="social" aria-pressed="false">Social</button>
+          </div>
+          <ol class="laws-list" id="lawsList"></ol>
         </section>
 
         <section class="view" id="arcadeView" role="tabpanel" tabindex="0" aria-labelledby="arcadeTitle">

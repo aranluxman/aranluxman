@@ -41,6 +41,7 @@ import {
   speakTopics,
 } from "./speak-library.mjs";
 import { createIcons } from "./icons.mjs";
+import { isLawsPath, LAW_AREAS, lawForDate, LAWS } from "./laws-library.mjs";
 import * as gcal from "./google-calendar.mjs";
 
 const STORE_KEY = "aran-life-flow-state";
@@ -939,6 +940,8 @@ document.addEventListener("DOMContentLoaded", () => {
   if (financePage !== null) {
     showFinancePage(financePage, { updateUrl: false });
     setView("finance");
+  } else if (isLawsPath(location.pathname)) {
+    setView("laws");
   } else if (["home", "calendar", "speak", "finance", "me", "arcade"].includes(view)) setView(view);
   scheduleMidnightRollover();
   // A phone that was asleep at midnight fires the timer late, or not until the
@@ -1150,12 +1153,30 @@ function wireEvents() {
   }));
   window.addEventListener("popstate", () => {
     const page = parseFinancePath(location.pathname);
+    const lawsActive = document.getElementById("lawsView").classList.contains("active");
     if (page !== null) {
       showFinancePage(page, { updateUrl: false });
       if (!els.financeView.classList.contains("active")) setView("finance");
-    } else if (els.financeView.classList.contains("active")) {
+    } else if (isLawsPath(location.pathname)) {
+      if (!lawsActive) setView("laws");
+    } else if (els.financeView.classList.contains("active") || lawsActive) {
       setView("home");
     }
+  });
+  document.getElementById("lawDayCard").addEventListener("click", (event) => {
+    if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey || event.button !== 0) return;
+    event.preventDefault();
+    openLaws();
+  });
+  document.getElementById("lawsFilters").addEventListener("click", (event) => {
+    const chip = event.target.closest("[data-law-filter]");
+    if (!chip) return;
+    lawsFilter = chip.dataset.lawFilter;
+    document.querySelectorAll("[data-law-filter]").forEach((item) => {
+      item.classList.toggle("active", item === chip);
+      item.setAttribute("aria-pressed", String(item === chip));
+    });
+    renderLaws();
   });
   els.sprintPad.addEventListener("click", tapSprint);
   els.stopClockPad.addEventListener("click", tapStopClock);
@@ -1297,7 +1318,53 @@ function render() {
   renderSleep();
   renderSugar();
   renderArcade();
+  renderLawOfDay();
   refreshIcons();
+}
+
+function renderLawOfDay() {
+  const law = lawForDate(todayKey());
+  document.getElementById("lawDayNumber").textContent = `Law ${law.n} of 48`;
+  document.getElementById("lawDayTitle").textContent = law.title;
+  document.getElementById("lawDayIdea").textContent = law.idea;
+  document.getElementById("lawDayTipLabel").textContent = law.mode === "use" ? "Use it today:" : "Watch for it today:";
+  document.getElementById("lawDayTip").textContent = law.example;
+  document.getElementById("lawDayCard").classList.toggle("is-defend", law.mode === "defend");
+  // The full list marks today's law; rebuild it only when the day changes.
+  if (lawsRenderedFor !== todayKey()) renderLaws();
+}
+
+let lawsFilter = "all";
+let lawsRenderedFor = "";
+
+function renderLaws() {
+  lawsRenderedFor = todayKey();
+  const todayN = lawForDate(todayKey()).n;
+  const visible = LAWS.filter((law) => lawsFilter === "all" || law.mode === lawsFilter || law.area === lawsFilter);
+  document.getElementById("lawsList").innerHTML = visible.map((law) => `
+    <li class="law-item is-${law.mode}${law.n === todayN ? " is-today" : ""}" id="law-${law.n}">
+      <div class="law-head">
+        <span class="law-num">${law.n}</span>
+        <h2>${escapeHtml(law.title)}</h2>
+        ${law.n === todayN ? '<span class="law-today-pill">Today</span>' : ""}
+      </div>
+      <p class="law-idea">${escapeHtml(law.idea)}</p>
+      <div class="law-tip"><span>${law.mode === "use" ? "How to use it" : "Spot it &amp; defend yourself"}</span><p>${escapeHtml(law.tip)}</p></div>
+      <div class="law-example"><span>In your life &middot; ${escapeHtml(LAW_AREAS[law.area])}</span><p>${escapeHtml(law.example)}</p></div>
+    </li>`).join("");
+}
+
+function openLaws() {
+  lawsFilter = "all";
+  document.querySelectorAll("[data-law-filter]").forEach((chip) => {
+    const on = chip.dataset.lawFilter === "all";
+    chip.classList.toggle("active", on);
+    chip.setAttribute("aria-pressed", String(on));
+  });
+  renderLaws();
+  setView("laws").then(() => {
+    document.getElementById(`law-${lawForDate(todayKey()).n}`)?.scrollIntoView({ block: "center" });
+  });
 }
 
 function renderHome() {
@@ -3686,6 +3753,13 @@ function setView(view) {
     history.replaceState(null, "", "/");
     document.title = DEFAULT_TITLE;
   }
+  if (view === "laws") {
+    if (!isLawsPath(location.pathname)) history.pushState(null, "", "/laws");
+    document.title = "48 Laws of Power | Life Flow";
+  } else if (isLawsPath(location.pathname)) {
+    history.replaceState(null, "", "/");
+    document.title = DEFAULT_TITLE;
+  }
   const change = () => {
     document.querySelectorAll(".nav-item").forEach((button) => {
       const selected = button.dataset.view === view;
@@ -3699,8 +3773,10 @@ function setView(view) {
     // Scroll position is per-app, not per-panel; land at the top of the new tab.
     window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
   };
-  if (document.startViewTransition) document.startViewTransition(change);
-  else change();
+  // Resolves once the new panel is in the DOM, for callers that scroll into it.
+  if (document.startViewTransition) return document.startViewTransition(change).updateCallbackDone;
+  change();
+  return Promise.resolve();
 }
 
 function normalizeState(saved) {

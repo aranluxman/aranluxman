@@ -4175,8 +4175,26 @@ input.has-error:focus-visible {
   border-color: transparent transparent transparent #fff;
 }
 .motivation-video:hover .motivation-play { transform: scale(1.08); }
+/* Basketball Practice button on Home: a practice-link tinted orange. */
+.basketball-link {
+  margin-block: var(--s-3);
+  border-radius: var(--radius-lg);
+  background:
+    linear-gradient(135deg, color-mix(in srgb, var(--orange) 12%, transparent), transparent 62%),
+    rgba(255, 255, 255, 0.028);
+}
+.basketball-link .practice-link-icon {
+  color: var(--orange);
+  background: color-mix(in srgb, var(--orange) 12%, rgba(0, 0, 0, 0.25));
+  border-color: color-mix(in srgb, var(--orange) 32%, transparent);
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.11),
+    0 0 20px -8px color-mix(in srgb, var(--orange) 70%, transparent);
+}
+.basketball-link:active .practice-link-go { color: var(--orange); }
 @media (min-width: 1000px) {
   .motivation-card { grid-column: 1 / -1; }
+  .basketball-link { grid-column: 1 / -1; margin-block: 0; }
   .motivation-videos:not([hidden]) { grid-template-columns: repeat(2, minmax(0, 260px)); justify-content: center; }
 }
 

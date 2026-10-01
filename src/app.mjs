@@ -42,6 +42,7 @@ import {
 } from "./speak-library.mjs";
 import { createIcons } from "./icons.mjs";
 import { isLawsPath, LAW_AREAS, lawForDate, LAWS } from "./laws-library.mjs";
+import { DEFAULT_MOTIVATION_VIDEOS, parseYouTubeLink } from "./motivation.mjs";
 import * as gcal from "./google-calendar.mjs";
 
 const STORE_KEY = "aran-life-flow-state";
@@ -792,6 +793,8 @@ const defaultState = {
   goalDone: {},
   aboutMe: {},
   financeNotes: {},
+  motivationVideos: DEFAULT_MOTIVATION_VIDEOS.map((video) => ({ ...video })),
+  motivationVideosUpdatedAt: 0,
   deletedIds: [],
   rPractice: { completed: {}, sets: {} },
   goalReminder: "Train hard. Give back. Build something.",
@@ -1120,26 +1123,31 @@ function wireEvents() {
   }));
   const motivationToggle = document.getElementById("motivationToggle");
   const motivationVideos = document.getElementById("motivationVideos");
-  motivationToggle?.addEventListener("click", () => {
+  motivationToggle.addEventListener("click", () => {
     const open = motivationToggle.getAttribute("aria-expanded") !== "true";
     motivationToggle.setAttribute("aria-expanded", String(open));
     motivationVideos.hidden = !open;
-    // Collapsing stops playback: swap any playing embed back to its thumbnail.
-    if (!open) motivationVideos.querySelectorAll("iframe").forEach((frame) => frame.replaceWith(frame.motivationTile));
   });
-  // Thumbnails load instantly; the YouTube player only loads once tapped.
-  motivationVideos?.addEventListener("click", (event) => {
-    const tile = event.target.closest("[data-yt]");
-    if (!tile) return;
-    const frame = document.createElement("iframe");
-    frame.className = "motivation-frame";
-    frame.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(tile.dataset.yt)}?autoplay=1&playsinline=1&rel=0`;
-    frame.title = tile.getAttribute("aria-label");
-    frame.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
-    frame.allowFullscreen = true;
-    frame.motivationTile = tile;
-    tile.replaceWith(frame);
+  document.getElementById("motivationRow").addEventListener("click", (event) => {
+    const remove = event.target.closest("[data-yt-remove]");
+    if (remove) {
+      removeMotivationVideo(remove.dataset.ytRemove);
+      return;
+    }
+    const play = event.target.closest("[data-yt-play]");
+    if (play) openMotivationPlayer(play.dataset.ytPlay);
   });
+  document.getElementById("motivationAddForm").addEventListener("submit", (event) => {
+    event.preventDefault();
+    addMotivationVideo(document.getElementById("motivationAddInput").value);
+  });
+  document.getElementById("motivationAddInput").addEventListener("input", () => showMotivationError(""));
+  const motivationPlayer = document.getElementById("motivationPlayer");
+  document.getElementById("motivationPlayerClose").addEventListener("click", () => motivationPlayer.close());
+  // Tapping the dark area around the video closes it, like a story viewer.
+  motivationPlayer.addEventListener("click", (event) => { if (event.target === motivationPlayer) motivationPlayer.close(); });
+  // Removing the embed on close is what stops playback.
+  motivationPlayer.addEventListener("close", () => { document.getElementById("motivationPlayerFrame").replaceChildren(); });
   document.querySelectorAll("[data-finance-note]").forEach((field) => field.addEventListener("input", () => {
     state.financeNotes[field.dataset.financeNote] = field.value;
     persist();
@@ -1319,7 +1327,94 @@ function render() {
   renderSugar();
   renderArcade();
   renderLawOfDay();
+  renderMotivationVideos();
   refreshIcons();
+}
+
+let motivationRenderedKey = "";
+
+function renderMotivationVideos() {
+  const videos = state.motivationVideos;
+  const key = JSON.stringify(videos);
+  if (key === motivationRenderedKey) return;
+  motivationRenderedKey = key;
+  document.getElementById("motivationCount").textContent = videos.length
+    ? `${videos.length} video${videos.length === 1 ? "" : "s"} \u00b7 swipe to watch`
+    : "Add your first video";
+  document.getElementById("motivationRow").innerHTML = videos.map((video) => {
+    const id = escapeHtml(video.id);
+    const title = escapeHtml(video.title || "Motivation video");
+    return `
+    <div class="motivation-tile" role="listitem">
+      <button class="motivation-video" type="button" data-yt-play="${id}" aria-label="Play: ${title}">
+        <img src="https://i.ytimg.com/vi/${id}/hqdefault.jpg" alt="" loading="lazy" />
+        <span class="motivation-play" aria-hidden="true"></span>
+        <span class="motivation-kind">${video.kind === "short" ? "Short" : "Video"}</span>
+      </button>
+      <button class="motivation-remove" type="button" data-yt-remove="${id}" aria-label="Remove ${title}" title="Remove">&times;</button>
+      <span class="motivation-title">${title}</span>
+    </div>`;
+  }).join("");
+}
+
+function saveMotivationVideos(videos) {
+  state.motivationVideos = videos;
+  state.motivationVideosUpdatedAt = Date.now();
+  persist();
+  renderMotivationVideos();
+  void upsertAppState();
+}
+
+function showMotivationError(message) {
+  const error = document.getElementById("motivationAddError");
+  error.textContent = message;
+  error.hidden = !message;
+}
+
+async function addMotivationVideo(link) {
+  const parsed = parseYouTubeLink(link);
+  if (!parsed) {
+    showMotivationError("That doesn't look like a YouTube video link.");
+    return;
+  }
+  if (state.motivationVideos.some((video) => video.id === parsed.id)) {
+    showMotivationError("That video is already in your list.");
+    return;
+  }
+  showMotivationError("");
+  document.getElementById("motivationAddInput").value = "";
+  // Newest first, like a story row. The title fills in once YouTube answers.
+  saveMotivationVideos([{ ...parsed, title: "" }, ...state.motivationVideos]);
+  document.getElementById("motivationRow").scrollTo({ left: 0, behavior: "smooth" });
+  try {
+    const response = await fetch(`https://www.youtube.com/oembed?format=json&url=${encodeURIComponent(`https://www.youtube.com/watch?v=${parsed.id}`)}`);
+    if (!response.ok) return;
+    const { title } = await response.json();
+    if (!title) return;
+    saveMotivationVideos(state.motivationVideos.map((video) => (video.id === parsed.id ? { ...video, title: String(title).slice(0, 120) } : video)));
+  } catch {
+    // Offline or blocked: the video still plays, it just shows without a title.
+  }
+}
+
+function removeMotivationVideo(id) {
+  const video = state.motivationVideos.find((item) => item.id === id);
+  if (!video || !window.confirm(`Remove "${video.title || "this video"}" from Motivation?`)) return;
+  saveMotivationVideos(state.motivationVideos.filter((item) => item.id !== id));
+}
+
+function openMotivationPlayer(id) {
+  const video = state.motivationVideos.find((item) => item.id === id);
+  if (!video) return;
+  const frame = document.createElement("iframe");
+  frame.src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(video.id)}?autoplay=1&playsinline=1&rel=0`;
+  frame.title = video.title || "Motivation video";
+  frame.allow = "autoplay; encrypted-media; picture-in-picture; fullscreen";
+  frame.allowFullscreen = true;
+  const holder = document.getElementById("motivationPlayerFrame");
+  holder.classList.toggle("is-short", video.kind === "short");
+  holder.replaceChildren(frame);
+  document.getElementById("motivationPlayer").showModal();
 }
 
 function renderLawOfDay() {
@@ -3236,6 +3331,12 @@ async function syncFromSupabase() {
         state.goalDone = { ...(appData.goalDone || {}), ...state.goalDone };
         state.aboutMe = { ...(appData.aboutMe || {}), ...state.aboutMe };
         state.financeNotes = { ...(appData.financeNotes || {}), ...state.financeNotes };
+        // A list can't be merged key-by-key (removals would come back), so the
+        // most recently edited copy wins.
+        if (Array.isArray(appData.motivationVideos) && (appData.motivationVideosUpdatedAt || 0) > state.motivationVideosUpdatedAt) {
+          state.motivationVideos = appData.motivationVideos;
+          state.motivationVideosUpdatedAt = appData.motivationVideosUpdatedAt;
+        }
         state.gameBests = { ...state.gameBests, ...(appData.gameBests || {}) };
         state.deletedIds = [...new Set([...(appData.deletedIds || []), ...state.deletedIds])].slice(-300);
         // normalizeRPractice migrates the legacy {date, done[]} shape into the
@@ -3700,6 +3801,8 @@ async function upsertAppState() {
         goalDone: state.goalDone,
         aboutMe: state.aboutMe,
         financeNotes: state.financeNotes,
+        motivationVideos: state.motivationVideos,
+        motivationVideosUpdatedAt: state.motivationVideosUpdatedAt,
         gameBests: state.gameBests,
         deletedIds: state.deletedIds,
         rPractice: state.rPractice,
@@ -3798,6 +3901,8 @@ function normalizeState(saved) {
     goalDone: { ...(saved.goalDone || {}) },
     aboutMe: { ...(saved.aboutMe || {}) },
     financeNotes: { ...(saved.financeNotes || {}) },
+    motivationVideos: Array.isArray(saved.motivationVideos) ? saved.motivationVideos : DEFAULT_MOTIVATION_VIDEOS.map((video) => ({ ...video })),
+    motivationVideosUpdatedAt: Number(saved.motivationVideosUpdatedAt) || 0,
     deletedIds: Array.isArray(saved.deletedIds) ? saved.deletedIds : [],
     rPractice: normalizeRPractice(saved.rPractice),
   };

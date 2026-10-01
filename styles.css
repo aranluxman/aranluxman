@@ -4099,8 +4099,9 @@ input.has-error:focus-visible {
 }
 
 /* ---------------------------------------------------------------
-   Home: Motivation card. Collapsed to one row; opens to two
-   YouTube Shorts (9:16) that load the player only when tapped.
+   Home: Motivation card. Collapsed to one row; opens to a sideways
+   swipe row of videos (story-style) plus an "Add video" box. Tapping
+   a video opens it in a full-screen player dialog.
    --------------------------------------------------------------- */
 .motivation-card { --accent: var(--orange); padding: var(--s-2); }
 .motivation-toggle {
@@ -4133,32 +4134,48 @@ input.has-error:focus-visible {
 .motivation-text small { color: var(--muted); font-size: 0.8rem; }
 .motivation-chevron { width: 18px; height: 18px; color: var(--faint); transition: transform var(--t-base) var(--ease-out); }
 .motivation-toggle[aria-expanded="true"] .motivation-chevron { transform: rotate(90deg); }
-.motivation-videos:not([hidden]) {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+.motivation-videos:not([hidden]) { display: grid; gap: var(--s-3); padding: var(--s-2); }
+.motivation-row {
+  display: flex;
   gap: var(--s-3);
-  padding: var(--s-2);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scroll-padding-inline: var(--s-2);
+  overscroll-behavior-x: contain;
+  scrollbar-width: none;
+  margin-inline: calc(var(--s-2) * -1);
+  padding: 2px var(--s-2) var(--s-1);
 }
-.motivation-video, .motivation-frame {
+.motivation-row::-webkit-scrollbar { display: none; }
+.motivation-tile {
+  position: relative;
+  flex: 0 0 132px;
+  display: grid;
+  gap: 6px;
+  align-content: start;
+  scroll-snap-align: start;
+}
+.motivation-video {
   position: relative;
   display: block;
   width: 100%;
-  aspect-ratio: 9 / 16;
-  border: 1px solid color-mix(in srgb, var(--accent) 22%, var(--line));
+  aspect-ratio: 3 / 4;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--accent) 26%, var(--line));
   border-radius: 14px;
   overflow: hidden;
   background: #000;
+  cursor: pointer;
 }
-.motivation-video { padding: 0; cursor: pointer; }
 .motivation-video img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .motivation-video:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .motivation-play {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: 52px;
-  height: 52px;
-  margin: -26px 0 0 -26px;
+  width: 42px;
+  height: 42px;
+  margin: -21px 0 0 -21px;
   border-radius: 50%;
   background: rgba(0, 0, 0, 0.6);
   border: 1px solid rgba(255, 255, 255, 0.35);
@@ -4171,10 +4188,105 @@ input.has-error:focus-visible {
   left: 54%;
   transform: translate(-50%, -50%);
   border-style: solid;
-  border-width: 9px 0 9px 15px;
+  border-width: 7px 0 7px 12px;
   border-color: transparent transparent transparent #fff;
 }
 .motivation-video:hover .motivation-play { transform: scale(1.08); }
+.motivation-kind {
+  position: absolute;
+  left: 6px;
+  bottom: 6px;
+  padding: 2px 7px;
+  border-radius: var(--radius-pill);
+  background: rgba(0, 0, 0, 0.65);
+  color: #fff;
+  font-size: 0.64rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+.motivation-remove {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 1.05rem;
+  line-height: 1;
+  cursor: pointer;
+}
+.motivation-remove:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.motivation-title {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  color: var(--muted);
+  font-size: 0.74rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+.motivation-add { display: flex; gap: var(--s-2); }
+.motivation-add input { flex: 1; min-width: 0; font-size: 1rem; }
+.motivation-add-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  min-height: var(--tap);
+  padding: 0 14px;
+  border: 1px solid color-mix(in srgb, var(--accent) 40%, transparent);
+  border-radius: var(--radius-sm);
+  background: color-mix(in srgb, var(--accent) 16%, transparent);
+  color: var(--accent);
+  font-size: 0.85rem;
+  font-weight: 700;
+  white-space: nowrap;
+  cursor: pointer;
+}
+.motivation-add-button svg { width: 16px; height: 16px; }
+.motivation-add-error { color: var(--red); font-size: 0.8rem; }
+
+.motivation-player {
+  position: fixed;
+  inset: 0;
+  margin: auto;
+  height: fit-content;
+  width: min(100vw - 24px, 960px);
+  max-width: none;
+  max-height: none;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: visible;
+}
+.motivation-player::backdrop { background: rgba(0, 0, 0, 0.88); }
+.motivation-player-close {
+  position: absolute;
+  top: -52px;
+  right: 0;
+  z-index: 1;
+}
+.motivation-player-frame {
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  overflow: hidden;
+  background: #000;
+}
+.motivation-player-frame.is-short {
+  width: min(100%, calc((100vh - 120px) * 9 / 16));
+  aspect-ratio: 9 / 16;
+  margin-inline: auto;
+}
+.motivation-player-frame iframe { width: 100%; height: 100%; border: 0; display: block; }
 /* Basketball Practice button on Home: a practice-link tinted orange. */
 .basketball-link {
   margin-block: var(--s-3);
@@ -4195,7 +4307,7 @@ input.has-error:focus-visible {
 @media (min-width: 1000px) {
   .motivation-card { grid-column: 1 / -1; }
   .basketball-link { grid-column: 1 / -1; margin-block: 0; }
-  .motivation-videos:not([hidden]) { grid-template-columns: repeat(2, minmax(0, 260px)); justify-content: center; }
+  .motivation-tile { flex-basis: 156px; }
 }
 
 /* ---------------------------------------------------------------

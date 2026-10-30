@@ -1,24 +1,20 @@
 # Aran Life Flow
 
-A calm personal planner for daily tasks, long-term to-dos, calendar-style events, focus sessions, sleep tracking, moods, and motivational quotes.
+A calm personal dashboard for goals, speaking practice, finance guides, and daily motivation.
 
 ## Features
 
-- Six sections: Home, Calendar, Sleep, Speak, Me, Arcade
-- **Google Calendar sync** over OAuth 2.0 (read-only), with a secret iCal feed as
-  a zero-setup fallback — see [docs/GOOGLE_CALENDAR_SETUP.md](docs/GOOGLE_CALENDAR_SETUP.md)
-- Month and week calendar views with an agenda, plus manually added events
-- Sleep tracker with calculated duration, a scrubable graph, and sleep scores
+- Four sections: Home, Speak, Finance, Me. Swipe left/right (or tap the nav) to move between them
 - Speaking practice: rotating topics, frameworks, and R/S/TH/SH articulation drills
-- Goals and an About Me profile, saved automatically
+- Goals with an overall completion percentage and a per-category breakdown, saved automatically
+- Dark and light themes (toggle on the page, or in Settings)
 - Law of the Day on Home (one of the 48 Laws of Power, in order, one per day) that
   opens the full list at `/laws`, with how-to-use or how-to-defend tips
 - Finance: guides with their own URLs (`/finance`, `/finance/4s-spending-framework`)
   and auto-saved self-check notes. Deep links rely on Cloudflare Pages' SPA
   fallback, so keep the site free of a top-level `404.html`.
-- Arcade: coins earned from real work, plus nine mini-games
-- Masked Supabase settings, dark mode, and iOS-friendly PWA metadata
-- Supabase sync for items, moods, focus sessions, sugar entries, and sleep logs
+- Supabase URL and key served from the server, never stored in the source or shown in Settings; iOS-friendly PWA metadata
+- Supabase sync for goals, notes, speaking practice, and settings
 
 ## Running locally
 
@@ -47,12 +43,10 @@ The app uses these public tables:
 - `life_flow_focus_sessions`
 - `life_flow_sleep_entries`
 
-Open **Settings** in the app and add:
-
-- Supabase project URL
-- Supabase publishable key
-- Private sync key, any private phrase you choose
-- Optional Google Calendar secret iCal URL
+The Supabase project URL and publishable key are **not** in the source or the
+Settings screen. `functions/api/supabase-config.js` serves them at runtime from
+environment variables (see below). In the app, open **Settings** and add a
+private sync key, any private phrase you choose.
 
 The private sync key is stored in the browser and sent as `x-owner-key` so row-level security can keep each owner key separate without requiring Google sign-in. To pair devices, open Settings on the device with your existing data, choose **Copy pairing link**, and open that link on your other devices. Once paired, cloud changes pull when the app is reopened, brought back into view, or while it remains visible.
 
@@ -60,20 +54,15 @@ The private sync key is stored in the browser and sent as `x-owner-key` so row-l
 
 Pages Functions in `functions/api/`:
 
-- `calendar.js` — CORS proxy for iCal feeds (`/api/calendar?url=…`). Forwards
-  only to an allowlist of calendar hosts, and falls back to `CALENDAR_ICAL_URL`
-  when no `url` is given, so the secret feed address can stay server-side.
-- `calendar-config.js` — reports whether a server-side feed is configured
-  (boolean + redacted label; never the URL itself)
-- `google-config.js` — serves the public Google OAuth client ID from the
-  `GOOGLE_OAUTH_CLIENT_ID` environment variable
+- `supabase-config.js` — serves the Supabase URL and publishable key from the
+  `SUPABASE_URL` and `SUPABASE_ANON_KEY` environment variables
 
 ### Environment variables
 
 | Name | Where | Purpose |
 | --- | --- | --- |
-| `GOOGLE_OAUTH_CLIENT_ID` | Pages → Settings → Environment variables | Google Calendar sign-in. Optional; without it the Connect button explains what to set and the iCal fallback still works. |
-| `CALENDAR_ICAL_URL` | Pages → Settings → Environment variables | Secret iCal feed address. Optional. When set, the feed is fetched server-side and the URL never reaches the browser. |
+| `SUPABASE_URL` | Pages → Settings → Environment variables | Supabase project URL. Required for cloud sync. |
+| `SUPABASE_ANON_KEY` | Pages → Settings → Environment variables | Supabase **publishable** key (never the `service_role` key). Required for cloud sync. |
 
-No client secret is used or needed — the frontend is a public OAuth client, and
-access tokens live in memory only, never in web storage.
+For `npm run dev`, export the same two variables before starting the server.
+Without them the app still works in local mode (data stays in the browser).

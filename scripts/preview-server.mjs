@@ -13,55 +13,14 @@ const types = {
   ".webmanifest": "application/manifest+json",
 };
 
-// Minimal stand-ins for the Cloudflare Pages Functions, so `/api/*` behaves the
+// Minimal stand-in for the Cloudflare Pages Function, so `/api/*` behaves the
 // same locally as it does in production.
 const apiRoutes = {
-  "/api/google-config": (_url, response) => {
-    const clientId = process.env.GOOGLE_OAUTH_CLIENT_ID || "";
-    response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
-    response.end(JSON.stringify({ clientId, configured: Boolean(clientId) }));
-  },
-  "/api/calendar-config": (_url, response) => {
-    const url = process.env.CALENDAR_ICAL_URL || "";
-    let label = "";
-    if (url) {
-      try {
-        const parsed = new URL(url);
-        label = `${parsed.hostname}/…/${parsed.pathname.split("/").pop()}`;
-      } catch { label = "configured"; }
-    }
-    response.writeHead(200, { "Content-Type": "application/json; charset=utf-8" });
-    response.end(JSON.stringify({ configured: Boolean(url), label }));
-  },
-  "/api/calendar": async (url, response) => {
-    const raw = url.searchParams.get("url") || process.env.CALENDAR_ICAL_URL || "";
-    if (!raw) {
-      response.writeHead(400);
-      response.end("No calendar URL configured");
-      return;
-    }
-    try {
-      const upstream = await fetch(raw, { headers: { Accept: "text/calendar, text/plain" } });
-      if (!upstream.ok) {
-        const detail = upstream.status === 404
-          ? "Calendar feed not found (404). If you used the public address, the calendar must be shared publicly — otherwise use the secret address from Google Calendar settings."
-          : `Calendar feed unavailable (${upstream.status})`;
-        response.writeHead(upstream.status === 404 ? 404 : 502);
-        response.end(detail);
-        return;
-      }
-      const body = await upstream.text();
-      if (!body.includes("BEGIN:VCALENDAR")) {
-        response.writeHead(422);
-        response.end("That URL did not return a calendar feed");
-        return;
-      }
-      response.writeHead(200, { "Content-Type": "text/calendar; charset=utf-8" });
-      response.end(body);
-    } catch {
-      response.writeHead(502);
-      response.end("Could not reach the calendar feed");
-    }
+  "/api/supabase-config": (_url, response) => {
+    const url = process.env.SUPABASE_URL || "";
+    const key = process.env.SUPABASE_ANON_KEY || "";
+    response.writeHead(200, { "Content-Type": "application/json; charset=utf-8", "Cache-Control": "no-store" });
+    response.end(JSON.stringify({ url, key, configured: Boolean(url && key) }));
   },
 };
 

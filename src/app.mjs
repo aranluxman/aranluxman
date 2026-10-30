@@ -1,28 +1,19 @@
 import {
-  buildMonthDays,
-  calculateCoinBreakdown,
   calculateSleepMinutes,
   calculateSugarStreak,
   calculateSleepScore,
-  calculateStats,
-  countSessionsForDate,
   eventsForDate,
-  filterItems,
   formatDateKey,
   formatDisplayDate,
   formatSleepDuration,
   getGreeting,
-  getGreetingEmoji,
-  getHomeSubtitle,
   getSleepSummary,
   getSugarProgress,
   parseFinancePath,
-  parseIcsEvents,
   SUGAR_DAILY_LIMIT_GRAMS,
   sleepTimestampsForWakeDate,
   sugarStreakMessage,
   sugarEntriesForDate,
-  summarizeFitnessWeek,
   summarizeSugar,
   sumSugarForDate,
   todayKey,
@@ -43,39 +34,12 @@ import {
 import { createIcons } from "./icons.mjs";
 import { isLawsPath, LAW_AREAS, lawForDate, LAWS } from "./laws-library.mjs";
 import { DEFAULT_MOTIVATION_VIDEOS, parseYouTubeLink } from "./motivation.mjs";
-import * as gcal from "./google-calendar.mjs";
 
 const STORE_KEY = "aran-life-flow-state";
 const SETTINGS_KEY = "aran-life-flow-settings";
 const CLOUD_REFRESH_MS = 60_000;
 const SPEAK_PRACTICE_BUCKET = "speak-practice";
-const DAILY_CHECKLIST_ITEMS = [
-  { id: "drink-water", label: "Drink water" },
-  { id: "stretch", label: "Stretch" },
-  { id: "journal", label: "Journal" },
-];
 const legacySharedIds = new Set(["0b7c7939-4a28-4d4e-8e96-b4d3a78ff101", "f47ba22f-b0db-4d3d-853d-a3091caaaf20"]);
-const categoryColors = {
-  School: "#3e9cff",
-  "Track & Field": "#ff9738",
-  YMCA: "#27c78a",
-  "Duke of Ed": "#9171ef",
-  "Web Dev": "#ebbd45",
-  Personal: "#9aa9ba",
-  Calendar: "#22c6d6",
-};
-const categoryIcons = {
-  School: "book-open",
-  "Track & Field": "footprints",
-  YMCA: "users",
-  "Duke of Ed": "award",
-  "Web Dev": "code-2",
-  Personal: "user",
-  Calendar: "calendar-days",
-};
-function iconForCategory(category) {
-  return categoryIcons[category] || "calendar-days";
-}
 const dukeLabels = { physical: "Physical (Track & Field)", volunteering: "Volunteering (YMCA)", skill: "Skill (Web Dev)" };
 const dukeMeta = {
   physical: { icon: "footprints", accent: "#f97316" },
@@ -660,136 +624,18 @@ const quotePool = [
   "Train hard enough to be proud, rest well enough to repeat.",
   "Momentum begins the second you start.",
 ];
-const coachTips = [
-  "Win the morning: make your bed, fill your water bottle, and name your one must-do.",
-  "Discipline is choosing what you want most over what you want now.",
-  "Your warm-up decides your workout. Never skip it.",
-  "Small steps every day beat giant leaps once a week.",
-  "Recovery is where the training actually sticks. Sleep like it matters.",
-  "Before you scroll, finish one thing that future-you will thank you for.",
-  "Hydrate before you feel thirsty. Performance starts with water.",
-  "A messy desk slows a sharp mind. Clear the space, then start.",
-  "You don't have to feel ready. You just have to begin.",
-  "Stretch tonight so tomorrow's sprint feels lighter.",
-  "Protect your bedtime like it's a race you can't be late for.",
-  "Two minutes of planning saves an hour of confusion.",
-  "Effort you can repeat beats effort you can brag about once.",
-  "When it's hard, shorten the goal: just the next rep, the next line.",
-  "Fuel up with real food before training, not after the crash.",
-  "Consistency is a superpower disguised as boredom.",
-  "Finish the homework you're avoiding first. The rest gets easy.",
-  "Your form matters more than your speed. Build it clean.",
-  "Rest days are training days for your recovery.",
-  "Track your sleep tonight; patterns reveal what excuses hide.",
-  "Breathe out the nerves before the start line. Calm is fast.",
-  "One focused hour beats three distracted ones.",
-  "Show up even when motivation doesn't. Habits carry you.",
-  "Pack your bag the night before so mornings stay calm.",
-  "Celebrate the rep you didn't want to do. That's the one that counts.",
-  "Phone in another room. Watch your focus double.",
-  "Eat the frog: do the hardest task while your energy is highest.",
-  "A good cool-down today is a faster recovery tomorrow.",
-  "Your future self is built by today's small promises kept.",
-  "Set the timer for 25 minutes. You can do anything for 25 minutes.",
-  "Strong legs, strong mind. Move your body to clear your head.",
-  "Drink water, stand up, roll your shoulders. Reset and continue.",
-  "Don't count the days. Make the days count.",
-  "Sleep is the cheapest performance enhancer you'll ever find.",
-  "Plan tomorrow tonight so you wake up with a target, not a question.",
-  "Progress hides in the boring reps. Trust the process.",
-  "Be the athlete who does the little things nobody claps for.",
-  "When tired, lower the bar to 'just start' and let momentum do the rest.",
-  "Read the question twice. Half of mistakes are rushed reading.",
-  "Stack one good habit on another: water, stretch, study, sleep.",
-  "Your warm-up is a promise to your body. Keep it.",
-  "Write down one thing you learned today. Reflection compounds.",
-  "Tight on time? Do the 10-minute version, not the zero-minute version.",
-  "Sweat now so you can smile at the finish line later.",
-  "Comparison steals joy. Race your own clock.",
-  "Sleep, train, eat, repeat. Champions love the routine.",
-  "Energy follows attention. Point yours at what matters.",
-  "Tomorrow's confidence is built by tonight's preparation.",
-  "If it's on your mind, put it on your list and free your brain.",
-  "The first rep is the hardest. Start and the body follows.",
-  "Greatness is just good, repeated, with patience.",
-  "Recover loud: foam roll, hydrate, and sleep early after a hard session.",
-  "Block distractions, not ambition. Guard your focus time.",
-  "Do it scared. Courage grows after the start, not before.",
-  "Master your breathing and you master your pace.",
-  "A clear goal beats a long to-do list. Pick the one that moves things.",
-  "Train the mind too: five calm breaths before every big effort.",
-  "Late-night scrolling steals tomorrow's energy. Log off, lights out.",
-  "You become what you practice. Practice the good stuff.",
-  "Take the win: finish, then rest without guilt.",
-  "Plan your meals like you plan your workouts. Both build you.",
-  "When stuck, teach it to someone. Explaining reveals the gaps.",
-  "Sprint the warm-up of your day: knock out the quick wins early.",
-  "Your only competition tomorrow is who you were today.",
-  "Stretch the tight spots before they become injuries.",
-  "Set fewer goals, finish more of them.",
-  "Sleep is a skill: same time, dark room, no screens.",
-  "Move first, think second. Action clears a foggy head.",
-  "The grind isn't glamorous. That's why it works.",
-  "Hard now, easy later. Easy now, hard later. Choose.",
-  "Pre-pack water and a snack so good choices are the easy choices.",
-  "Focus is a muscle. Train it one timer at a time.",
-  "Don't break the chain: one small action keeps the streak alive.",
-  "Strong starts come from steady warm-ups, not adrenaline.",
-  "Give your best to the boring basics and the rest takes care of itself.",
-  "Write the first sentence badly. You can fix it once it exists.",
-  "Recovery food after training: protein, water, and real carbs.",
-  "Tired isn't a reason to quit; it's a reason to slow down and continue.",
-  "Your habits are voting for the person you're becoming.",
-  "Earn your rest, then actually rest.",
-  "A short walk beats a long stall. Move, then return.",
-  "Train your weaknesses; show off your strengths on race day.",
-  "Set the alarm across the room. Win the first decision of the day.",
-  "One page, one rep, one minute. Start absurdly small.",
-  "Cold water on the face beats another hour of scrolling.",
-  "Hydrate, fuel, sleep: the unglamorous engine of every personal best.",
-  "You can rest or you can quit. They're not the same thing.",
-  "Build the skill on quiet days so it shows up on loud ones.",
-  "Don't wait to feel motivated. Schedule it and show up.",
-  "Finish strong: the last rep teaches the most.",
-  "Give back today: help someone and your own problems shrink.",
-  "Big dreams, small calendars. Put the dream on the schedule.",
-  "Less hype, more reps. The work speaks for itself.",
-  "Protect your mornings; they set the tempo for everything.",
-  "When in doubt, do the next right thing, not the perfect thing.",
-  "Sleep before midnight is worth double. Get to bed.",
-  "Track it to change it. Numbers are honest even when feelings aren't.",
-  "Train like you race; race like you trained.",
-  "Stack tiny wins until they start to look like talent.",
-  "End the day proud of one thing you finished, not just started.",
-];
-const boostPool = [
-  "Log your Duke of Ed entry for the week.",
-  "Complete 20 pushups before lunch.",
-  "Finish one school task before checking your phone.",
-  "Log last night's sleep.",
-  "Review your next track session plan.",
-  "Send one clear update on a Web Dev project.",
-];
-const memoryIconPool = [
-  "bolt", "book-open", "trophy", "code-2", "heart-handshake", "timer", "star", "graduation-cap",
-  "dumbbell", "flame", "rocket", "music", "heart", "crown", "gamepad-2", "medal",
-  "footprints", "target", "moon", "sun", "zap", "bike",
-];
 
 const defaultState = {
   items: [],
   sleepEntries: [],
   sugarEntries: [],
   sugarStreak: { current_streak: 0, longest_streak: 0, last_updated_date: "", limit_grams: SUGAR_DAILY_LIMIT_GRAMS },
-  dailyChecklist: { date: todayKey(), completed: {} },
   speakPracticeSessions: [],
   focusSessions: [],
   fitnessLog: [],
   rewards: [],
   dukeProgress: { physical: 0, volunteering: 0, skill: 0 },
   memoryNotes: { family: "Everything I do is for them.", moments: "", future: "" },
-  reactionAttempts: [],
-  gameBests: { sprint: 0, stopClock: null, numberRush: null, target: 0, simon: 0, math: 0 },
   goalDone: {},
   aboutMe: {},
   financeNotes: {},
@@ -798,16 +644,9 @@ const defaultState = {
   deletedIds: [],
   rPractice: { completed: {}, sets: {} },
   goalReminder: "Train hard. Give back. Build something.",
-  selectedDate: todayKey(),
-  monthCursor: `${todayKey().slice(0, 7)}-01`,
-  calendarView: "month",
-  activeFilter: "today",
 };
 const defaultSettings = {
-  supabaseUrl: "https://hcvjiveloioftozvnbhe.supabase.co",
-  supabaseAnonKey: "sb_publishable_DGZFZUhnMLgFpdYzcHWRmw_wqOPu2Aq",
   ownerKey: "",
-  calendarUrl: "",
   displayName: "Aran",
   plannerSubtitle: "Grade 9 \u00b7 Athlete \u00b7 Builder",
   sleepGoalHours: 8.5,
@@ -815,13 +654,7 @@ const defaultSettings = {
   pushupGoal: 60,
   trackGoal: 3,
   darkMode: true,
-  // Connection state only. The access token is deliberately never persisted —
-  // see src/google-calendar.mjs.
-  googleConnected: false,
-  googleEmail: "",
 };
-// Real schedule is imported from calendarImport below, so no placeholder recurring events.
-const recurringTemplates = [];
 // One-time import of Aran's handwritten sleep log [date, fell asleep, woke up] (24h, wake is next morning).
 const sleepLogImport = [
   ["2026-05-05", "22:30", "07:00"],
@@ -845,71 +678,16 @@ const sleepLogImport = [
   ["2026-06-03", "22:15", "06:40"],
   ["2026-06-04", "22:56", "07:00"],
 ];
-// Import (v2) of Aran's schedule from his four-month calendar PDF (July 20 - September 3, 2026):
-// [date, title, start (24h), end (24h), category, location]. Multi-day events get one all-day entry per day.
-const calendarImport = [
-  ["2026-07-20","YMCA Personal Training Academy","11:00","15:00","YMCA","YMCA"],
-  ["2026-07-20","Track and Field","18:00","19:30","Track & Field","Bill Crothers Secondary School (44 Main St Unionville)"],
-  ["2026-07-21","YMCA Personal Training Academy","11:00","15:00","YMCA","YMCA"],
-  ["2026-07-22","YMCA Personal Training Academy","11:00","15:00","YMCA","YMCA"],
-  ["2026-07-23","YMCA Personal Training Academy","11:00","15:00","YMCA","YMCA"],
-  ["2026-07-23","Workout","19:00","20:00","Track & Field","YMCA"],
-  ["2026-07-24","2026 Ontario U14, U16, U18 Outdoor Track and Field Championship","","","Track & Field","St. Catharines, Ontario"],
-  ["2026-07-24","Track and Field","18:00","19:30","Track & Field","Bill Crothers Secondary School (44 Main St Unionville)"],
-  ["2026-07-25","2026 Ontario U14, U16, U18 Outdoor Track and Field Championship","","","Track & Field","St. Catharines, Ontario"],
-  ["2026-07-25","Work Out Training Track","08:00","09:30","Track & Field",""],
-  ["2026-07-25","Track: U16 100m Heats","12:15","13:15","Track & Field",""],
-  ["2026-07-25","Track: U16 100m Final (if qualified)","15:30","16:30","Track & Field",""],
-  ["2026-07-26","2026 Ontario U14, U16, U18 Outdoor Track and Field Championship","","","Track & Field","St. Catharines, Ontario"],
-  ["2026-07-26","Track: U16 200m Timed Final","14:50","15:50","Track & Field",""],
-  ["2026-07-27","Track and Field","18:00","19:30","Track & Field","Bill Crothers Secondary School (44 Main St Unionville)"],
-  ["2026-07-30","Workout","19:00","20:00","Track & Field","YMCA"],
-  ["2026-07-31","Camping","","","Personal",""],
-  ["2026-07-31","Track and Field","18:00","19:30","Track & Field","Bill Crothers Secondary School (44 Main St Unionville)"],
-  ["2026-08-01","Camping","","","Personal",""],
-  ["2026-08-01","Work Out Training Track","08:00","09:30","Track & Field",""],
-  ["2026-08-02","Camping","","","Personal",""],
-  ["2026-08-03","Track and Field","18:00","19:30","Track & Field","Bill Crothers Secondary School (44 Main St Unionville)"],
-  ["2026-08-04","Bronze Medallion","09:00","16:00","Personal",""],
-  ["2026-08-05","Bronze Medallion","09:00","16:00","Personal",""],
-  ["2026-08-06","Bronze Medallion","09:00","16:00","Personal",""],
-  ["2026-08-06","Workout","19:00","20:00","Track & Field","YMCA"],
-  ["2026-08-07","Track and Field","18:00","19:30","Track & Field","Bill Crothers Secondary School (44 Main St Unionville)"],
-  ["2026-08-08","Work Out Training Track","08:00","09:30","Track & Field",""],
-  ["2026-08-10","Track and Field","18:00","19:30","Track & Field","Bill Crothers Secondary School (44 Main St Unionville)"],
-  ["2026-08-13","Workout","19:00","20:00","Track & Field","YMCA"],
-  ["2026-08-14","Track and Field","18:00","19:30","Track & Field","Bill Crothers Secondary School (44 Main St Unionville)"],
-  ["2026-08-15","Work Out Training Track","08:00","09:30","Track & Field",""],
-  ["2026-08-17","Track and Field","18:00","19:30","Track & Field","Bill Crothers Secondary School (44 Main St Unionville)"],
-  ["2026-08-17","Basketball for Cadets","20:00","22:00","Personal","Bill Hogarth Secondary School (100 Donald Sim Ave)"],
-  ["2026-08-20","Workout","19:00","20:00","Track & Field","YMCA"],
-  ["2026-08-21","Track and Field","18:00","19:30","Track & Field","Bill Crothers Secondary School (44 Main St Unionville)"],
-  ["2026-08-22","Work Out Training Track","08:00","09:30","Track & Field",""],
-  ["2026-08-24","Track and Field","18:00","19:30","Track & Field","Bill Crothers Secondary School (44 Main St Unionville)"],
-  ["2026-08-26","Camerons Birthday","","","Personal",""],
-  ["2026-08-27","Workout","19:00","20:00","Track & Field","YMCA"],
-  ["2026-08-28","Track and Field","18:00","19:30","Track & Field","Bill Crothers Secondary School (44 Main St Unionville)"],
-  ["2026-08-29","Work Out Training Track","08:00","09:30","Track & Field",""],
-  ["2026-08-31","Track and Field","18:00","19:30","Track & Field","Bill Crothers Secondary School (44 Main St Unionville)"],
-  ["2026-09-03","Workout","19:00","20:00","Track & Field","YMCA"],
-];
-const CALENDAR_IMPORT_VERSION = 2;
 
 let settings = normalizeSettings(loadJson(SETTINGS_KEY, defaultSettings));
-let state = importCalendarEvents(importSleepLog(normalizeState(loadJson(STORE_KEY, defaultState))));
+// The Supabase URL and publishable key are served by /api/supabase-config at
+// runtime so they are not in the repository, the bundle, or the settings form.
+let cloud = { url: "", key: "" };
+let state = importSleepLog(normalizeState(loadJson(STORE_KEY, defaultState)));
 let cloudSyncInFlight = null;
 let cloudSyncAgain = false;
 let cloudRefreshTimer = null;
-let reaction = { mode: "idle", goAt: 0, timeoutId: null };
-let memoryGame = null;
 let pendingSleepId = "";
-let coachCursor = null;
-let sprintGame = { active: false, count: 0, timeoutId: null };
-let stopClock = { running: false, startAt: 0, rafId: null };
-let numberRush = { order: [], next: 1, startAt: 0, active: false };
-let targetGame = { active: false, score: 0, lit: -1, intervalId: null, timeoutId: null };
-let simonGame = { sequence: [], inputIndex: 0, playing: false, awaitingInput: false };
-let mathGame = { active: false, score: 0, answer: 0, timeoutId: null, intervalId: null, secondsLeft: 0 };
 // One cursor, not three. The framework and storytelling technique are derived
 // from whichever topic is showing, so they cannot drift away from it.
 let speakCursor = null;
@@ -945,7 +723,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setView("finance");
   } else if (isLawsPath(location.pathname)) {
     setView("laws");
-  } else if (["home", "calendar", "speak", "finance", "me", "arcade"].includes(view)) setView(view);
+  } else if (["home", "speak", "finance", "me"].includes(view)) setView(view);
   scheduleMidnightRollover();
   // A phone that was asleep at midnight fires the timer late, or not until the
   // tab is looked at again; re-check the date whenever the app becomes visible.
@@ -956,14 +734,13 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
   void initializeCloud();
-  void initGoogleCalendar();
 });
 
 function bindElements() {
   [
-    "greeting", "homeTitle", "currentDateText", "quoteText", "nextQuoteButton", "coachText", "coachButton", "coachDots", "coachBadge", "heroCoins",
-    "doneTodayStat", "openTasksStat", "streakStat", "coinsStat", "trackWeekStat", "pushupsWeekStat", "addTrackSessionButton",
-    "addPushupsButton", "upcomingTodayList", "workoutList", "goalsList", "goalsProgress",
+    "greeting", "homeTitle", "currentDateText", "quoteText", "nextQuoteButton",
+    "addTrackSessionButton",
+    "addPushupsButton", "workoutList", "goalsList", "goalsProgress", "goalsSummary", "themeToggleButton",
     "speakTopicKind", "speakTopicText", "speakTopicSource", "speakFrameworkName", "speakFrameworkWhen", "speakFrameworkSteps",
     "speakFrameworkDefinition", "speakFrameworkExample", "speakTopicForm", "speakTopicInput", "speakPurposeInput",
     "speakTechniqueName", "speakTechniqueDefinition", "speakTechniqueExample",
@@ -975,30 +752,19 @@ function bindElements() {
     "speakRecordIntent", "preRecordDialog", "preRecordForm", "preRecordFeelingInput", "preRecordOutcomeInput",
     "preRecordCountdown", "preRecordCount", "preRecordStartButton", "preRecordCancelButton",
     "heroRingFill", "heroProgressPercent",
-    "simonStart", "simonGrid", "simonStatus", "simonBest", "mathStart", "mathQuestion", "mathAnswers", "mathStatus", "mathBest",
-    "sprintPad", "sprintStatus", "sprintBest", "stopClockPad", "stopClockStatus", "stopClockBest",
-    "numberRushStart", "numberRushGrid", "numberRushStatus", "numberRushBest",
-    "targetStart", "targetGrid", "targetStatus", "targetBest",
-    "monthLabel", "todayButton", "calendarGrid", "monthCalendar",
-    "weekGrid", "calendarViewToggle", "agendaTitle", "agendaList", "addSleepButton", "sleepGoalInput",
+    "addSleepButton", "sleepGoalInput",
     "lastNightDate", "lastBedtime", "lastWake", "lastDuration", "lastMood",
     "averageSleepStat", "sleepScoreStat", "sleepHint", "sleepChart", "sleepList",
     "sugarForm", "sugarNameInput", "sugarGramsInput", "sugarAddButton", "sugarList",
     "sugarNameError", "sugarGramsError",
     "sugarTotal", "sugarStatus", "sugarLimitLabel", "sugarProgressFill", "sugarOverFlag",
     "sugarChart", "sugarHistoryHint", "sugarHistoryList", "sugarLogCard", "sugarAverageStat", "sugarOverStat",
-    "sugarStreakMessage", "sugarCurrentStreak", "sugarLongestStreak", "sugarStreakCaption", "dailyChecklistList", "dailyChecklistCount",
-    "arcadeCoins", "arcadeCoinBreakdown", "arcadeBoost", "arcadeBoostButton", "reactionStartButton", "reactionPad", "reactionBest",
-    "reactionHistory", "memoryStartButton", "memoryStatus", "memoryGrid", "goalReminderInput", "composeDialog", "composeForm",
-    "composeTitle", "editingItemIdInput", "toggleAdvancedButton", "advancedFields", "itemTitleInput", "itemKindInput",
-    "itemDateInput", "itemCategoryInput", "itemPriorityInput", "itemNotesInput", "itemStartTimeInput", "itemEndTimeInput",
-    "itemRepeatInput", "repeatDays", "sleepDialog", "sleepForm", "sleepDateInput", "sleptAtInput", "wokeAtInput",
+    "sugarStreakMessage", "sugarCurrentStreak", "sugarLongestStreak", "sugarStreakCaption",
+    "sleepDialog", "sleepForm", "sleepDateInput", "sleptAtInput", "wokeAtInput",
     "sleepError", "sleepMoodDialog", "settingsDialog", "settingsForm",
     "financeView", "brandHomeButton", "sidebarSubtitle", "syncButton", "syncStatus", "syncBanner", "syncBannerText", "displayNameInput",
-    "plannerSubtitleInput", "focusGoalInput", "pushupGoalInput", "trackGoalInput", "supabaseUrlInput", "supabaseAnonInput",
-    "ownerKeyInput", "copyPairingLinkButton", "calendarUrlInput", "darkModeInput", "resetDataButton", "clearImportedButton", "openSettingsButton",
-    "gcalMark", "gcalStatus", "gcalNote", "gcalConnectButton", "gcalRefreshButton", "gcalDisconnectButton",
-    "icalUrlInput", "icalSaveButton", "icalRefreshButton", "icalServerNote",
+    "plannerSubtitleInput", "focusGoalInput", "pushupGoalInput", "trackGoalInput",
+    "ownerKeyInput", "copyPairingLinkButton", "darkModeInput", "resetDataButton", "openSettingsButton",
   ].forEach((id) => {
     els[id] = document.getElementById(id);
   });
@@ -1006,13 +772,15 @@ function bindElements() {
 
 function wireEvents() {
   document.querySelectorAll("[data-view]").forEach((button) => button.addEventListener("click", () => setView(button.dataset.view)));
-  document.querySelectorAll("[data-open-compose]").forEach((button) => button.addEventListener("click", () => openCompose(button.dataset.openCompose)));
-  document.querySelectorAll("[data-toggle-secret]").forEach((button) => button.addEventListener("click", () => toggleSecret(button)));
-  document.getElementById("closeComposeButton").addEventListener("click", () => els.composeDialog.close());
   document.getElementById("closeSleepButton").addEventListener("click", () => els.sleepDialog.close());
   document.getElementById("closeSettingsButton").addEventListener("click", () => els.settingsDialog.close());
-  document.getElementById("prevMonthButton").addEventListener("click", () => moveCalendar(-1));
-  document.getElementById("nextMonthButton").addEventListener("click", () => moveCalendar(1));
+  els.themeToggleButton?.addEventListener("click", () => {
+    settings.darkMode = !settings.darkMode;
+    saveJson(SETTINGS_KEY, settings);
+    applySettings();
+    void upsertAppState();
+  });
+  initSwipeNavigation();
   els.brandHomeButton.addEventListener("click", () => setView("home"));
   const heroAvatar = document.getElementById("heroAvatar");
   const avatarFileInput = document.getElementById("avatarFileInput");
@@ -1030,23 +798,12 @@ function wireEvents() {
     avatarFileInput.value = "";
   });
   els.nextQuoteButton.addEventListener("click", nextQuote);
-  els.coachButton.addEventListener("click", () => renderCoach(true));
   els.addTrackSessionButton?.addEventListener("click", () => logFitness({ track_session: true }));
   els.addPushupsButton?.addEventListener("click", () => logFitness({ pushups: 10 }));
   els.workoutList?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-workout-add]");
     if (!button) return;
     logFitness({ [button.dataset.workoutAdd]: Number(button.dataset.workoutStep) });
-  });
-  els.simonStart?.addEventListener("click", startSimon);
-  els.simonGrid?.addEventListener("click", (event) => {
-    const pad = event.target.closest("[data-simon]");
-    if (pad) tapSimon(Number(pad.dataset.simon));
-  });
-  els.mathStart?.addEventListener("click", startMathSprint);
-  els.mathAnswers?.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-math-answer]");
-    if (button) answerMath(Number(button.dataset.mathAnswer));
   });
   els.goalsList.addEventListener("click", (event) => {
     const button = event.target.closest("[data-goal]");
@@ -1072,10 +829,6 @@ function wireEvents() {
     if (button) toggleRSentence(button.dataset.rId);
   });
   els.rNextSet?.addEventListener("click", nextRSet);
-  els.dailyChecklistList?.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-checklist-item]");
-    if (button) toggleDailyChecklist(button.dataset.checklistItem);
-  });
   els.speakTopicSelect?.addEventListener("change", () => selectLibraryTopic(Number(els.speakTopicSelect.value)));
   els.speakModeTabs?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-speak-mode]");
@@ -1186,18 +939,6 @@ function wireEvents() {
     });
     renderLaws();
   });
-  els.sprintPad.addEventListener("click", tapSprint);
-  els.stopClockPad.addEventListener("click", tapStopClock);
-  els.numberRushStart.addEventListener("click", startNumberRush);
-  els.numberRushGrid.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-rush]");
-    if (button) tapNumberRush(Number(button.dataset.rush));
-  });
-  els.targetStart.addEventListener("click", startTargetGame);
-  els.targetGrid.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-target]");
-    if (button) tapTarget(Number(button.dataset.target));
-  });
   document.querySelectorAll(".memory-card").forEach((card) => card.addEventListener("click", (event) => {
     if (!event.target.matches("textarea")) card.classList.toggle("expanded");
   }));
@@ -1215,14 +956,6 @@ function wireEvents() {
     renderDukeProgress();
     void upsertAppState();
   });
-  els.todayButton.addEventListener("click", goToToday);
-  els.calendarViewToggle.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-calendar-view]");
-    if (!button) return;
-    state.calendarView = button.dataset.calendarView;
-    persist();
-    renderCalendar();
-  });
   const sleepRangeToggle = document.getElementById("sleepRangeToggle");
   sleepRangeToggle?.addEventListener("click", (event) => {
     const button = event.target.closest("[data-sleep-range]");
@@ -1236,28 +969,7 @@ function wireEvents() {
     els.sleepGoalInput.value = settings.sleepGoalHours;
     saveJson(SETTINGS_KEY, settings);
     renderSleep();
-    renderStats();
     void upsertAppState();
-  });
-  els.arcadeBoostButton.addEventListener("click", completeDailyBoost);
-  els.reactionStartButton.addEventListener("click", startReaction);
-  els.reactionPad.addEventListener("click", tapReaction);
-  els.memoryStartButton.addEventListener("click", startMemoryGame);
-  els.goalReminderInput.addEventListener("input", () => {
-    state.goalReminder = els.goalReminderInput.value;
-    persist();
-    void upsertAppState();
-  });
-  els.toggleAdvancedButton.addEventListener("click", () => setAdvancedFields(els.advancedFields.hidden));
-  els.itemKindInput.addEventListener("change", updateCalendarFields);
-  els.itemRepeatInput.addEventListener("change", renderRepeatDays);
-  els.repeatDays.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-repeat-day]");
-    if (button) button.classList.toggle("active");
-  });
-  els.composeForm.addEventListener("submit", (event) => {
-    event.preventDefault();
-    saveItemFromForm();
   });
   els.sleepForm.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -1271,41 +983,28 @@ function wireEvents() {
     saveSettings();
   });
   els.resetDataButton.addEventListener("click", resetAllData);
-  els.clearImportedButton?.addEventListener("click", clearImportedSchedule);
   // The settings dialog had no way in at all after the nav button was removed,
   // which stranded the owner key, Supabase config and iCal URL.
   els.openSettingsButton?.addEventListener("click", () => {
     hydrateSettingsForm();
     els.settingsDialog.showModal();
   });
-  els.gcalConnectButton?.addEventListener("click", () => void syncGoogleCalendar({ interactive: true }));
-  els.gcalRefreshButton?.addEventListener("click", () => void syncGoogleCalendar());
-  els.gcalDisconnectButton?.addEventListener("click", disconnectGoogle);
-  els.icalSaveButton?.addEventListener("click", saveIcalUrl);
-  els.icalRefreshButton?.addEventListener("click", () => void refreshIcalFeed());
-  els.icalUrlInput?.addEventListener("keydown", (event) => {
-    if (event.key === "Enter") { event.preventDefault(); saveIcalUrl(); }
-  });
 
-  // Refresh when the user comes back to the tab, so switching from the Google
-  // Calendar app back to Life Flow shows the change straight away.
+  // Refresh when the user comes back to the tab so other devices' changes show up.
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState !== "visible") return;
-    if (canSync()) void syncAll({ includeCalendar: false });
-    if (!settings.googleConnected) return;
-    if (Date.now() - gcalLastSync < 60_000) return;
-    void syncGoogleCalendar();
+    if (canSync()) void syncAll();
   });
 
   window.addEventListener("online", () => {
-    if (canSync()) void syncAll({ includeCalendar: false });
+    if (canSync()) void syncAll();
   });
   cloudRefreshTimer = window.setInterval(() => {
-    if (document.visibilityState === "visible" && canSync()) void syncAll({ includeCalendar: false });
+    if (document.visibilityState === "visible" && canSync()) void syncAll();
   }, CLOUD_REFRESH_MS);
 
   // Escape closes dialogs natively; make the backdrop click do the same.
-  [els.composeDialog, els.sleepDialog, els.settingsDialog].forEach((dialog) => {
+  [els.sleepDialog, els.settingsDialog].forEach((dialog) => {
     dialog?.addEventListener("click", (event) => {
       if (event.target === dialog) dialog.close();
     });
@@ -1314,18 +1013,12 @@ function wireEvents() {
 
 function render() {
   renderHome();
-  renderDailyChecklist();
-  renderStats();
-  renderUpcomingToday();
-  renderCoach();
   renderWorkout();
   renderGoals();
   renderSpeak();
   renderMemoryNotes();
-  renderCalendar();
   renderSleep();
   renderSugar();
-  renderArcade();
   renderLawOfDay();
   renderMotivationVideos();
   refreshIcons();
@@ -1471,43 +1164,6 @@ function renderHome() {
   applyAvatar();
 }
 
-function normalizeDailyChecklist() {
-  if (!state.dailyChecklist || state.dailyChecklist.date !== todayKey()) {
-    state.dailyChecklist = { date: todayKey(), completed: {} };
-    persist();
-  }
-  state.dailyChecklist.completed ||= {};
-  return state.dailyChecklist;
-}
-
-function renderDailyChecklist() {
-  if (!els.dailyChecklistList) return;
-  const checklist = normalizeDailyChecklist();
-  const doneCount = DAILY_CHECKLIST_ITEMS.filter((item) => checklist.completed[item.id]).length;
-  els.dailyChecklistCount.textContent = `${doneCount} of ${DAILY_CHECKLIST_ITEMS.length} done`;
-  els.dailyChecklistList.innerHTML = DAILY_CHECKLIST_ITEMS.map((item) => {
-    const done = Boolean(checklist.completed[item.id]);
-    return `<button type="button" class="daily-checklist-item ${done ? "done" : ""}" data-checklist-item="${item.id}" aria-pressed="${done}"><span class="daily-checklist-check" aria-hidden="true"><i data-lucide="${done ? "check" : "circle"}"></i></span><span class="daily-checklist-label">${escapeHtml(item.label)}</span>${done ? '<span class="checklist-done-badge">Done for today</span>' : ""}</button>`;
-  }).join("");
-  refreshIcons();
-}
-
-function toggleDailyChecklist(itemId) {
-  if (!DAILY_CHECKLIST_ITEMS.some((item) => item.id === itemId)) return;
-  const checklist = normalizeDailyChecklist();
-  checklist.completed[itemId] = !checklist.completed[itemId];
-  if (!checklist.completed[itemId]) delete checklist.completed[itemId];
-  persist();
-  renderDailyChecklist();
-  void upsertSupabase("daily_checklist", {
-    user_id: settings.ownerKey,
-    item_id: itemId,
-    date: checklist.date,
-    completed: Boolean(checklist.completed[itemId]),
-    updated_at: new Date().toISOString(),
-  }, "user_id,item_id,date");
-}
-
 function applyAvatar() {
   const avatar = document.getElementById("heroAvatar");
   if (!avatar) return;
@@ -1528,113 +1184,6 @@ function applyAvatar() {
 function nextQuote() {
   const current = quotePool.indexOf(els.quoteText.textContent);
   els.quoteText.textContent = quotePool[(current + 1) % quotePool.length];
-}
-
-function renderCoach(advance = false) {
-  if (coachCursor === null) coachCursor = dailyIndex(coachTips.length);
-  if (advance) coachCursor = (coachCursor + 1) % coachTips.length;
-  const index = coachCursor % coachTips.length;
-  els.coachText.textContent = coachTips[index];
-  if (els.coachBadge) els.coachBadge.textContent = `${index + 1} / ${coachTips.length}`;
-  if (els.coachDots) {
-    const count = Math.min(7, coachTips.length);
-    els.coachDots.innerHTML = Array.from({ length: count }, (_, i) => `<span class="${i === index % count ? "active" : ""}"></span>`).join("");
-  }
-}
-
-function renderStats() {
-  const stats = calculateStats(state.items, state.focusSessions, todayKey(), state.sleepEntries, state.rewards, settings.sleepGoalHours * 60);
-  const fitness = summarizeFitnessWeek(state.fitnessLog, todayKey());
-  if (els.doneTodayStat) els.doneTodayStat.textContent = String(stats.doneToday);
-  if (els.openTasksStat) els.openTasksStat.textContent = String(stats.openTasks);
-  if (els.streakStat) els.streakStat.textContent = stats.streakDays ? `${stats.streakDays}d` : "\u2014";
-  if (els.coinsStat) els.coinsStat.textContent = String(stats.coins);
-  if (els.heroCoins) els.heroCoins.textContent = String(stats.coins);
-  if (els.trackWeekStat) els.trackWeekStat.textContent = `${fitness.trackSessions} / ${settings.trackGoal}`;
-  if (els.pushupsWeekStat) els.pushupsWeekStat.textContent = `${fitness.pushups} / ${settings.pushupGoal}`;
-  renderDailyProgress();
-}
-
-function renderDailyProgress() {
-  // Today's plan = the day's calendar events plus any dated tasks. It used to
-  // count only `daily_task` items, but nothing in the UI creates those since
-  // the Tasks page was removed, so the ring sat at 0% forever.
-  const key = todayKey();
-  const todaysEvents = eventsForDate(state.items, key);
-  const todaysTasks = state.items.filter((item) => item.kind === "daily_task" && item.due_date === key);
-  const done = todaysEvents.filter((event) => (event.completed_dates || []).includes(key)).length
-    + todaysTasks.filter((item) => item.completed).length;
-  const total = todaysEvents.length + todaysTasks.length;
-  const percent = total ? Math.round((done / total) * 100) : 0;
-  if (els.heroProgressPercent) els.heroProgressPercent.textContent = `${percent}%`;
-  if (els.heroRingFill) {
-    const circumference = 2 * Math.PI * 31;
-    els.heroRingFill.style.strokeDasharray = String(circumference);
-    els.heroRingFill.style.strokeDashoffset = String(circumference * (1 - percent / 100));
-    els.heroRingFill.classList.toggle("is-complete", total > 0 && done === total);
-  }
-
-}
-
-/**
- * Ripple + check pop when something is marked done.
- * Uses the Web Animations API rather than a CSS class so the element can be
- * re-rendered underneath us without leaving a stuck animation behind.
- */
-function celebrateDone(trigger) {
-  if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  trigger.animate(
-    [
-      { transform: "scale(1)" },
-      { transform: "scale(1.35)", offset: 0.35 },
-      { transform: "scale(1)" },
-    ],
-    { duration: 420, easing: "cubic-bezier(0.16, 1, 0.3, 1)" },
-  );
-  const ripple = document.createElement("span");
-  ripple.className = "done-ripple";
-  trigger.appendChild(ripple);
-  ripple.animate(
-    [
-      { transform: "scale(0.2)", opacity: 0.7 },
-      { transform: "scale(2.4)", opacity: 0 },
-    ],
-    { duration: 520, easing: "cubic-bezier(0.16, 1, 0.3, 1)" },
-  ).finished.finally(() => ripple.remove());
-}
-
-/**
- * Drop the schedule that was transcribed into the source from Aran's calendar
- * PDF. Once Google is connected those rows are redundant duplicates.
- */
-function clearImportedSchedule() {
-  const imported = state.items.filter((item) => item.kind === "calendar_event" && item.source === "import");
-  if (!imported.length) {
-    window.alert("There are no pre-loaded events left to remove.");
-    return;
-  }
-  if (!window.confirm(`Remove ${imported.length} pre-loaded event${imported.length === 1 ? "" : "s"}? Events from Google and ones you added yourself are kept.`)) return;
-  state.deletedIds = [...new Set([...state.deletedIds, ...imported.map((item) => item.id)])].slice(-300);
-  state.items = state.items.filter((item) => !(item.kind === "calendar_event" && item.source === "import"));
-  persist();
-  render();
-  void Promise.all(imported.map((item) => deleteSupabaseItem(item.id).catch(() => {})));
-  void upsertAppState();
-}
-
-function renderUpcomingToday() {
-  const events = eventsForDate(state.items, todayKey()).sort(sortByTime).slice(0, 6);
-  els.upcomingTodayList.innerHTML = events.length
-    ? events.map((event) => {
-        const start = event.start_time ? clock(event.start_time) : "All day";
-        return `<article class="upcoming-item" style="--accent:${colorFor(event.category)}">
-          <span class="upcoming-icon"><i data-lucide="${iconForCategory(event.category)}"></i></span>
-          <span class="upcoming-time">${start}</span>
-          <strong class="upcoming-name">${escapeHtml(event.title)}</strong>
-          <span class="upcoming-range"><i></i>${formatEventTime(event)}</span>
-        </article>`;
-      }).join("")
-    : '<p class="empty-inline">No events today - free day.</p>';
 }
 
 function renderDukeProgress() {
@@ -1686,10 +1235,12 @@ function renderGoals() {
   if (!els.goalsList) return;
   let total = 0;
   let done = 0;
+  const categories = [];
   els.goalsList.innerHTML = goalGroups.map((group) => {
     const groupDone = group.goals.filter((_, i) => state.goalDone[`${group.key}-${i}`]).length;
     total += group.goals.length;
     done += groupDone;
+    categories.push({ group, groupDone });
     const items = group.goals.map((text, i) => {
       const id = `${group.key}-${i}`;
       const checked = Boolean(state.goalDone[id]);
@@ -1699,8 +1250,36 @@ function renderGoals() {
       <div class="goal-group-head"><span class="goal-group-icon"><i data-lucide="${group.icon}"></i></span><b>${group.title}</b><small>${groupDone}/${group.goals.length}</small></div>
       <div class="goal-items">${items}</div></div>`;
   }).join("");
+  const percent = total ? Math.round((done / total) * 100) : 0;
   if (els.goalsProgress) els.goalsProgress.textContent = `${done} / ${total} done`;
+  if (els.goalsSummary) {
+    const rows = categories.map(({ group, groupDone }) => {
+      const pct = group.goals.length ? Math.round((groupDone / group.goals.length) * 100) : 0;
+      return `<li style="--accent:${group.accent}">
+        <span class="goal-group-icon"><i data-lucide="${group.icon}"></i></span>
+        <div class="goals-row-body"><div class="goals-row-top"><b>${group.title}</b><span>${groupDone}/${group.goals.length} &middot; <strong>${pct}%</strong></span></div>
+        <div class="goals-bar" role="progressbar" aria-label="${group.title}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct}"><i style="width:${pct}%"></i></div></div>
+      </li>`;
+    }).join("");
+    els.goalsSummary.innerHTML = `<div class="goals-overall">
+      <div class="goals-overall-top"><strong>${percent}%</strong><span>of your 2026 goals done<small>${done} of ${total} goals</small></span></div>
+      <div class="goals-bar goals-bar-lg" role="progressbar" aria-label="All goals" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${percent}"><i style="width:${percent}%"></i></div>
+    </div><ul class="goals-breakdown">${rows}</ul>`;
+  }
+  renderHeroProgress(percent, total > 0 && done === total);
   refreshIcons();
+}
+
+// The ring on Home mirrors overall goal completion now that the daily
+// checklist and calendar it used to count are gone.
+function renderHeroProgress(percent, complete) {
+  if (els.heroProgressPercent) els.heroProgressPercent.textContent = `${percent}%`;
+  if (els.heroRingFill) {
+    const circumference = 2 * Math.PI * 31;
+    els.heroRingFill.style.strokeDasharray = String(circumference);
+    els.heroRingFill.style.strokeDashoffset = String(circumference * (1 - percent / 100));
+    els.heroRingFill.classList.toggle("is-complete", complete);
+  }
 }
 
 function hydratePurposeOptions() {
@@ -2201,100 +1780,6 @@ function renderMemoryNotes() {
   });
 }
 
-function renderCalendar() {
-  const cursor = new Date(`${state.monthCursor}T00:00:00`);
-  if (state.calendarView === "week") {
-    const start = startOfWeek(state.selectedDate);
-    const end = addDays(start, 6);
-    const fmt = (key) => new Date(`${key}T00:00:00`).toLocaleDateString("en", { month: "short", day: "numeric" });
-    els.monthLabel.textContent = `${fmt(start)} - ${fmt(end)}`;
-  } else {
-    els.monthLabel.textContent = cursor.toLocaleDateString("en", { month: "long", year: "numeric" });
-  }
-  els.calendarViewToggle.querySelectorAll("button").forEach((button) => button.classList.toggle("active", button.dataset.calendarView === state.calendarView));
-  els.calendarViewToggle.querySelectorAll("button").forEach((button) =>
-    button.setAttribute("aria-selected", String(button.dataset.calendarView === state.calendarView)));
-  els.monthCalendar.hidden = state.calendarView !== "month";
-  els.weekGrid.hidden = state.calendarView !== "week";
-  if (state.calendarView === "month") renderMonth(cursor);
-  else renderWeek();
-  renderAgenda();
-  renderGcalCard();
-}
-
-function renderMonth(cursor) {
-  els.calendarGrid.innerHTML = buildMonthDays(cursor.getFullYear(), cursor.getMonth()).map((day, index) => {
-    const events = eventsForDate(state.items, day.key);
-    const dots = events.slice(0, 3).map((event) => `<i style="background:${colorFor(event.category)}"></i>`).join("");
-    const label = `${new Date(`${day.key}T00:00:00`).toLocaleDateString("en", { weekday: "long", month: "long", day: "numeric" })}, ${events.length} event${events.length === 1 ? "" : "s"}`;
-    return `<button class="calendar-day ${!day.isCurrentMonth ? "outside" : ""} ${day.key === todayKey() ? "today" : ""} ${day.key === state.selectedDate ? "selected" : ""}" data-date="${day.key}" type="button" role="gridcell" aria-label="${label}" aria-selected="${day.key === state.selectedDate}" style="--row:${Math.floor(index / 7)}"><span>${day.dayNumber}</span><b class="dots">${dots}</b></button>`;
-  }).join("");
-  els.calendarGrid.querySelectorAll("[data-date]").forEach((button) => button.addEventListener("click", () => selectDate(button.dataset.date)));
-  applySlide(els.calendarGrid);
-}
-
-// Replay the directional slide once, then clear it so an unrelated re-render
-// (a Google sync landing, say) does not animate the grid again.
-let calendarSlide = "";
-function applySlide(container) {
-  if (!container || !calendarSlide) return;
-  container.classList.remove("slide-next", "slide-prev");
-  void container.offsetWidth;
-  container.classList.add(calendarSlide);
-  calendarSlide = "";
-}
-
-function renderWeek() {
-  const start = startOfWeek(state.selectedDate);
-  const days = Array.from({ length: 7 }, (_, index) => addDays(start, index));
-  const weekCount = days.reduce((sum, date) => sum + eventsForDate(state.items, date).length, 0);
-  els.weekGrid.innerHTML = `<div class="week-head">${days.map((date) => `<button data-date="${date}" class="${date === todayKey() ? "today" : ""}">${new Date(`${date}T00:00:00`).toLocaleDateString("en", { weekday: "short", day: "numeric" })}</button>`).join("")}</div>
-    <div class="week-columns">${days.map((date) => `<div>${eventsForDate(state.items, date).map((event) => `<article class="week-event" style="--accent:${colorFor(event.category)}"><small>${formatEventTime(event)}</small>${escapeHtml(event.title)}</article>`).join("") || '<span class="week-empty"></span>'}</div>`).join("")}</div>
-    <p class="week-range">${weekCount} event${weekCount === 1 ? "" : "s"} this week</p>`;
-  els.weekGrid.querySelectorAll("[data-date]").forEach((button) => button.addEventListener("click", () => selectDate(button.dataset.date)));
-  applySlide(els.weekGrid);
-}
-
-function renderAgenda() {
-  const events = eventsForDate(state.items, state.selectedDate).sort(sortByTime);
-  const selected = new Date(`${state.selectedDate}T00:00:00`);
-  els.agendaTitle.textContent = state.selectedDate === todayKey() ? `Today - ${prettyDate(state.selectedDate)}` : formatDisplayDate(selected);
-  els.agendaList.innerHTML = events.length ? events.map((event, index) => {
-    const done = (event.completed_dates || []).includes(state.selectedDate);
-    const fromGoogle = event.source === "google";
-    // Location gets its own line with a pin so it reads the way Google shows it.
-    const location = event.location ? `<span class="agenda-location"><i data-lucide="map-pin"></i>${escapeHtml(event.location)}</span>` : "";
-    const description = descriptionOf(event);
-    return `<article class="agenda-item ${done ? "completed" : ""}" style="--accent:${colorFor(event.category)};--i:${index}">
-      <div class="agenda-body">
-        <strong>${escapeHtml(event.title)}</strong>
-        <span class="agenda-meta">${formatEventTime(event)} &middot; ${escapeHtml(event.google_calendar_name || event.category)}${fromGoogle ? '<em class="agenda-src">Google</em>' : ""}</span>
-        ${location}
-        ${description ? `<p>${escapeHtml(description)}</p>` : ""}
-      </div>
-      <button class="icon-button agenda-done" data-done-event="${event.id}" title="${done ? "Mark not done" : "Mark done"}" aria-label="${done ? "Mark not done" : "Mark done"}: ${escapeHtml(event.title)}" aria-pressed="${done}"><i data-lucide="check"></i></button>
-      <button class="icon-button agenda-delete" data-delete-event="${event.id}" title="Delete" aria-label="Delete ${escapeHtml(event.title)}"><i data-lucide="trash-2"></i></button>
-    </article>`;
-  }).join("") : '<article class="empty-inline">Nothing scheduled for this day.</article>';
-  els.agendaList.querySelectorAll("[data-done-event]").forEach((button) => button.addEventListener("click", () => toggleEventDone(button.dataset.doneEvent, state.selectedDate)));
-  els.agendaList.querySelectorAll("[data-delete-event]").forEach((button) => button.addEventListener("click", () => deleteItem(button.dataset.deleteEvent)));
-  refreshIcons();
-}
-
-// Notes hold "location\ndescription"; the location is rendered separately, so
-// strip it here to avoid printing the same string twice.
-function descriptionOf(event) {
-  const notes = String(event.notes || "");
-  if (!event.location) return notes;
-  return notes.startsWith(event.location) ? notes.slice(event.location.length).trim() : notes;
-}
-
-function selectDate(date) {
-  state.selectedDate = date;
-  state.monthCursor = `${date.slice(0, 7)}-01`;
-  persist();
-  renderCalendar();
-}
 
 function renderSleep() {
   const goalMinutes = settings.sleepGoalHours * 60;
@@ -2403,271 +1888,18 @@ function renderSleepGraph(points, goalMinutes) {
   graph.addEventListener("pointermove", (event) => { if (event.buttons || event.pointerType === "mouse") showAt(event.clientX); });
   graph.addEventListener("pointerleave", hide);
 }
-function renderArcade() {
-  const coins = calculateCoinBreakdown(state.items, state.focusSessions, state.sleepEntries, state.rewards, settings.sleepGoalHours * 60);
-  els.arcadeCoins.textContent = String(coins.total);
-  els.arcadeCoinBreakdown.textContent = `Earned from tasks: ${coins.tasks} | Earned from focus sessions: ${coins.focus}`;
-  const boost = boostPool[dailyIndex(boostPool.length)];
-  const completed = state.rewards.some((reward) => reward.type === "daily_boost" && reward.date === todayKey());
-  els.arcadeBoost.textContent = completed ? `${boost} Completed today.` : boost;
-  els.arcadeBoostButton.disabled = completed;
-  els.arcadeBoostButton.textContent = completed ? "Completed +20" : "Complete boost +20";
-  els.goalReminderInput.value = state.goalReminder;
-  renderReaction();
-  renderMemory();
-  renderGames();
-}
-
-function renderGames() {
-  const best = state.gameBests || {};
-  els.sprintBest.textContent = best.sprint ? String(best.sprint) : "—";
-  els.stopClockBest.textContent = best.stopClock != null ? `${Number(best.stopClock).toFixed(2)}s` : "—";
-  els.numberRushBest.textContent = best.numberRush != null ? `${Number(best.numberRush).toFixed(2)}s` : "—";
-  els.targetBest.textContent = best.target ? String(best.target) : "—";
-  if (els.simonBest) els.simonBest.textContent = best.simon ? String(best.simon) : "—";
-  if (els.mathBest) els.mathBest.textContent = best.math ? String(best.math) : "—";
-  if (!sprintGame.active) { els.sprintPad.className = "reaction-pad"; els.sprintPad.textContent = "Tap to start"; }
-  if (!stopClock.running) { els.stopClockPad.className = "reaction-pad"; els.stopClockPad.textContent = "Start clock"; }
-  if (!numberRush.active) els.numberRushGrid.innerHTML = "";
-  if (!targetGame.active) els.targetGrid.innerHTML = "";
-}
 
 /* ---- Simon Says (pattern memory) ---- */
-function startSimon() {
-  simonGame = { sequence: [Math.floor(Math.random() * 4)], inputIndex: 0, playing: false, awaitingInput: false };
-  els.simonStatus.textContent = "Watch the pattern...";
-  playSimonSequence();
-}
-async function playSimonSequence() {
-  simonGame.playing = true;
-  simonGame.awaitingInput = false;
-  els.simonGrid.classList.add("locked");
-  await new Promise((resolve) => setTimeout(resolve, 450));
-  for (const pad of simonGame.sequence) {
-    flashSimonPad(pad);
-    await new Promise((resolve) => setTimeout(resolve, 560));
-  }
-  simonGame.playing = false;
-  simonGame.awaitingInput = true;
-  simonGame.inputIndex = 0;
-  els.simonGrid.classList.remove("locked");
-  els.simonStatus.textContent = `Your turn — repeat ${simonGame.sequence.length} ${simonGame.sequence.length === 1 ? "tap" : "taps"}.`;
-}
-function flashSimonPad(index) {
-  const pad = els.simonGrid.querySelector(`[data-simon="${index}"]`);
-  if (!pad) return;
-  pad.classList.add("lit");
-  window.setTimeout(() => pad.classList.remove("lit"), 340);
-}
-function tapSimon(index) {
-  if (!simonGame.awaitingInput || simonGame.playing) return;
-  flashSimonPad(index);
-  if (index !== simonGame.sequence[simonGame.inputIndex]) {
-    const streak = simonGame.sequence.length - 1;
-    simonGame.awaitingInput = false;
-    els.simonStatus.textContent = `Wrong pad! You reached a streak of ${streak}.`;
-    state.gameBests.simon = Math.max(Number(state.gameBests.simon || 0), streak);
-    els.simonBest.textContent = state.gameBests.simon ? String(state.gameBests.simon) : "—";
-    persist();
-    void upsertAppState();
-    return;
-  }
-  simonGame.inputIndex += 1;
-  if (simonGame.inputIndex < simonGame.sequence.length) return;
-  const streak = simonGame.sequence.length;
-  state.gameBests.simon = Math.max(Number(state.gameBests.simon || 0), streak);
-  els.simonBest.textContent = String(state.gameBests.simon);
-  els.simonStatus.textContent = `Streak ${streak}! Next round...`;
-  simonGame.sequence.push(Math.floor(Math.random() * 4));
-  persist();
-  void upsertAppState();
-  window.setTimeout(playSimonSequence, 750);
-}
 
 /* ---- Math Sprint (30s quick arithmetic) ---- */
-function startMathSprint() {
-  if (mathGame.timeoutId) clearTimeout(mathGame.timeoutId);
-  if (mathGame.intervalId) clearInterval(mathGame.intervalId);
-  mathGame = { active: true, score: 0, answer: 0, timeoutId: null, intervalId: null, secondsLeft: 30 };
-  els.mathStatus.textContent = "Score: 0 · 30s left";
-  mathGame.intervalId = window.setInterval(() => {
-    mathGame.secondsLeft -= 1;
-    if (mathGame.secondsLeft > 0) els.mathStatus.textContent = `Score: ${mathGame.score} · ${mathGame.secondsLeft}s left`;
-  }, 1000);
-  mathGame.timeoutId = window.setTimeout(endMathSprint, 30000);
-  nextMathQuestion();
-}
-function nextMathQuestion() {
-  const kind = Math.floor(Math.random() * 3);
-  let a;
-  let b;
-  let text;
-  if (kind === 0) { a = 7 + Math.floor(Math.random() * 43); b = 6 + Math.floor(Math.random() * 38); mathGame.answer = a + b; text = `${a} + ${b}`; }
-  else if (kind === 1) { a = 25 + Math.floor(Math.random() * 60); b = 4 + Math.floor(Math.random() * 21); mathGame.answer = a - b; text = `${a} − ${b}`; }
-  else { a = 3 + Math.floor(Math.random() * 10); b = 3 + Math.floor(Math.random() * 9); mathGame.answer = a * b; text = `${a} × ${b}`; }
-  els.mathQuestion.textContent = `${text} = ?`;
-  const options = new Set([mathGame.answer]);
-  while (options.size < 4) {
-    const offset = Math.ceil(Math.random() * 9) * (Math.random() < 0.5 ? -1 : 1);
-    if (mathGame.answer + offset > 0) options.add(mathGame.answer + offset);
-  }
-  els.mathAnswers.innerHTML = shuffle([...options]).map((value) => `<button type="button" class="math-answer" data-math-answer="${value}">${value}</button>`).join("");
-}
-function answerMath(value) {
-  if (!mathGame.active) return;
-  if (value === mathGame.answer) {
-    mathGame.score += 1;
-    els.mathStatus.textContent = `Score: ${mathGame.score} · ${mathGame.secondsLeft}s left`;
-    nextMathQuestion();
-  } else {
-    els.mathQuestion.classList.add("shake");
-    window.setTimeout(() => els.mathQuestion.classList.remove("shake"), 350);
-  }
-}
-function endMathSprint() {
-  mathGame.active = false;
-  if (mathGame.intervalId) clearInterval(mathGame.intervalId);
-  els.mathQuestion.textContent = `Time! Final score: ${mathGame.score}`;
-  els.mathAnswers.innerHTML = "";
-  state.gameBests.math = Math.max(Number(state.gameBests.math || 0), mathGame.score);
-  els.mathStatus.textContent = `You solved ${mathGame.score} in 30 seconds.`;
-  els.mathBest.textContent = state.gameBests.math ? String(state.gameBests.math) : "—";
-  persist();
-  void upsertAppState();
-}
 
 /* ---- Sprint Tap (track speed) ---- */
-function tapSprint() {
-  if (!sprintGame.active) {
-    sprintGame = { active: true, count: 0, timeoutId: window.setTimeout(endSprint, 5000) };
-    els.sprintPad.className = "reaction-pad go";
-    els.sprintPad.textContent = "TAP! 0";
-    els.sprintStatus.textContent = "GO! Tap as fast as you can!";
-    return;
-  }
-  sprintGame.count += 1;
-  els.sprintPad.textContent = `TAP! ${sprintGame.count}`;
-}
-function endSprint() {
-  const count = sprintGame.count;
-  sprintGame.active = false;
-  els.sprintPad.className = "reaction-pad result";
-  els.sprintPad.textContent = `${count} taps`;
-  state.gameBests.sprint = Math.max(Number(state.gameBests.sprint || 0), count);
-  els.sprintBest.textContent = String(state.gameBests.sprint);
-  els.sprintStatus.textContent = `${count} taps in 5s. Tap to go again.`;
-  persist();
-  void upsertAppState();
-}
 
 /* ---- Stop the Clock (precision / start timing) ---- */
-function tapStopClock() {
-  if (!stopClock.running) {
-    stopClock = { running: true, startAt: performance.now(), rafId: null };
-    els.stopClockPad.className = "reaction-pad waiting";
-    els.stopClockStatus.textContent = "Tap again to stop at 5.00s!";
-    const tick = () => {
-      if (!stopClock.running) return;
-      els.stopClockPad.textContent = `${((performance.now() - stopClock.startAt) / 1000).toFixed(2)}s`;
-      stopClock.rafId = requestAnimationFrame(tick);
-    };
-    tick();
-    return;
-  }
-  stopClock.running = false;
-  if (stopClock.rafId) cancelAnimationFrame(stopClock.rafId);
-  const seconds = (performance.now() - stopClock.startAt) / 1000;
-  const gap = Math.abs(seconds - 5);
-  els.stopClockPad.className = "reaction-pad result";
-  els.stopClockPad.textContent = `${seconds.toFixed(2)}s`;
-  els.stopClockStatus.textContent = `Off by ${gap.toFixed(2)}s. Tap to try again.`;
-  const prev = state.gameBests.stopClock;
-  if (prev == null || gap < prev) state.gameBests.stopClock = gap;
-  els.stopClockBest.textContent = `${Number(state.gameBests.stopClock).toFixed(2)}s`;
-  persist();
-  void upsertAppState();
-}
 
 /* ---- Number Rush ---- */
-function startNumberRush() {
-  numberRush = { order: shuffle(Array.from({ length: 9 }, (_, i) => i + 1)), next: 1, startAt: performance.now(), active: true };
-  els.numberRushStatus.textContent = "Tap 1 to start the clock!";
-  renderNumberRush();
-}
-function renderNumberRush() {
-  els.numberRushGrid.innerHTML = numberRush.order.map((n) => `<button type="button" data-rush="${n}" class="rush-cell ${n < numberRush.next ? "done" : ""}" ${n < numberRush.next ? "disabled" : ""}>${n < numberRush.next ? "" : n}</button>`).join("");
-}
-function tapNumberRush(n) {
-  if (!numberRush.active) return;
-  if (n !== numberRush.next) { els.numberRushStatus.textContent = `Tap ${numberRush.next} next!`; return; }
-  numberRush.next += 1;
-  if (numberRush.next > 9) {
-    numberRush.active = false;
-    const time = (performance.now() - numberRush.startAt) / 1000;
-    const prev = state.gameBests.numberRush;
-    if (prev == null || time < prev) state.gameBests.numberRush = time;
-    els.numberRushStatus.textContent = `Cleared in ${time.toFixed(2)}s!`;
-    els.numberRushBest.textContent = `${Number(state.gameBests.numberRush).toFixed(2)}s`;
-    persist();
-    void upsertAppState();
-  } else {
-    els.numberRushStatus.textContent = `Tap ${numberRush.next} next!`;
-  }
-  renderNumberRush();
-}
 
 /* ---- Target Tap ---- */
-function startTargetGame() {
-  if (targetGame.intervalId) clearInterval(targetGame.intervalId);
-  if (targetGame.timeoutId) clearTimeout(targetGame.timeoutId);
-  targetGame = { active: true, score: 0, lit: Math.floor(Math.random() * 16), intervalId: null, timeoutId: null };
-  let left = 15;
-  els.targetStatus.textContent = `Hits: 0 · ${left}s left`;
-  targetGame.intervalId = window.setInterval(() => {
-    left -= 1;
-    if (left > 0) els.targetStatus.textContent = `Hits: ${targetGame.score} · ${left}s left`;
-  }, 1000);
-  targetGame.timeoutId = window.setTimeout(endTargetGame, 15000);
-  renderTargetGame();
-}
-function renderTargetGame() {
-  els.targetGrid.innerHTML = Array.from({ length: 16 }, (_, i) => `<button type="button" data-target="${i}" class="target-cell ${i === targetGame.lit ? "lit" : ""}"></button>`).join("");
-}
-function tapTarget(i) {
-  if (!targetGame.active || i !== targetGame.lit) return;
-  targetGame.score += 1;
-  let next = targetGame.lit;
-  while (next === targetGame.lit) next = Math.floor(Math.random() * 16);
-  targetGame.lit = next;
-  renderTargetGame();
-}
-function endTargetGame() {
-  targetGame.active = false;
-  if (targetGame.intervalId) clearInterval(targetGame.intervalId);
-  state.gameBests.target = Math.max(Number(state.gameBests.target || 0), targetGame.score);
-  els.targetStatus.textContent = `Time! You hit ${targetGame.score} targets.`;
-  els.targetBest.textContent = String(state.gameBests.target);
-  els.targetGrid.innerHTML = Array.from({ length: 16 }, (_, i) => `<button type="button" data-target="${i}" class="target-cell"></button>`).join("");
-  persist();
-  void upsertAppState();
-}
-
-function renderReaction() {
-  const attempts = state.reactionAttempts.slice(0, 5);
-  const best = attempts.length ? Math.min(...state.reactionAttempts.map((attempt) => attempt.ms)) : null;
-  els.reactionBest.textContent = best ? `${best} ms` : "\u2014";
-  els.reactionHistory.innerHTML = attempts.map((attempt) => `<li>${attempt.ms} ms</li>`).join("");
-}
-
-function renderMemory() {
-  if (!memoryGame) {
-    els.memoryGrid.innerHTML = "";
-    return;
-  }
-  els.memoryGrid.innerHTML = memoryGame.cards.map((card, index) => `<button type="button" data-memory-index="${index}" class="${card.revealed || card.matched ? "revealed" : ""} ${card.matched ? "matched" : ""}">${card.revealed || card.matched ? `<i data-lucide="${card.icon}"></i>` : "?"}</button>`).join("");
-  els.memoryGrid.querySelectorAll("[data-memory-index]").forEach((button) => button.addEventListener("click", () => flipMemory(Number(button.dataset.memoryIndex))));
-  refreshIcons();
-}
 
 function logFitness(change) {
   const entry = fitnessEntry(todayKey());
@@ -2678,158 +1910,15 @@ function logFitness(change) {
   saveFitnessEntry(entry);
 }
 
-function setTrackToday(value) {
-  const entry = fitnessEntry(todayKey());
-  entry.track_session = value;
-  saveFitnessEntry(entry);
-}
-
 function saveFitnessEntry(entry) {
   state.fitnessLog = [entry, ...state.fitnessLog.filter((candidate) => candidate.entry_date !== entry.entry_date)];
   persist();
-  renderStats();
   renderWorkout();
   void upsertAppState();
 }
 
 function fitnessEntry(date) {
   return { entry_date: date, pushups: 0, pullups: 0, plank: 0, track_session: false, ...(state.fitnessLog.find((entry) => entry.entry_date === date) || {}) };
-}
-
-function openCompose(kind, item = null) {
-  els.composeForm.reset();
-  els.editingItemIdInput.value = item?.id || "";
-  els.itemKindInput.value = item?.kind || kind;
-  els.itemTitleInput.value = item?.title || "";
-  els.itemDateInput.value = item?.due_date || todayKey();
-  els.itemCategoryInput.value = item?.category || (kind === "calendar_event" ? "Personal" : "School");
-  els.itemPriorityInput.value = item?.priority || "medium";
-  els.itemNotesInput.value = item?.notes || "";
-  els.itemStartTimeInput.value = item?.start_time || "";
-  els.itemEndTimeInput.value = item?.end_time || "";
-  els.itemRepeatInput.value = item?.repeat_pattern || "none";
-  els.repeatDays.querySelectorAll("[data-repeat-day]").forEach((button) => button.classList.toggle("active", (item?.repeat_days || []).includes(Number(button.dataset.repeatDay))));
-  els.composeTitle.textContent = item ? "Edit item" : kind === "calendar_event" ? "Add event" : "Add task";
-  setAdvancedFields(Boolean(item || kind === "calendar_event"));
-  updateCalendarFields();
-  els.composeDialog.showModal();
-  els.itemTitleInput.focus();
-}
-
-function setAdvancedFields(show) {
-  els.advancedFields.hidden = !show;
-  document.querySelectorAll("[data-advanced-field]").forEach((field) => { field.hidden = !show; });
-  els.toggleAdvancedButton.textContent = show ? "Less options" : "More options";
-  els.toggleAdvancedButton.setAttribute("aria-expanded", String(show));
-}
-
-function updateCalendarFields() {
-  const visible = els.itemKindInput.value === "calendar_event";
-  document.querySelectorAll(".calendar-field").forEach((field) => { field.hidden = !visible; });
-  renderRepeatDays();
-}
-
-function renderRepeatDays() {
-  els.repeatDays.hidden = els.itemKindInput.value !== "calendar_event" || els.itemRepeatInput.value !== "specific";
-}
-
-function saveItemFromForm() {
-  const existing = state.items.find((item) => item.id === els.editingItemIdInput.value);
-  const kind = els.itemKindInput.value;
-  const category = els.itemCategoryInput.value;
-  const item = {
-    ...(existing || {}),
-    id: existing?.id || crypto.randomUUID(),
-    owner_key: settings.ownerKey,
-    kind,
-    title: els.itemTitleInput.value.trim(),
-    notes: els.itemNotesInput.value.trim(),
-    category,
-    priority: els.itemPriorityInput.value,
-    due_date: els.itemDateInput.value || null,
-    start_time: kind === "calendar_event" ? els.itemStartTimeInput.value : "",
-    end_time: kind === "calendar_event" ? els.itemEndTimeInput.value : "",
-    repeat_pattern: kind === "calendar_event" ? els.itemRepeatInput.value : "none",
-    repeat_days: kind === "calendar_event" && els.itemRepeatInput.value === "specific"
-      ? [...els.repeatDays.querySelectorAll(".active")].map((button) => Number(button.dataset.repeatDay))
-      : [],
-    scheduled_at: kind === "calendar_event" && els.itemDateInput.value && els.itemStartTimeInput.value ? `${els.itemDateInput.value}T${els.itemStartTimeInput.value}:00` : null,
-    duration_minutes: durationBetween(els.itemStartTimeInput.value, els.itemEndTimeInput.value) || existing?.duration_minutes || 30,
-    completed: existing?.completed || false,
-    completed_dates: existing?.completed_dates || [],
-    subtasks: existing?.subtasks || [],
-    color: colorFor(category),
-    source: existing?.source || "manual",
-    created_at: existing?.created_at || new Date().toISOString(),
-    updated_at: new Date().toISOString(),
-  };
-  state.items = existing ? state.items.map((entry) => entry.id === item.id ? item : entry) : [item, ...state.items];
-  persist();
-  els.composeDialog.close();
-  render();
-  void upsertSupabase("life_flow_items", item);
-}
-
-function toggleEventDone(id, date) {
-  const event = state.items.find((item) => item.id === id);
-  if (!event) return;
-  const completing = !(event.completed_dates || []).includes(date);
-  const completed = new Set(event.completed_dates || []);
-  if (completed.has(date)) completed.delete(date);
-  else completed.add(date);
-  event.completed_dates = [...completed];
-  persist();
-  render();
-  // Celebrate *after* the re-render: render() replaces the agenda markup, so
-  // animating the button that was clicked would throw the animation away with it.
-  if (completing) {
-    const button = els.agendaList.querySelector(`[data-done-event="${CSS.escape(id)}"]`);
-    if (button) celebrateDone(button);
-  }
-  void upsertSupabase("life_flow_items", event);
-}
-
-function deleteItem(id) {
-  const target = state.items.find((item) => item.id === id);
-  if (target && !window.confirm(`Delete "${target.title}"?`)) return;
-  if (target?.source === "google") {
-    // Deleting locally would just come back on the next sync, so be honest.
-    window.alert("This event comes from Google Calendar. Delete it in Google and refresh to remove it here.");
-    return;
-  }
-  state.items = state.items.filter((item) => item.id !== id);
-  // Tombstone the id so other devices drop it too instead of re-uploading it.
-  state.deletedIds = [...new Set([...state.deletedIds, id])].slice(-300);
-  persist();
-  render();
-  void deleteSupabaseItem(id);
-  void upsertAppState();
-}
-
-function moveCalendar(direction) {
-  calendarSlide = direction > 0 ? "slide-next" : "slide-prev";
-  if (state.calendarView === "week") {
-    // Move week-by-week relative to the currently shown week.
-    state.selectedDate = addDays(startOfWeek(state.selectedDate), direction * 7);
-    state.monthCursor = `${state.selectedDate.slice(0, 7)}-01`;
-  } else {
-    // Build the target month from its first day: setMonth() on a 29th-31st
-    // overflows into the month after (Jan 31 + 1 month = Mar 3).
-    const base = new Date(`${state.monthCursor}T00:00:00`);
-    const target = new Date(base.getFullYear(), base.getMonth() + direction, 1);
-    state.monthCursor = formatDateKey(target);
-    // Keep the day-of-month where it still exists, else clamp to the last day.
-    const previousDay = Number(state.selectedDate.slice(8, 10));
-    const lastDay = new Date(target.getFullYear(), target.getMonth() + 1, 0).getDate();
-    target.setDate(Math.min(previousDay, lastDay));
-    state.selectedDate = formatDateKey(target);
-  }
-  persist();
-  renderCalendar();
-}
-
-function goToToday() {
-  selectDate(todayKey());
 }
 
 function openSleepDialog() {
@@ -3081,155 +2170,13 @@ function handleDateRollover() {
   render();
 }
 
-function completeDailyBoost() {
-  if (state.rewards.some((reward) => reward.type === "daily_boost" && reward.date === todayKey())) return;
-  const card = els.arcadeBoostButton?.closest(".arcade-card");
-  state.rewards.unshift({ id: crypto.randomUUID(), type: "daily_boost", amount: 20, date: todayKey() });
-  persist();
-  render();
-  celebrateBoost(card);
-  void upsertAppState();
-}
-
-// A short pop on the card plus a burst of sparks from the button. Worth the
-// extra code only because completing the boost is the one deliberately
-// rewarding action on the page.
-function celebrateBoost(card) {
-  if (!card || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-  card.classList.remove("boost-pop");
-  void card.offsetWidth;
-  card.classList.add("boost-pop");
-  card.addEventListener("animationend", () => card.classList.remove("boost-pop"), { once: true });
-
-  const button = card.querySelector("#arcadeBoostButton");
-  if (!button) return;
-  const origin = button.getBoundingClientRect();
-  const host = card.getBoundingClientRect();
-  const colors = ["#00e5c3", "#4ff5dc", "#ff9738", "#ebbd45"];
-  for (let i = 0; i < 14; i += 1) {
-    const spark = document.createElement("span");
-    spark.className = "boost-spark";
-    spark.style.background = colors[i % colors.length];
-    spark.style.left = `${origin.left - host.left + origin.width / 2}px`;
-    spark.style.top = `${origin.top - host.top + origin.height / 2}px`;
-    card.appendChild(spark);
-    const angle = (Math.PI * 2 * i) / 14 + Math.random() * 0.4;
-    const distance = 46 + Math.random() * 44;
-    spark.animate(
-      [
-        { transform: "translate(-50%, -50%) scale(1)", opacity: 1 },
-        {
-          transform: `translate(calc(-50% + ${Math.cos(angle) * distance}px), calc(-50% + ${Math.sin(angle) * distance}px)) scale(0.3)`,
-          opacity: 0,
-        },
-      ],
-      { duration: 620 + Math.random() * 220, easing: "cubic-bezier(0.16, 1, 0.3, 1)" },
-    ).finished.finally(() => spark.remove());
-  }
-}
-
-function startReaction() {
-  if (reaction.timeoutId) clearTimeout(reaction.timeoutId);
-  reaction.mode = "waiting";
-  els.reactionPad.disabled = false;
-  els.reactionPad.className = "reaction-pad waiting";
-  els.reactionPad.textContent = "Ready...";
-  reaction.timeoutId = window.setTimeout(() => {
-    reaction.mode = "go";
-    reaction.goAt = performance.now();
-    els.reactionPad.className = "reaction-pad go";
-    els.reactionPad.textContent = "GO!";
-  }, 1200 + Math.random() * 2500);
-}
-
-function tapReaction() {
-  if (reaction.mode === "waiting") {
-    clearTimeout(reaction.timeoutId);
-    reaction.mode = "idle";
-    els.reactionPad.textContent = "Too soon - try again";
-    els.reactionPad.className = "reaction-pad false-start";
-    return;
-  }
-  if (reaction.mode !== "go") return;
-  const ms = Math.round(performance.now() - reaction.goAt);
-  state.reactionAttempts.unshift({ ms, at: new Date().toISOString() });
-  state.reactionAttempts = state.reactionAttempts.slice(0, 20);
-  reaction.mode = "idle";
-  els.reactionPad.textContent = `${ms} ms`;
-  els.reactionPad.className = "reaction-pad result";
-  persist();
-  renderReaction();
-  void upsertAppState();
-}
-
-function startMemoryGame() {
-  const coins = calculateCoinBreakdown(state.items, state.focusSessions, state.sleepEntries, state.rewards, settings.sleepGoalHours * 60).total;
-  if (coins < 5) {
-    els.memoryStatus.textContent = "Earn 5 coins first to play.";
-    return;
-  }
-  state.rewards.unshift({ id: crypto.randomUUID(), type: "memory_entry", amount: -5, date: todayKey() });
-  const chosen = shuffle([...memoryIconPool]).slice(0, 8);
-  const cards = shuffle([...chosen, ...chosen]).map((icon) => ({ icon, revealed: false, matched: false }));
-  memoryGame = { cards, selected: [], moves: 0, startedAt: Date.now(), locked: false };
-  els.memoryStatus.textContent = "Moves: 0";
-  persist();
-  renderArcade();
-  void upsertAppState();
-}
-
-function flipMemory(index) {
-  if (!memoryGame || memoryGame.locked) return;
-  const card = memoryGame.cards[index];
-  if (card.matched || card.revealed) return;
-  card.revealed = true;
-  memoryGame.selected.push(index);
-  renderMemory();
-  if (memoryGame.selected.length < 2) return;
-  memoryGame.moves += 1;
-  const [first, second] = memoryGame.selected.map((entry) => memoryGame.cards[entry]);
-  if (first.icon === second.icon) {
-    first.matched = true;
-    second.matched = true;
-    memoryGame.selected = [];
-    finishMemoryIfComplete();
-    return;
-  }
-  memoryGame.locked = true;
-  window.setTimeout(() => {
-    first.revealed = false;
-    second.revealed = false;
-    memoryGame.selected = [];
-    memoryGame.locked = false;
-    els.memoryStatus.textContent = `Moves: ${memoryGame.moves}`;
-    renderMemory();
-  }, 650);
-}
-
-function finishMemoryIfComplete() {
-  if (!memoryGame.cards.every((card) => card.matched)) {
-    els.memoryStatus.textContent = `Moves: ${memoryGame.moves}`;
-    renderMemory();
-    return;
-  }
-  const seconds = Math.round((Date.now() - memoryGame.startedAt) / 1000);
-  state.rewards.unshift({ id: crypto.randomUUID(), type: "memory_win", amount: 5, date: todayKey() });
-  els.memoryStatus.textContent = `Won in ${memoryGame.moves} moves and ${seconds}s. +5 coins!`;
-  persist();
-  renderArcade();
-  void upsertAppState();
-}
-
 function hydrateSettingsForm() {
   els.displayNameInput.value = settings.displayName;
   els.plannerSubtitleInput.value = settings.plannerSubtitle;
   els.focusGoalInput.value = String(settings.focusGoal);
   els.pushupGoalInput.value = String(settings.pushupGoal);
   els.trackGoalInput.value = String(settings.trackGoal);
-  els.supabaseUrlInput.value = settings.supabaseUrl;
-  els.supabaseAnonInput.value = settings.supabaseAnonKey;
   els.ownerKeyInput.value = settings.ownerKey;
-  els.calendarUrlInput.value = settings.calendarUrl;
   els.darkModeInput.checked = settings.darkMode;
   els.sleepGoalInput.value = String(settings.sleepGoalHours);
 }
@@ -3242,10 +2189,7 @@ function saveSettings() {
     focusGoal: els.focusGoalInput.value,
     pushupGoal: els.pushupGoalInput.value,
     trackGoal: els.trackGoalInput.value,
-    supabaseUrl: els.supabaseUrlInput.value.trim(),
-    supabaseAnonKey: els.supabaseAnonInput.value.trim(),
     ownerKey: els.ownerKeyInput.value.trim() || settings.ownerKey,
-    calendarUrl: els.calendarUrlInput.value.trim(),
     darkMode: els.darkModeInput.checked,
     sleepGoalHours: els.sleepGoalInput.value,
   });
@@ -3260,6 +2204,11 @@ function saveSettings() {
 
 function applySettings() {
   document.body.classList.toggle("dark-mode", settings.darkMode);
+  document.body.classList.toggle("light-mode", !settings.darkMode);
+  document.documentElement.style.colorScheme = settings.darkMode ? "dark" : "light";
+  document.querySelector('meta[name="theme-color"]')?.setAttribute("content", settings.darkMode ? "#0a0f1e" : "#eaf6f3");
+  els.themeToggleButton?.setAttribute("aria-label", settings.darkMode ? "Switch to light theme" : "Switch to dark theme");
+  if (els.darkModeInput) els.darkModeInput.checked = settings.darkMode;
   els.sidebarSubtitle.textContent = settings.plannerSubtitle;
 }
 
@@ -3272,7 +2221,7 @@ function resetAllData() {
   render();
 }
 
-async function syncAll({ includeCalendar = true } = {}) {
+async function syncAll() {
   if (!canSync()) return;
   if (cloudSyncInFlight) {
     cloudSyncAgain = true;
@@ -3283,7 +2232,6 @@ async function syncAll({ includeCalendar = true } = {}) {
       cloudSyncAgain = false;
       const loaded = await syncFromSupabase();
       if (!loaded) return;
-      if (includeCalendar) await importCalendar();
       await syncToSupabase();
     } while (cloudSyncAgain);
   })();
@@ -3294,7 +2242,28 @@ async function syncAll({ includeCalendar = true } = {}) {
   }
 }
 
+async function loadCloudConfig() {
+  try {
+    const response = await fetch("/api/supabase-config", { cache: "no-store" });
+    const config = response.ok ? await response.json() : null;
+    if (config?.url && config?.key) {
+      cloud = { url: config.url, key: config.key };
+      // Older versions stored the pair in this browser; the server copy replaces it.
+      if ("supabaseUrl" in settings || "supabaseAnonKey" in settings) {
+        delete settings.supabaseUrl;
+        delete settings.supabaseAnonKey;
+        saveJson(SETTINGS_KEY, settings);
+      }
+      return;
+    }
+  } catch {
+    // Offline or no function (plain static hosting): fall through to a saved pair.
+  }
+  if (settings.supabaseUrl && settings.supabaseAnonKey) cloud = { url: settings.supabaseUrl, key: settings.supabaseAnonKey };
+}
+
 async function initializeCloud() {
+  await loadCloudConfig();
   if (!canSync()) return;
   await syncAll();
 }
@@ -3306,7 +2275,7 @@ async function syncFromSupabase() {
   }
   try {
     setSyncStatus("Syncing from Supabase...");
-    const [items, focus, sleep, sugar, cloudState, streakRows, checklistRows, practiceSessions] = await Promise.all([
+    const [items, focus, sleep, sugar, cloudState, streakRows, practiceSessions] = await Promise.all([
       supabaseFetch("life_flow_items?select=*&order=created_at.desc"),
       supabaseFetch("life_flow_focus_sessions?select=*&order=completed_at.desc"),
       supabaseFetch("life_flow_sleep_entries?select=*&order=sleep_date.desc"),
@@ -3315,7 +2284,6 @@ async function syncFromSupabase() {
       supabaseFetch("life_flow_sugar_entries?select=*&order=created_at.desc").catch(() => []),
       supabaseFetch("life_flow_app_state?select=*"),
       supabaseFetch("sugar_streaks?select=*&limit=1").catch(() => []),
-      supabaseFetch(`daily_checklist?select=*&date=eq.${todayKey()}`).catch(() => []),
       supabaseFetch("speak_practice_sessions?select=*&order=created_at.desc&limit=30").catch(() => []),
     ]);
     if (cloudState?.[0]) {
@@ -3324,7 +2292,6 @@ async function syncFromSupabase() {
       state.dukeProgress = { ...state.dukeProgress, ...(saved.duke_progress || {}) };
       state.rewards = saved.rewards || state.rewards;
       state.memoryNotes = { ...state.memoryNotes, ...(saved.memory_notes || {}) };
-      state.reactionAttempts = saved.reaction_attempts || state.reactionAttempts;
       state.goalReminder = saved.goal_reminder || state.goalReminder;
       const { appData, ...prefs } = saved.preferences || {};
       if (appData) {
@@ -3337,7 +2304,6 @@ async function syncFromSupabase() {
           state.motivationVideos = appData.motivationVideos;
           state.motivationVideosUpdatedAt = appData.motivationVideosUpdatedAt;
         }
-        state.gameBests = { ...state.gameBests, ...(appData.gameBests || {}) };
         state.deletedIds = [...new Set([...(appData.deletedIds || []), ...state.deletedIds])].slice(-300);
         // normalizeRPractice migrates the legacy {date, done[]} shape into the
         // cooldown log; merging through it keeps local progress intact.
@@ -3356,13 +2322,11 @@ async function syncFromSupabase() {
       renderFinanceNotes();
     }
     const deleted = new Set(state.deletedIds);
-    state.items = seedRecurring(mergeById(state.items, items || []).filter((item) => !deleted.has(item.id)));
+    state.items = mergeById(state.items, items || []).filter((item) => !deleted.has(item.id));
     state.focusSessions = mergeById(state.focusSessions, focus || []);
     state.sleepEntries = mergeById(state.sleepEntries, sleep || []);
     state.sugarEntries = mergeById(state.sugarEntries, sugar || []);
     if (streakRows?.[0]) state.sugarStreak = { ...state.sugarStreak, ...streakRows[0] };
-    const checklist = normalizeDailyChecklist();
-    for (const row of checklistRows || []) checklist.completed[row.item_id] = Boolean(row.completed);
     state.speakPracticeSessions = mergeById(state.speakPracticeSessions, practiceSessions || []).slice(-30);
     persist();
     render();
@@ -3392,13 +2356,6 @@ async function syncToSupabase() {
     // Keyed by id, not by date: a day holds many items, unlike sleep.
     for (const entry of state.sugarEntries) await upsertSupabase("life_flow_sugar_entries", entry);
     await upsertSupabase("sugar_streaks", { ...state.sugarStreak, user_id: settings.ownerKey, updated_at: new Date().toISOString() }, "user_id");
-    const checklist = normalizeDailyChecklist();
-    for (const item of DAILY_CHECKLIST_ITEMS) {
-      await upsertSupabase("daily_checklist", {
-        user_id: settings.ownerKey, item_id: item.id, date: checklist.date,
-        completed: Boolean(checklist.completed[item.id]), updated_at: new Date().toISOString(),
-      }, "user_id,item_id,date");
-    }
     for (const session of state.speakPracticeSessions) {
       await upsertSupabase("speak_practice_sessions", session);
     }
@@ -3409,300 +2366,21 @@ async function syncToSupabase() {
   }
 }
 
-// True when the deployment has CALENDAR_ICAL_URL set, meaning the app can pull
-// the feed without the URL ever being handed to the browser.
-let icalServerConfigured = false;
-let icalServerLabel = "";
-let icalLastSync = 0;
-
-async function loadIcalConfig() {
-  try {
-    const response = await fetch("/api/calendar-config", { headers: { Accept: "application/json" } });
-    if (!response.ok) return;
-    const data = await response.json();
-    icalServerConfigured = Boolean(data.configured);
-    icalServerLabel = data.label || "";
-  } catch {
-    icalServerConfigured = false;
-  }
-}
-
-/**
- * Pull the iCal feed. Uses the server-side CALENDAR_ICAL_URL when one is
- * configured, otherwise the URL saved in Settings.
- * @returns {Promise<{ok: boolean, count?: number, error?: string}>}
- */
-async function importCalendar({ silent = true } = {}) {
-  if (!settings.calendarUrl && !icalServerConfigured) return { ok: false, error: "No calendar URL set" };
-  try {
-    // Omitting `url` lets the Function supply the secret from its environment.
-    const endpoint = settings.calendarUrl
-      ? `/api/calendar?url=${encodeURIComponent(settings.calendarUrl)}`
-      : "/api/calendar";
-    const response = await fetch(endpoint, { cache: "no-store" });
-    if (!response.ok) {
-      // Surface the Function's actual explanation (404 = wrong address form,
-      // 422 = not a calendar) instead of a generic "skipped".
-      throw new Error((await response.text().catch(() => "")) || `Calendar feed error ${response.status}`);
-    }
-    const imported = parseIcsEvents(await response.text()).map((event) => ({
-      ...event, id: stableUuid(`${settings.ownerKey}:${event.id}`), owner_key: settings.ownerKey,
-    }));
-    // Replace the whole ICS set rather than merging, so events deleted upstream
-    // disappear here too instead of lingering forever.
-    state.items = [...state.items.filter((item) => item.source !== "ics"), ...imported];
-    icalLastSync = Date.now();
-    persist();
-    render();
-    // Push to Supabase in the background. The events are already on screen and
-    // saved locally, so making the user wait on the upload just to see "synced"
-    // adds latency for no benefit — and a slow cloud write shouldn't look like
-    // a slow calendar.
-    if (canSync()) {
-      void Promise.all(imported.map((event) => upsertSupabase("life_flow_items", event).catch(() => {})));
-    }
-    return { ok: true, count: imported.length };
-  } catch (error) {
-    if (!silent) setGcalNote(error.message, "warn");
-    setSyncStatus("Calendar import skipped");
-    return { ok: false, error: error.message };
-  }
-}
-
-async function refreshIcalFeed() {
-  setGcalNote("Fetching calendar feed…");
-  renderGcalCard();
-  const result = await importCalendar({ silent: false });
-  if (result.ok) {
-    setGcalNote(
-      result.count
-        ? `Synced ${result.count} event${result.count === 1 ? "" : "s"} from the calendar feed.`
-        : "Feed reached, but it contains no events.",
-      "ok",
-    );
-  }
-  renderGcalCard();
-}
 
 /* ============================================================
    GOOGLE CALENDAR
    ============================================================ */
 
-let gcalBusy = false;
-let gcalLastSync = 0;
-let gcalTimerId = null;
-// Whether this deployment has GOOGLE_OAUTH_CLIENT_ID set. Null until checked.
-let googleConfigured = null;
-
-function setGcalNote(text, tone = "") {
-  if (!els.gcalNote) return;
-  els.gcalNote.hidden = !text;
-  els.gcalNote.textContent = text || "";
-  els.gcalNote.dataset.tone = tone;
-}
-
-function renderGcalCard() {
-  if (!els.gcalStatus) return;
-  const connected = gcal.isConnected();
-  const count = state.items.filter((item) => item.source === "google").length;
-
-  els.gcalMark.dataset.state = connected ? "on" : "off";
-  els.gcalConnectButton.hidden = connected;
-  els.gcalRefreshButton.hidden = !connected;
-  els.gcalDisconnectButton.hidden = !connected;
-  els.gcalRefreshButton.disabled = gcalBusy;
-  els.gcalConnectButton.disabled = gcalBusy || googleConfigured === false;
-  els.gcalRefreshButton.classList.toggle("is-spinning", gcalBusy);
-
-  // The feed path is independent of OAuth: show its refresh whenever a feed is
-  // available, from Settings or from the server-side CALENDAR_ICAL_URL.
-  const feedAvailable = Boolean(settings.calendarUrl || icalServerConfigured);
-  if (els.icalRefreshButton) els.icalRefreshButton.hidden = connected || !feedAvailable;
-  if (els.icalUrlInput && document.activeElement !== els.icalUrlInput) {
-    els.icalUrlInput.value = settings.calendarUrl || "";
-  }
-  if (els.icalServerNote) {
-    els.icalServerNote.hidden = !icalServerConfigured;
-    els.icalServerNote.textContent = icalServerConfigured
-      ? `A feed is already configured on the server (${icalServerLabel}). Leave the box empty to keep using it.`
-      : "";
-  }
-
-  if (gcalBusy) {
-    els.gcalStatus.textContent = "Syncing with Google…";
-  } else if (connected) {
-    const when = gcalLastSync
-      ? new Date(gcalLastSync).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit" })
-      : "just now";
-    const who = settings.googleEmail ? `${settings.googleEmail} · ` : "";
-    els.gcalStatus.textContent = `${who}${count} event${count === 1 ? "" : "s"} synced · updated ${when}`;
-  } else if (settings.calendarUrl || icalServerConfigured) {
-    const feedCount = state.items.filter((item) => item.source === "ics").length;
-    const when = icalLastSync
-      ? ` · updated ${new Date(icalLastSync).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit" })}`
-      : "";
-    els.gcalStatus.textContent = feedCount
-      ? `Calendar feed · ${feedCount} event${feedCount === 1 ? "" : "s"}${when}`
-      : "Calendar feed set. Tap Refresh feed to pull events.";
-  } else {
-    els.gcalStatus.textContent = "Not connected — showing saved events only.";
-  }
-  refreshIcons();
-}
-
-/**
- * Pull from Google and make its events the source of truth.
- *
- * Every `source: "google"` item is replaced wholesale on each sync. That is
- * what makes edits and deletions in Google propagate here: an event that no
- * longer comes back simply stops existing locally, with no tombstone bookkeeping.
- */
-async function syncGoogleCalendar({ interactive = false } = {}) {
-  if (gcalBusy) return;
-  gcalBusy = true;
-  renderGcalCard();
-  try {
-    if (interactive) {
-      const email = await gcal.connect();
-      settings.googleConnected = true;
-      settings.googleEmail = email || "";
-      saveJson(SETTINGS_KEY, settings);
-    } else {
-      await gcal.reconnectSilently();
-    }
-
-    const events = await gcal.fetchEvents();
-    const withOwner = events.map((event) => ({ ...event, owner_key: settings.ownerKey }));
-    state.items = [...state.items.filter((item) => item.source !== "google"), ...withOwner];
-    gcalLastSync = Date.now();
-    settings.googleConnected = true;
-    saveJson(SETTINGS_KEY, settings);
-    persist();
-    render();
-    setGcalNote(
-      events.length
-        ? `Synced ${events.length} event${events.length === 1 ? "" : "s"} from Google Calendar.`
-        : "Connected — no events found in the next 12 months.",
-      "ok",
-    );
-    scheduleGcalRefresh();
-  } catch (error) {
-    if (error?.needsConsent) {
-      // A silent refresh legitimately fails when there is no live Google
-      // session; only nag the user if they asked for this explicitly.
-      settings.googleConnected = false;
-      saveJson(SETTINGS_KEY, settings);
-      if (interactive) setGcalNote(error.message, "warn");
-      else setGcalNote("");
-    } else {
-      setGcalNote(error?.message || "Could not reach Google Calendar.", "warn");
-    }
-  } finally {
-    gcalBusy = false;
-    renderGcalCard();
-  }
-}
-
-function disconnectGoogle() {
-  gcal.disconnect();
-  settings.googleConnected = false;
-  settings.googleEmail = "";
-  saveJson(SETTINGS_KEY, settings);
-  state.items = state.items.filter((item) => item.source !== "google");
-  if (gcalTimerId) { clearTimeout(gcalTimerId); gcalTimerId = null; }
-  persist();
-  render();
-  setGcalNote("Disconnected. Google events removed from this device.", "ok");
-}
-
-// Keep the calendar fresh without polling a hidden tab.
-function scheduleGcalRefresh() {
-  if (gcalTimerId) clearTimeout(gcalTimerId);
-  gcalTimerId = window.setTimeout(() => {
-    if (document.visibilityState === "visible" && settings.googleConnected) void syncGoogleCalendar();
-    else scheduleGcalRefresh();
-  }, 5 * 60 * 1000);
-}
-
-/**
- * Validate and store a pasted iCal URL, then pull it immediately.
- *
- * The check is deliberately specific: the overwhelmingly common mistake is
- * grabbing the "public address" (.../public/basic.ics) for a calendar that is
- * not shared publicly, which Google answers with a 404 and no explanation.
- */
-function saveIcalUrl() {
-  const raw = els.icalUrlInput.value.trim();
-  if (!raw) {
-    settings.calendarUrl = "";
-    saveJson(SETTINGS_KEY, settings);
-    state.items = state.items.filter((item) => item.source !== "ics");
-    persist();
-    render();
-    setGcalNote("Calendar feed cleared.", "ok");
-    return;
-  }
-
-  let parsed;
-  try {
-    parsed = new URL(raw);
-  } catch {
-    setGcalNote("That doesn't look like a URL. Paste the whole link, starting with https://", "warn");
-    return;
-  }
-  if (parsed.protocol !== "https:") {
-    setGcalNote("The calendar link must start with https://", "warn");
-    return;
-  }
-  if (!/\.ics$/i.test(parsed.pathname)) {
-    setGcalNote("That link doesn't end in .ics — copy the iCal format address, not the calendar's web page.", "warn");
-    return;
-  }
-  if (parsed.pathname.includes("/public/")) {
-    setGcalNote(
-      "That's the public address, which only works if your calendar is shared with the whole internet. Copy the Secret address instead — it contains \"private-\".",
-      "warn",
-    );
-    return;
-  }
-
-  settings.calendarUrl = raw;
-  saveJson(SETTINGS_KEY, settings);
-  void refreshIcalFeed();
-}
-
-async function initGoogleCalendar() {
-  if (!els.gcalStatus) return;
-  await loadIcalConfig();
-  // A feed configured either way should populate the calendar on load.
-  if (settings.calendarUrl || icalServerConfigured) void importCalendar();
-  googleConfigured = await gcal.isConfigured();
-  if (!googleConfigured) {
-    els.gcalConnectButton.title = "Needs GOOGLE_OAUTH_CLIENT_ID on the deployment";
-    // Only nag about OAuth when there is no working feed already.
-    if (!settings.calendarUrl && !icalServerConfigured) {
-      setGcalNote(
-        "Google sign-in isn't set up on this deployment. Either add GOOGLE_OAUTH_CLIENT_ID in Cloudflare Pages, or use a calendar feed link below.",
-        "info",
-      );
-    }
-    renderGcalCard();
-    return;
-  }
-  renderGcalCard();
-  // Resume a previous connection without showing a popup.
-  if (settings.googleConnected) await syncGoogleCalendar();
-}
 
 // PostgREST reports an unknown column as PGRST204 and names it in the message.
 const UNKNOWN_COLUMN = /Could not find the '([^']+)' column/i;
 
 async function uploadSpeakPracticeAudio(path, blob, mimeType) {
-  const response = await fetch(`${settings.supabaseUrl.replace(/\/$/, "")}/storage/v1/object/${SPEAK_PRACTICE_BUCKET}/${path}`, {
+  const response = await fetch(`${cloud.url.replace(/\/$/, "")}/storage/v1/object/${SPEAK_PRACTICE_BUCKET}/${path}`, {
     method: "POST",
     headers: {
-      apikey: settings.supabaseAnonKey,
-      Authorization: `Bearer ${settings.supabaseAnonKey}`,
+      apikey: cloud.key,
+      Authorization: `Bearer ${cloud.key}`,
       "Content-Type": mimeType,
       "x-owner-key": settings.ownerKey,
       "x-upsert": "false",
@@ -3713,11 +2391,11 @@ async function uploadSpeakPracticeAudio(path, blob, mimeType) {
 }
 
 async function signedSpeakPracticeUrl(path) {
-  const response = await fetch(`${settings.supabaseUrl.replace(/\/$/, "")}/storage/v1/object/sign/${SPEAK_PRACTICE_BUCKET}`, {
+  const response = await fetch(`${cloud.url.replace(/\/$/, "")}/storage/v1/object/sign/${SPEAK_PRACTICE_BUCKET}`, {
     method: "POST",
     headers: {
-      apikey: settings.supabaseAnonKey,
-      Authorization: `Bearer ${settings.supabaseAnonKey}`,
+      apikey: cloud.key,
+      Authorization: `Bearer ${cloud.key}`,
       "Content-Type": "application/json",
       "x-owner-key": settings.ownerKey,
     },
@@ -3727,7 +2405,7 @@ async function signedSpeakPracticeUrl(path) {
   const payload = await response.json();
   const signed = Array.isArray(payload) ? payload[0]?.signedURL : payload?.signedURL;
   if (!signed) return "";
-  return signed.startsWith("http") ? signed : `${settings.supabaseUrl.replace(/\/$/, "")}/storage/v1${signed.startsWith("/") ? signed : `/${signed}`}`;
+  return signed.startsWith("http") ? signed : `${cloud.url.replace(/\/$/, "")}/storage/v1${signed.startsWith("/") ? signed : `/${signed}`}`;
 }
 
 async function hydrateSpeakPracticeAudioUrls() {
@@ -3787,7 +2465,6 @@ async function upsertAppState() {
     duke_progress: state.dukeProgress,
     rewards: state.rewards,
     memory_notes: state.memoryNotes,
-    reaction_attempts: state.reactionAttempts,
     goal_reminder: state.goalReminder,
     preferences: {
       displayName: settings.displayName,
@@ -3803,7 +2480,6 @@ async function upsertAppState() {
         financeNotes: state.financeNotes,
         motivationVideos: state.motivationVideos,
         motivationVideosUpdatedAt: state.motivationVideosUpdatedAt,
-        gameBests: state.gameBests,
         deletedIds: state.deletedIds,
         rPractice: state.rPractice,
       },
@@ -3812,16 +2488,12 @@ async function upsertAppState() {
   }, "owner_key");
 }
 
-async function deleteSupabaseItem(id) {
-  if (canSync()) await supabaseFetch(`life_flow_items?id=eq.${id}`, { method: "DELETE" });
-}
-
 async function supabaseFetch(path, options = {}) {
-  const response = await fetch(`${settings.supabaseUrl.replace(/\/$/, "")}/rest/v1/${path}`, {
+  const response = await fetch(`${cloud.url.replace(/\/$/, "")}/rest/v1/${path}`, {
     ...options,
     headers: {
-      apikey: settings.supabaseAnonKey,
-      Authorization: `Bearer ${settings.supabaseAnonKey}`,
+      apikey: cloud.key,
+      Authorization: `Bearer ${cloud.key}`,
       "Content-Type": "application/json",
       "x-owner-key": settings.ownerKey,
       ...(options.headers || {}),
@@ -3834,7 +2506,7 @@ async function supabaseFetch(path, options = {}) {
 
 function canSync() {
   // Security reminder: confirm Row Level Security policies only permit this owner's rows in Supabase.
-  return Boolean(settings.supabaseUrl && settings.supabaseAnonKey && settings.ownerKey);
+  return Boolean(cloud.url && cloud.key && settings.ownerKey);
 }
 
 function setSyncStatus(text) {
@@ -3847,6 +2519,64 @@ function setSyncStatus(text) {
 function indexCards(panel) {
   if (!panel) return;
   [...panel.children].forEach((child, index) => child.style.setProperty("--card-index", String(index)));
+}
+
+// Pages reachable from the bottom nav, in the order they appear there. Features
+// that are switched off with CSS (display:none) are skipped automatically.
+function navViews() {
+  return [...document.querySelectorAll(".nav-item")]
+    .filter((button) => button.offsetParent !== null)
+    .map((button) => button.dataset.view);
+}
+
+function currentView() {
+  return document.querySelector(".view.active")?.id.replace(/View$/, "") || "home";
+}
+
+function moveNavPill() {
+  const list = document.querySelector(".nav-list");
+  const active = list?.querySelector(".nav-item.active");
+  if (!list || !active || active.offsetParent === null) return;
+  list.style.setProperty("--pill-x", `${active.offsetLeft}px`);
+  list.style.setProperty("--pill-w", `${active.offsetWidth}px`);
+  list.classList.add("has-pill");
+}
+
+// Swipe left/right anywhere on the page (the nav bar included) to change tab.
+function initSwipeNavigation() {
+  const MIN_DISTANCE = 56;
+  let start = null;
+  const blocked = (target) => {
+    if (document.querySelector("dialog[open]")) return true;
+    for (let node = target; node instanceof Element && node !== document.body; node = node.parentElement) {
+      if (node.matches?.("input, textarea, select, [data-no-swipe]")) return true;
+      const { overflowX } = getComputedStyle(node);
+      if ((overflowX === "auto" || overflowX === "scroll") && node.scrollWidth > node.clientWidth + 1) return true;
+    }
+    return false;
+  };
+  document.addEventListener("touchstart", (event) => {
+    start = event.touches.length === 1 && !blocked(event.target)
+      ? { x: event.touches[0].clientX, y: event.touches[0].clientY, time: Date.now() }
+      : null;
+  }, { passive: true });
+  document.addEventListener("touchend", (event) => {
+    if (!start) return;
+    const touch = event.changedTouches[0];
+    const dx = touch.clientX - start.x;
+    const dy = touch.clientY - start.y;
+    const quick = Date.now() - start.time < 700;
+    start = null;
+    if (!quick || Math.abs(dx) < MIN_DISTANCE || Math.abs(dx) < Math.abs(dy) * 1.6) return;
+    const order = navViews();
+    const at = order.indexOf(currentView());
+    if (at === -1) return;
+    const next = order[at + (dx < 0 ? 1 : -1)];
+    if (next) void setView(next);
+  }, { passive: true });
+  document.addEventListener("touchcancel", () => { start = null; }, { passive: true });
+  window.addEventListener("resize", moveNavPill);
+  document.fonts?.ready.then(moveNavPill);
 }
 
 function setView(view) {
@@ -3863,21 +2593,30 @@ function setView(view) {
     history.replaceState(null, "", "/");
     document.title = DEFAULT_TITLE;
   }
+  const order = navViews();
+  const from = order.indexOf(currentView());
+  const to = order.indexOf(view);
+  const direction = from === -1 || to === -1 || from === to ? "" : to > from ? "from-right" : "from-left";
   const change = () => {
     document.querySelectorAll(".nav-item").forEach((button) => {
       const selected = button.dataset.view === view;
       button.classList.toggle("active", selected);
       button.setAttribute("aria-selected", String(selected));
     });
-    document.querySelectorAll(".view").forEach((panel) => panel.classList.toggle("active", panel.id === `${view}View`));
+    document.querySelectorAll(".view").forEach((panel) => {
+      panel.classList.remove("from-right", "from-left");
+      panel.classList.toggle("active", panel.id === `${view}View`);
+    });
     const active = document.getElementById(`${view}View`);
+    if (direction) active.classList.add(direction);
+    moveNavPill();
     indexCards(active);
     refreshIcons();
     // Scroll position is per-app, not per-panel; land at the top of the new tab.
     window.scrollTo({ top: 0, behavior: "instant" in window ? "instant" : "auto" });
   };
   // Resolves once the new panel is in the DOM, for callers that scroll into it.
-  if (document.startViewTransition) return document.startViewTransition(change).updateCallbackDone;
+  if (document.startViewTransition && !direction) return document.startViewTransition(change).updateCallbackDone;
   change();
   return Promise.resolve();
 }
@@ -3887,17 +2626,14 @@ function normalizeState(saved) {
     ...defaultState, ...saved,
     dukeProgress: { ...defaultState.dukeProgress, ...(saved.dukeProgress || {}) },
     memoryNotes: { ...defaultState.memoryNotes, ...(saved.memoryNotes || {}) },
-    items: seedRecurring(normalizeItemIds(Array.isArray(saved.items) ? saved.items : [])),
+    items: normalizeItemIds(Array.isArray(saved.items) ? saved.items : []),
     sleepEntries: Array.isArray(saved.sleepEntries) ? saved.sleepEntries : [],
     sugarEntries: Array.isArray(saved.sugarEntries) ? saved.sugarEntries : [],
     sugarStreak: { ...defaultState.sugarStreak, ...(saved.sugarStreak || {}) },
-    dailyChecklist: { ...defaultState.dailyChecklist, ...(saved.dailyChecklist || {}), completed: { ...(saved.dailyChecklist?.completed || {}) } },
     speakPracticeSessions: Array.isArray(saved.speakPracticeSessions) ? saved.speakPracticeSessions : [],
     focusSessions: Array.isArray(saved.focusSessions) ? saved.focusSessions : [],
     fitnessLog: Array.isArray(saved.fitnessLog) ? saved.fitnessLog : [],
     rewards: Array.isArray(saved.rewards) ? saved.rewards : [],
-    reactionAttempts: Array.isArray(saved.reactionAttempts) ? saved.reactionAttempts : [],
-    gameBests: { ...defaultState.gameBests, ...(saved.gameBests || {}) },
     goalDone: { ...(saved.goalDone || {}) },
     aboutMe: { ...(saved.aboutMe || {}) },
     financeNotes: { ...(saved.financeNotes || {}) },
@@ -3940,31 +2676,6 @@ function importSleepLog(target) {
   return target;
 }
 
-function importCalendarEvents(target) {
-  if (target.calendarImportVersion === CALENDAR_IMPORT_VERSION) return target;
-  const additions = calendarImport
-    .map(([date, title, start, end, category, location]) => ({
-      // Stable ids so every synced device generates the same rows instead of duplicates.
-      id: stableUuid(`${settings.ownerKey}:cal-v${CALENDAR_IMPORT_VERSION}:${date}|${title}|${start}`), owner_key: settings.ownerKey, kind: "calendar_event",
-      title, category, priority: "medium", due_date: date,
-      start_time: start, end_time: end, repeat_pattern: "none", repeat_days: [],
-      notes: location || "", completed: false, completed_dates: [], subtasks: [],
-      scheduled_at: start ? `${date}T${start}:00` : null,
-      duration_minutes: durationBetween(start, end) || 30,
-      color: colorFor(category), source: "import", created_at: new Date().toISOString(),
-    }));
-  // The schedule was corrected from Aran's calendar PDF, so tombstone every other
-  // calendar event (synced devices drop them too) and keep only the new list.
-  const keep = new Set(additions.map((item) => item.id));
-  const outdated = (target.items || []).filter((item) => item.kind === "calendar_event" && !keep.has(item.id));
-  target.deletedIds = [...new Set([...(target.deletedIds || []), ...outdated.map((item) => item.id)])].slice(-300);
-  target.items = [...additions, ...(target.items || []).filter((item) => item.kind !== "calendar_event")];
-  target.calendarImportVersion = CALENDAR_IMPORT_VERSION;
-  target.calendarImported = true;
-  saveJson(STORE_KEY, target);
-  return target;
-}
-
 function normalizeSettings(saved) {
   const result = { ...defaultSettings, ...saved };
   const pairingKey = consumePairingKey();
@@ -3972,6 +2683,9 @@ function normalizeSettings(saved) {
   if (!result.plannerSubtitle || result.plannerSubtitle === "Personal planner") result.plannerSubtitle = defaultSettings.plannerSubtitle;
   if (saved.settingsVersion !== 2 && Number(result.sleepGoalHours) === 8) result.sleepGoalHours = 8.5;
   result.settingsVersion = 2;
+  delete result.calendarUrl;
+  delete result.googleConnected;
+  delete result.googleEmail;
   result.ownerKey ||= createOwnerKey();
   result.sleepGoalHours = clampNumber(result.sleepGoalHours, 6, 10, 8.5);
   result.focusGoal = clampNumber(result.focusGoal, 1, 20, 4);
@@ -3979,26 +2693,6 @@ function normalizeSettings(saved) {
   result.trackGoal = clampNumber(result.trackGoal, 1, 14, 3);
   saveJson(SETTINGS_KEY, result);
   return result;
-}
-
-function createCalendarSeed(id, title, category, date, start, end, days) {
-  return {
-    id, kind: "calendar_event", title, category, due_date: date, start_time: start, end_time: end,
-    repeat_pattern: "specific", repeat_days: days, notes: "", completed_dates: [], priority: "medium",
-    duration_minutes: durationBetween(start, end) || 30, color: colorFor(category), source: "seed", created_at: `${date}T00:00:00.000Z`,
-  };
-}
-
-function getRecurringSeeds() {
-  return recurringTemplates.map(([key, title, category, date, start, end, days]) =>
-    createCalendarSeed(stableUuid(`${settings.ownerKey}:${key}`), title, category, date, start, end, days),
-  );
-}
-
-function seedRecurring(items) {
-  items = items.filter((item) => item.source !== "seed" && !["seed-track", "seed-ymca", "seed-duke"].includes(item.id));
-  const ids = new Set(items.map((item) => item.id));
-  return [...items, ...getRecurringSeeds().filter((seed) => !ids.has(seed.id))];
 }
 
 function normalizeItemIds(items) {
@@ -4021,20 +2715,6 @@ function normalizeItemIds(items) {
   return [...new Map(mapped.map((item) => [item.id, item])).values()];
 }
 
-function sortByTime(a, b) {
-  return String(a.start_time || "99:99").localeCompare(String(b.start_time || "99:99"));
-}
-
-function formatEventTime(event) {
-  if (!event.start_time) return "All day";
-  return `${clock(event.start_time)}${event.end_time ? ` - ${clock(event.end_time)}` : ""}`;
-}
-
-function clock(time) {
-  const [hours, minutes] = time.split(":").map(Number);
-  return new Date(2026, 0, 1, hours, minutes).toLocaleTimeString("en", { hour: "numeric", minute: "2-digit" });
-}
-
 function formatTime(value) {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? "" : date.toLocaleTimeString("en", { hour: "numeric", minute: "2-digit" });
@@ -4044,31 +2724,10 @@ function prettyDate(date) {
   return new Date(`${date}T00:00:00`).toLocaleDateString("en", { month: "short", day: "numeric" });
 }
 
-function startOfWeek(dateKey) {
-  const date = new Date(`${dateKey}T00:00:00`);
-  date.setDate(date.getDate() - date.getDay());
-  return formatDateKey(date);
-}
-
 function addDays(key, amount) {
   const date = new Date(`${key}T00:00:00`);
   date.setDate(date.getDate() + amount);
   return formatDateKey(date);
-}
-
-function durationBetween(start, end) {
-  if (!start || !end) return 0;
-  const [startHours, startMinutes] = start.split(":").map(Number);
-  const [endHours, endMinutes] = end.split(":").map(Number);
-  return Math.max(0, endHours * 60 + endMinutes - startHours * 60 - startMinutes);
-}
-
-function priorityWeight(priority) {
-  return { high: 3, medium: 2, low: 1 }[priority] || 0;
-}
-
-function colorFor(category) {
-  return categoryColors[category] || categoryColors.Personal;
 }
 
 function dailyIndex(length) {
@@ -4100,12 +2759,6 @@ function stableUuid(text) {
 function clampNumber(value, min, max, fallback) {
   const number = Number(value);
   return Number.isFinite(number) ? Math.min(max, Math.max(min, number)) : fallback;
-}
-
-function toggleSecret(button) {
-  const input = document.getElementById(button.dataset.toggleSecret);
-  input.type = input.type === "password" ? "text" : "password";
-  button.textContent = input.type === "password" ? "Show" : "Hide";
 }
 
 async function copyPairingLink() {

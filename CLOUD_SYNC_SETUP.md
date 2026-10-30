@@ -56,8 +56,7 @@ The migration file is created, but you need to apply it to your Supabase databas
 2. Click **Settings** (⚙️ icon bottom-left)
 3. Scroll down to the Supabase section
 4. You should see:
-   - **Supabase URL:** `https://hcvjiveloioftozvnbhe.supabase.co` (already filled)
-   - **Supabase publishable key:** `sb_publishable_DGZFZUhnMLgFpdYzcHWRmw_wqOPu2Aq` (already filled)
+   - The Supabase URL and publishable key come from the `SUPABASE_URL` and `SUPABASE_ANON_KEY` environment variables, so there is nothing to type here
    - **Owner key:** (empty)
 
 5. **For laptop:** Generate an owner key or paste the one you want to use
@@ -119,7 +118,7 @@ To use the same Life Flow data on your iPad, phone, or another laptop:
 
 2. **Sync Frequency:**
    - **On app load:** `initializeCloud()` runs auto-sync
-   - **When settings change:** `syncAll()` pulls, imports calendar, then pushes
+   - **When settings change:** `syncAll()` pulls, then pushes
    - **When data changes:** Each operation calls `upsertSupabase()` immediately
    - **Manual sync:** "Sync now" button in settings
 
@@ -158,7 +157,7 @@ All synced records now include:
 **Fix:** 
 - Open Settings
 - Ensure **Owner key** field is filled with the same value on all devices
-- Ensure Supabase URL and key are present (they should be pre-filled)
+- Ensure `SUPABASE_URL` and `SUPABASE_ANON_KEY` are set on the host (`/api/supabase-config` should report `configured: true`)
 - Click Save
 
 ### Data isn't appearing on the other device

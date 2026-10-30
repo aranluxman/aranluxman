@@ -15,7 +15,7 @@
 - [ ] Open Life Flow app
 - [ ] Click Settings ⚙️
 - [ ] Scroll to "Supabase" section
-- [ ] Verify **Supabase URL** and **Supabase publishable key** are filled (pre-filled)
+- [ ] Confirm `SUPABASE_URL` and `SUPABASE_ANON_KEY` are set in Cloudflare Pages → Settings → Environment variables (they no longer appear in Settings)
 - [ ] Enter an **Owner key** (or use: `owner_6cced001-4527-481f-aeec-b37a333545cd`)
 - [ ] Click **Save settings**
 - [ ] Wait for "Synced with Supabase" message (if it says "Local mode", check the owner key is filled)
@@ -51,8 +51,7 @@
 ### If it didn't work:
 - [ ] Check owner key is same on both devices (copy-paste to be sure)
 - [ ] Click "Sync now" button in settings
-- [ ] Check Supabase URL: should be `https://hcvjiveloioftozvnbhe.supabase.co`
-- [ ] Check Supabase key starts with: `sb_publishable_DGZFZUhnMLgFpdYzcHWRmw_wqOPu2Aq`
+- [ ] Open `/api/supabase-config` on your site: it should report `"configured":true`
 - [ ] In Supabase, go to **Authentication** → **RLS** and verify policies exist
 - [ ] Run the migration SQL again
 

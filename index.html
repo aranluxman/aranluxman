@@ -14,7 +14,7 @@
     <link rel="icon" id="dynamicFavicon" href="/assets/icon-512.png" />
     <link rel="apple-touch-icon" id="dynamicTouchIcon" href="/assets/icon-512.png" />
     <link rel="stylesheet" href="/styles.css" />
-    <script type="module" src="/src/app.mjs?v=20261001-motivation-row"></script>
+    <script type="module" src="/src/app.mjs?v=20261030-light-swipe"></script>
   </head>
   <body class="dark-mode">
     <div class="app-shell">
@@ -25,14 +25,13 @@
         </button>
         <nav class="nav-list" role="tablist" aria-label="Sections">
           <button class="nav-item active" data-view="home" type="button" role="tab" aria-selected="true" aria-controls="homeView"><i data-lucide="home"></i><span>Home</span></button>
-          <button class="nav-item" data-view="calendar" type="button" role="tab" aria-selected="false" aria-controls="calendarView"><i data-lucide="calendar-days"></i><span>Calendar</span></button>
           <button class="nav-item" data-view="sleep" type="button" role="tab" aria-selected="false" aria-controls="sleepView"><i data-lucide="moon"></i><span>Sleep</span></button>
           <button class="nav-item" data-view="sugar" type="button" role="tab" aria-selected="false" aria-controls="sugarView"><i data-lucide="candy"></i><span>Sugar</span></button>
           <button class="nav-item" data-view="speak" type="button" role="tab" aria-selected="false" aria-controls="speakView"><i data-lucide="mic"></i><span>Speak</span></button>
           <button class="nav-item" data-view="finance" type="button" role="tab" aria-selected="false" aria-controls="financeView"><i data-lucide="wallet"></i><span>Finance</span></button>
           <button class="nav-item" data-view="me" type="button" role="tab" aria-selected="false" aria-controls="meView"><i data-lucide="target"></i><span>Me</span></button>
-          <button class="nav-item" data-view="arcade" type="button" role="tab" aria-selected="false" aria-controls="arcadeView"><i data-lucide="gamepad-2"></i><span>Arcade</span></button>
         </nav>
+        <button class="ghost-button theme-fab" id="themeToggleButton" type="button" aria-label="Switch theme" title="Switch theme"><i data-lucide="sun" class="icon-sun"></i><i data-lucide="moon" class="icon-moon"></i><span>Theme</span></button>
         <button class="ghost-button settings-fab" id="openSettingsButton" type="button" aria-label="Settings" title="Settings"><i data-lucide="settings"></i><span>Settings</span></button>
       </aside>
 
@@ -50,12 +49,12 @@
                 <p class="current-date"><i data-lucide="calendar-days"></i><span id="currentDateText"></span></p>
               </div>
             </div>
-            <div class="hero-progress" title="Today's progress">
+            <div class="hero-progress" title="Goals completed">
               <svg viewBox="0 0 72 72" aria-hidden="true">
                 <circle class="hero-ring-bg" cx="36" cy="36" r="31"></circle>
                 <circle class="hero-ring-fill" id="heroRingFill" cx="36" cy="36" r="31"></circle>
               </svg>
-              <span class="hero-progress-text"><strong id="heroProgressPercent">0%</strong><small>today</small></span>
+              <span class="hero-progress-text"><strong id="heroProgressPercent">0%</strong><small>goals</small></span>
             </div>
           </header>
           <section class="surface motivation-card" aria-label="Motivation">
@@ -94,71 +93,6 @@
             <span class="quote-mark" aria-hidden="true"><i data-lucide="quote"></i></span>
             <p id="quoteText"></p>
             <button class="icon-button" id="nextQuoteButton" type="button" aria-label="New quote" title="New quote"><i data-lucide="refresh-cw"></i></button>
-          </section>
-          <section class="surface daily-checklist-card" aria-labelledby="dailyChecklistTitle">
-            <div class="card-heading"><h2 id="dailyChecklistTitle">Daily checklist</h2><span id="dailyChecklistCount">0 of 3 done</span></div>
-            <p class="checklist-note">Small actions that make today feel easier.</p>
-            <div class="daily-checklist-list" id="dailyChecklistList"></div>
-          </section>
-          <section class="upcoming-card surface" aria-labelledby="upcomingTitle">
-            <div class="card-heading"><h2 id="upcomingTitle">Upcoming Today</h2><button class="see-all" data-view="calendar" type="button">See all <i data-lucide="chevron-right"></i></button></div>
-            <div class="upcoming-rail" id="upcomingTodayList"></div>
-          </section>
-          <section class="coach-card surface" aria-labelledby="coachTitle">
-            <button class="coach-main" id="coachButton" type="button" title="New coaching tip" aria-label="New coaching tip">
-              <span class="coach-icon" aria-hidden="true"><i data-lucide="brain"></i></span>
-              <div class="coach-body">
-                <div class="coach-title-row"><h2 id="coachTitle">AI Coach</h2><span class="coach-badge" id="coachBadge">New tip</span></div>
-                <p id="coachText"></p>
-              </div>
-              <i data-lucide="chevron-right" class="coach-chevron" aria-hidden="true"></i>
-            </button>
-            <div class="coach-dots" id="coachDots" aria-hidden="true"></div>
-          </section>
-        </section>
-
-        <section class="view" id="calendarView" role="tabpanel" tabindex="0" aria-labelledby="calendarTitle">
-          <div class="section-heading section-heading-calendar calendar-header"><h1 id="calendarTitle">Calendar</h1><button class="add-button labeled" data-open-compose="calendar_event" type="button" title="Add Event"><i data-lucide="plus"></i><span>Add Event</span></button></div>
-          <div class="calendar-topline"><div class="segmented" id="calendarViewToggle" role="tablist" aria-label="Calendar view"><button class="active" data-calendar-view="month" type="button" role="tab" aria-selected="true">Month</button><button data-calendar-view="week" type="button" role="tab" aria-selected="false">Week</button></div><button class="ghost-button compact" id="todayButton" type="button">Jump to today</button></div>
-          <div class="calendar-toolbar"><button class="icon-button" id="prevMonthButton" type="button" aria-label="Previous month"><i data-lucide="chevron-left"></i></button><strong id="monthLabel" aria-live="polite">May 2026</strong><button class="icon-button" id="nextMonthButton" type="button" aria-label="Next month"><i data-lucide="chevron-right"></i></button></div>
-          <div id="monthCalendar">
-            <div class="weekday-row" aria-hidden="true"><span>Sun</span><span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span></div>
-            <div class="calendar-grid" id="calendarGrid" role="grid" aria-label="Month"></div>
-          </div>
-          <div class="week-grid" id="weekGrid" hidden></div>
-          <section class="day-agenda surface">
-            <h2 id="agendaTitle">Today</h2><p class="section-subtitle" id="agendaHint">Tap a day to see events.</p><div id="agendaList"></div>
-          </section>
-          <section class="surface gcal-card" id="calendarSyncCard" aria-labelledby="gcalTitle">
-            <div class="gcal-head">
-              <span class="gcal-mark" id="gcalMark" data-state="off" aria-hidden="true"><i data-lucide="calendar-days"></i></span>
-              <div class="gcal-copy">
-                <h2 id="gcalTitle">Google Calendar</h2>
-                <p id="gcalStatus">Not connected &mdash; showing saved events only.</p>
-              </div>
-            </div>
-            <div class="gcal-actions">
-              <button class="primary-button compact" id="gcalConnectButton" type="button"><i data-lucide="link-2"></i><span>Connect Google</span></button>
-              <button class="ghost-button compact" id="gcalRefreshButton" type="button" hidden><i data-lucide="rotate-cw"></i><span>Refresh</span></button>
-              <button class="ghost-button compact" id="gcalDisconnectButton" type="button" hidden><i data-lucide="cloud-off"></i><span>Disconnect</span></button>
-              <button class="ghost-button compact" id="icalRefreshButton" type="button" hidden><i data-lucide="rotate-cw"></i><span>Refresh feed</span></button>
-            </div>
-            <p class="gcal-note" id="gcalNote" role="status" aria-live="polite" hidden></p>
-            <details class="gcal-ical">
-              <summary>Use a calendar feed link instead</summary>
-              <p class="gcal-ical-help">
-                Paste the <strong>Secret address in iCal format</strong> from Google Calendar &rarr;
-                your calendar &rarr; <em>Settings and sharing</em> &rarr; <em>Integrate calendar</em>.
-                It ends in <code>/basic.ics</code> and contains <code>private-</code>.
-                Treat it like a password &mdash; anyone with it can read your calendar.
-              </p>
-              <div class="gcal-ical-row">
-                <input id="icalUrlInput" type="url" inputmode="url" autocomplete="off" spellcheck="false"
-                       placeholder="https://calendar.google.com/calendar/ical/.../private-.../basic.ics" />
-                <button class="primary-button compact" id="icalSaveButton" type="button">Save &amp; sync</button>
-              </div>
-              <p class="gcal-ical-server" id="icalServerNote" hidden></p>
-            </details>
           </section>
         </section>
 
@@ -267,6 +201,7 @@
           </section>
           <section class="surface goals-card" aria-labelledby="goalsTitle">
             <div class="card-heading"><h2 id="goalsTitle">My 2026 Goals</h2><span id="goalsProgress"></span></div>
+            <div class="goals-summary" id="goalsSummary"></div>
             <div class="goals-groups" id="goalsList"></div>
           </section>
         </section>
@@ -459,23 +394,6 @@
           <ol class="laws-list" id="lawsList"></ol>
         </section>
 
-        <section class="view" id="arcadeView" role="tabpanel" tabindex="0" aria-labelledby="arcadeTitle">
-          <div class="section-heading section-heading-arcade arcade-header"><div><h1 id="arcadeTitle">Arcade</h1><p class="section-subtitle">Earn coins by finishing real work.</p></div></div>
-          <section class="coins-banner"><i data-lucide="trophy"></i><div><span>COINS</span><strong id="arcadeCoins">0</strong><p id="arcadeCoinBreakdown">Earned from tasks: 0 | Earned from focus sessions: 0</p></div></section>
-          <section class="arcade-grid">
-            <article class="arcade-card daily-boost"><h2>Daily Boost</h2><p id="arcadeBoost"></p><button class="primary-button" id="arcadeBoostButton" type="button">Complete boost +20</button></article>
-            <article class="arcade-card rules-card"><h2>Earn Coins</h2><ul><li>Complete a task: +5</li><li>Complete a focus session: +10</li><li>Complete YMCA event: +15</li><li>Complete track training: +10</li></ul></article>
-            <article class="arcade-card game-card"><h2>Reaction Tap</h2><p>Sprint Start Trainer &middot; Free</p><button class="reaction-pad" id="reactionPad" type="button" disabled>Start when ready</button><button class="ghost-button compact" id="reactionStartButton" type="button">Start attempt</button><p><strong id="reactionBest">&mdash;</strong> best</p><ol class="attempts" id="reactionHistory"></ol></article>
-            <article class="arcade-card game-card memory-card-game"><h2>Memory Match</h2><p>Entry: 5 coins &middot; Win: +5 coins &middot; New board every game</p><button class="ghost-button compact" id="memoryStartButton" type="button">Play Memory Match</button><p id="memoryStatus">Match all 8 pairs.</p><div class="memory-grid" id="memoryGrid"></div></article>
-            <article class="arcade-card game-card"><h2>Sprint Tap</h2><p>Track speed &middot; Tap as fast as you can for 5 seconds</p><button class="reaction-pad" id="sprintPad" type="button">Tap to start</button><p id="sprintStatus">Best burst counts your fastest hands.</p><p><strong id="sprintBest">&mdash;</strong> best taps</p></article>
-            <article class="arcade-card game-card"><h2>Stop the Clock</h2><p>Start precision &middot; Stop it as close to 5.00s as you can</p><button class="reaction-pad" id="stopClockPad" type="button">Start clock</button><p id="stopClockStatus">Tap once to start, again to stop.</p><p><strong id="stopClockBest">&mdash;</strong> best gap</p></article>
-            <article class="arcade-card game-card"><h2>Number Rush</h2><p>Tap 1 to 9 in order as fast as possible</p><button class="ghost-button compact" id="numberRushStart" type="button">New round</button><p id="numberRushStatus">Press New round to begin.</p><div class="rush-grid" id="numberRushGrid"></div><p><strong id="numberRushBest">&mdash;</strong> best time</p></article>
-            <article class="arcade-card game-card"><h2>Target Tap</h2><p>Hit the lit square &middot; 15 seconds</p><button class="ghost-button compact" id="targetStart" type="button">Start round</button><p id="targetStatus">Press Start round to begin.</p><div class="target-grid" id="targetGrid"></div><p><strong id="targetBest">&mdash;</strong> best hits</p></article>
-            <article class="arcade-card game-card"><h2>Simon Says</h2><p>Watch the pattern, repeat it &middot; it grows every round</p><button class="ghost-button compact" id="simonStart" type="button">Start pattern</button><p id="simonStatus">Press Start pattern to begin.</p><div class="simon-grid" id="simonGrid"><button type="button" class="simon-pad simon-teal" data-simon="0" aria-label="Teal pad"></button><button type="button" class="simon-pad simon-orange" data-simon="1" aria-label="Orange pad"></button><button type="button" class="simon-pad simon-purple" data-simon="2" aria-label="Purple pad"></button><button type="button" class="simon-pad simon-gold" data-simon="3" aria-label="Gold pad"></button></div><p><strong id="simonBest">&mdash;</strong> best streak</p></article>
-            <article class="arcade-card game-card"><h2>Math Sprint</h2><p>30 seconds of quick math &middot; how many can you solve?</p><button class="ghost-button compact" id="mathStart" type="button">Start sprint</button><div class="math-stage"><p class="math-question" id="mathQuestion">Ready?</p><div class="math-answers" id="mathAnswers"></div></div><p id="mathStatus">Press Start sprint to begin.</p><p><strong id="mathBest">&mdash;</strong> best score</p></article>
-            <article class="arcade-card arcade-photo-card"><img src="/assets/reminders/family-birthday.jpg" alt="" loading="lazy" decoding="async" /><div><label>My goal<input id="goalReminderInput" value="Train hard. Give back. Build something." /></label><p>Finish the work so you can be fully present for moments like this.</p></div></article>
-          </section>
-        </section>
       </main>
     </div>
 
@@ -483,27 +401,6 @@
       <button class="icon-button motivation-player-close" id="motivationPlayerClose" type="button" aria-label="Close video"><i data-lucide="x"></i></button>
       <div class="motivation-player-frame" id="motivationPlayerFrame"></div>
     </dialog>
-    <dialog class="compose-dialog" id="composeDialog" aria-labelledby="composeTitle">
-      <form id="composeForm" method="dialog">
-        <div class="dialog-heading"><h2 id="composeTitle">Add item</h2><button class="icon-button" id="closeComposeButton" type="button" aria-label="Close"><i data-lucide="x"></i></button></div>
-        <input id="editingItemIdInput" type="hidden" />
-        <label>Title<input id="itemTitleInput" required maxlength="120" placeholder="Write the task..." /></label>
-        <button class="ghost-button compact more-options-button" id="toggleAdvancedButton" type="button" aria-expanded="false">More options</button>
-        <div class="form-grid advanced-fields" id="advancedFields" hidden>
-          <label>Type<select id="itemKindInput"><option value="daily_task">Task</option><option value="long_term">Long-term</option><option value="calendar_event">Calendar event</option></select></label>
-          <label>Due date<input id="itemDateInput" type="date" /></label>
-          <label>Category<select id="itemCategoryInput"><option>School</option><option>Track &amp; Field</option><option>YMCA</option><option>Duke of Ed</option><option>Web Dev</option><option>Personal</option></select></label>
-          <label>Priority<select id="itemPriorityInput"><option value="medium">Medium</option><option value="high">High</option><option value="low">Low</option></select></label>
-          <label class="calendar-field">Start time<input id="itemStartTimeInput" type="time" /></label>
-          <label class="calendar-field">End time<input id="itemEndTimeInput" type="time" /></label>
-          <label class="calendar-field">Repeat<select id="itemRepeatInput"><option value="none">None</option><option value="daily">Daily</option><option value="weekly">Weekly</option><option value="specific">Specific days</option></select></label>
-          <div class="repeat-days calendar-field" id="repeatDays"><span>Days</span><button type="button" data-repeat-day="0">S</button><button type="button" data-repeat-day="1">M</button><button type="button" data-repeat-day="2">T</button><button type="button" data-repeat-day="3">W</button><button type="button" data-repeat-day="4">T</button><button type="button" data-repeat-day="5">F</button><button type="button" data-repeat-day="6">S</button></div>
-        </div>
-        <label class="advanced-fields" data-advanced-field hidden>Notes<textarea id="itemNotesInput" rows="3"></textarea></label>
-        <button class="primary-button" type="submit">Save</button>
-      </form>
-    </dialog>
-
     <dialog class="compose-dialog" id="sleepDialog" aria-labelledby="sleepDialogTitle">
       <form id="sleepForm" method="dialog">
         <div class="dialog-heading"><h2 id="sleepDialogTitle">Add sleep</h2><button class="icon-button" id="closeSleepButton" type="button" aria-label="Close"><i data-lucide="x"></i></button></div>
@@ -547,18 +444,14 @@
         <label>Display name<input id="displayNameInput" value="Aran" /></label>
         <label>Sidebar subtitle<input id="plannerSubtitleInput" value="Grade 9 &middot; Athlete &middot; Builder" /></label>
         <div class="form-grid"><label>Daily focus session goal<input id="focusGoalInput" type="number" min="1" max="20" value="4" /></label><label>Weekly pushup goal<input id="pushupGoalInput" type="number" min="1" max="1000" value="60" /></label><label>Weekly track sessions goal<input id="trackGoalInput" type="number" min="1" max="14" value="3" /></label></div>
-        <p class="settings-note">Local mode: use the app without cloud sync; data is stored in your browser only.</p>
-        <label>Supabase URL<span class="secret-field"><input id="supabaseUrlInput" type="password" /><button type="button" data-toggle-secret="supabaseUrlInput">Show</button></span></label>
-        <label>Supabase publishable key<span class="secret-field"><input id="supabaseAnonInput" type="password" /><button type="button" data-toggle-secret="supabaseAnonInput">Show</button></span></label>
+        <p class="settings-note">Cloud sync is configured on the server. Without a private sync key the app works in local mode and stores data in this browser only.</p>
         <label>Private sync key<input id="ownerKeyInput" autocomplete="off" spellcheck="false" /></label>
         <div class="dialog-actions sync-pairing-actions"><button class="ghost-button compact" id="copyPairingLinkButton" type="button">Copy pairing link</button></div>
         <p class="settings-note">To connect your laptop, iPad, and phone, copy the pairing link from the device that already has your data and open it once on each other device. The link contains your private sync key, so treat it like a password. New changes then sync automatically.</p>
-        <label>Google Calendar secret iCal URL <small class="field-hint">Fallback if you'd rather not connect your account. Google refreshes these feeds every few hours, so it lags behind live changes.</small><input id="calendarUrlInput" placeholder="https://calendar.google.com/calendar/ical/.../basic.ics" /></label>
-        <label class="toggle-row"><input id="darkModeInput" type="checkbox" /> Dark mode</label>
+        <label class="toggle-row"><input id="darkModeInput" type="checkbox" /> Dark theme <small class="field-hint">Turn off for the light theme.</small></label>
         <div class="dialog-actions"><button class="ghost-button compact" id="syncButton" type="button">Sync now</button><button class="primary-button" type="submit">Save settings</button></div>
         <p class="sync-status" id="syncStatus">Local mode</p>
         <div class="danger-zone">
-          <button class="ghost-button compact" id="clearImportedButton" type="button">Remove pre-loaded schedule</button>
           <button class="danger-button" id="resetDataButton" type="button">Reset all data</button>
         </div>
       </form>
